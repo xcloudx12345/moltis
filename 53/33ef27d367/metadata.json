@@ -5,7 +5,7 @@
   "branch": "soul-location",
   "checkpoints_count": 0,
   "files_touched": [
-    "crates/node-host/src/service.rs"
+    "crates/onboarding/src/service.rs"
   ],
   "sessions": [
     {
@@ -17,10 +17,10 @@
     }
   ],
   "token_usage": {
-    "input_tokens": 14,
-    "cache_creation_tokens": 12277,
-    "cache_read_tokens": 924998,
-    "output_tokens": 258,
-    "api_call_count": 12
+    "input_tokens": 7,
+    "cache_creation_tokens": 5106,
+    "cache_read_tokens": 425441,
+    "output_tokens": 58,
+    "api_call_count": 5
   }
 }

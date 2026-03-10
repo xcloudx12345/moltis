@@ -88,3 +88,12 @@ PASS [   0.008s] moltis-msteams channel_webhook_verifier::tests::contract_has_va
         PASS [   0.007s] moltis-msteams channel_webhook_verifier::tests::no_secret_configured_and_not_required_passes
         PASS [   0.007s] moltis-msteams channel_webhook_verifier::tests::...
 
+### Prompt 12
+
+PASS [   0.012s] moltis-oauth registration_store::tests::delete_registration
+        PASS [   0.010s] moltis-oauth registration_store::tests::load_nonexistent_returns_none
+        PASS [   0.900s] moltis-oauth discovery::tests::fetch_as_metadata_success
+        PASS [   0.011s] moltis-oauth registration_store::tests::no_client_secret_roundtrip
+        PASS [   0.010s] moltis-oauth registration_store::tests::roundtrip_save_load
+        PASS [   0.012s] moltis-oauth::oauth_tests load_oauth_conf...
+

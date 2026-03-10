@@ -402,3 +402,147 @@ warning: 1929/3625 tests were not run due to test failure (run with --no-fail-fa
 error: test run failed
 [local/test] failed in 136s
 ~/.s/w/m/soul-location soul-location ❯
+
+---
+
+PASS [   0.012s] moltis-oauth registration_store::tests::delete_registration
+        PASS [   0.010s] moltis-oauth registration_store::tests::load_nonexistent_returns_none
+        PASS [   0.900s] moltis-oauth discovery::tests::fetch_as_metadata_success
+        PASS [   0.011s] moltis-oauth registration_store::tests::no_client_secret_roundtrip
+        PASS [   0.010s] moltis-oauth registration_store::tests::roundtrip_save_load
+        PASS [   0.012s] moltis-oauth::oauth_tests load_oauth_config_returns_none_for_unknown
+        PASS [   0.010s] moltis-oauth::oauth_tests pkce_generates_valid_challenge
+        PASS [   0.009s] moltis-oauth::oauth_tests pkce_is_deterministic_sha256
+        PASS [   0.013s] moltis-oauth::oauth_tests load_oauth_config_returns_openai_codex_defaults
+        PASS [   0.913s] moltis-oauth discovery::tests::fetch_as_metadata_malformed_json
+        PASS [   0.931s] moltis-oauth device_flow::tests::poll_for_token_access_denied_error
+        PASS [   0.016s] moltis-oauth::oauth_tests callback_port_parses_from_redirect_uri
+        PASS [   0.912s] moltis-oauth discovery::tests::fetch_resource_metadata_network_failure
+        PASS [   0.011s] moltis-onboarding service::tests::cancel_wizard
+        PASS [   0.012s] moltis-oauth::oauth_tests token_store_roundtrip
+        PASS [   0.010s] moltis-onboarding service::tests::sentinel_file_marks_onboarded
+        PASS [   0.020s] moltis-onboarding service::tests::config_data_alone_does_not_skip_onboarding
+        PASS [   0.009s] moltis-onboarding state::tests::back_from_confirm
+        PASS [   0.024s] moltis-onboarding service::tests::identity_update_empty_fields
+        PASS [   0.024s] moltis-onboarding service::tests::identity_update_location_null_clears_existing_value
+        PASS [   0.024s] moltis-onboarding service::tests::identity_update_location_fields
+  TRY 1 FAIL [   0.014s] moltis-onboarding service::tests::wizard_round_trip
+──── TRY 1 STDOUT:       moltis-onboarding service::tests::wizard_round_trip
+
+running 1 test
+test service::tests::wizard_round_trip ... FAILED
+
+failures:
+
+failures:
+    service::tests::wizard_round_trip
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+
+──── TRY 1 STDERR:       moltis-onboarding service::tests::wizard_round_trip
+
+thread 'service::tests::wizard_round_trip' (590345) panicked at crates/onboarding/src/service.rs:429:9:
+assertion failed: dir.path().join("IDENTITY.md").exists()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+   RETRY 2/3 [         ] moltis-onboarding service::tests::wizard_round_trip
+        PASS [   0.857s] moltis-oauth discovery::tests::fetch_resource_metadata_not_found
+        PASS [   0.008s] moltis-onboarding state::tests::full_wizard_flow
+        PASS [   0.009s] moltis-onboarding state::tests::default_agent_name
+        PASS [   0.010s] moltis-openclaw-import agents::tests::import_agents_no_config_no_agents
+        PASS [   0.010s] moltis-openclaw-import agents::tests::import_agents_single_default
+        PASS [   0.014s] moltis-openclaw-import agents::tests::import_agents_multiple
+        PASS [   0.011s] moltis-openclaw-import agents::tests::import_agents_synthesizes_from_detection
+        PASS [   0.009s] moltis-openclaw-import agents::tests::sanitize_basic
+  TRY 2 FAIL [   0.011s] moltis-onboarding service::tests::wizard_round_trip
+──── TRY 2 STDOUT:       moltis-onboarding service::tests::wizard_round_trip
+
+running 1 test
+test service::tests::wizard_round_trip ... FAILED
+
+failures:
+
+failures:
+    service::tests::wizard_round_trip
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+
+──── TRY 2 STDERR:       moltis-onboarding service::tests::wizard_round_trip
+
+thread 'service::tests::wizard_round_trip' (590372) panicked at crates/onboarding/src/service.rs:429:9:
+assertion failed: dir.path().join("IDENTITY.md").exists()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+        PASS [   0.011s] moltis-openclaw-import agents::tests::import_agents_with_identity
+   RETRY 3/3 [         ] moltis-onboarding service::tests::wizard_round_trip
+        PASS [   0.037s] moltis-onboarding service::tests::identity_update_partial
+        PASS [   0.849s] moltis-oauth discovery::tests::fetch_resource_metadata_success
+        PASS [   0.012s] moltis-openclaw-import agents::tests::sanitize_collapses_dashes
+        PASS [   0.007s] moltis-openclaw-import agents::tests::sanitize_main_gets_suffix
+        PASS [   0.007s] moltis-openclaw-import agents::tests::sanitize_empty_string
+        PASS [   0.008s] moltis-openclaw-import agents::tests::sanitize_collision_detection
+        PASS [   0.008s] moltis-openclaw-import agents::tests::sanitize_multiple_collisions
+        PASS [   0.008s] moltis-openclaw-import agents::tests::sanitize_special_chars
+        PASS [   0.009s] moltis-openclaw-import agents::tests::sanitize_trims_dashes
+        PASS [   0.009s] moltis-openclaw-import agents::tests::sanitize_truncates_long_ids
+        PASS [   0.009s] moltis-openclaw-import channels::tests::import_discord_flat_config
+  TRY 3 FAIL [   0.011s] moltis-onboarding service::tests::wizard_round_trip
+──── TRY 3 STDOUT:       moltis-onboarding service::tests::wizard_round_trip
+
+running 1 test
+test service::tests::wizard_round_trip ... FAILED
+
+failures:
+
+failures:
+    service::tests::wizard_round_trip
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+
+──── TRY 3 STDERR:       moltis-onboarding service::tests::wizard_round_trip
+
+thread 'service::tests::wizard_round_trip' (590412) panicked at crates/onboarding/src/service.rs:429:9:
+assertion failed: dir.path().join("IDENTITY.md").exists()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+  Cancelling due to test failure: 15 tests still running
+        PASS [   0.012s] moltis-openclaw-import channels::tests::import_discord_accounts
+        PASS [   0.010s] moltis-openclaw-import channels::tests::import_skips_disabled_accounts
+        PASS [   0.011s] moltis-openclaw-import channels::tests::import_skips_disabled_discord_accounts
+        PASS [   0.011s] moltis-openclaw-import channels::tests::import_telegram_accounts
+        PASS [   0.010s] moltis-openclaw-import channels::tests::no_telegram_returns_skipped
+        PASS [   0.011s] moltis-openclaw-import channels::tests::import_telegram_flat_config
+        PASS [   0.008s] moltis-openclaw-import channels::tests::parse_allow_from_mixed
+        PASS [   0.009s] moltis-openclaw-import channels::tests::unsupported_channels_in_warnings
+        PASS [   0.008s] moltis-openclaw-import detect::tests::detect_at_empty_dir
+        PASS [   0.785s] moltis-oauth discovery::tests::register_client_error_response
+        PASS [   0.785s] moltis-oauth discovery::tests::register_client_no_secret
+        PASS [   0.290s] moltis-oauth discovery::tests::register_client_success
+        PASS [   0.236s] moltis-oauth::oauth_tests oauth_flow_start_generates_unique_state
+        PASS [   0.238s] moltis-oauth::oauth_tests oauth_flow_start_builds_valid_url
+        PASS [   0.257s] moltis-oauth::oauth_tests oauth_flow_exchange_sends_resource_indicator_when_configured
+────────────
+     Summary [  25.770s] 1770/3625 tests run: 1769 passed, 1 failed, 0 skipped
+  TRY 3 FAIL [   0.011s] moltis-onboarding service::tests::wizard_round_trip
+──── TRY 3 STDOUT:       moltis-onboarding service::tests::wizard_round_trip
+
+running 1 test
+test service::tests::wizard_round_trip ... FAILED
+
+failures:
+
+failures:
+    service::tests::wizard_round_trip
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+
+──── TRY 3 STDERR:       moltis-onboarding service::tests::wizard_round_trip
+
+thread 'service::tests::wizard_round_trip' (590412) panicked at crates/onboarding/src/service.rs:429:9:
+assertion failed: dir.path().join("IDENTITY.md").exists()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+warning: 1855/3625 tests were not run due to test failure (run with --no-fail-fast to run all tests, or run with --max-fail)
+error: test run failed
+[local/test] failed in 59s
+~/.s/w/m/soul-location soul-location ❯
