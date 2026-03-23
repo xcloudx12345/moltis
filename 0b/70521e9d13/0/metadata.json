@@ -1,0 +1,86 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "0b70521e9d13",
+  "session_id": "99de5c6c-7baa-471b-8b77-fb0dc7229e4f",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-23T10:40:51.591128Z",
+  "branch": "temikus/fix-mcp-naming",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/cli/src/doctor_commands.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "591b79b94652",
+  "checkpoint_transcript_start": 189,
+  "transcript_lines_at_start": 189,
+  "token_usage": {
+    "input_tokens": 12,
+    "cache_creation_tokens": 5350,
+    "cache_read_tokens": 746196,
+    "output_tokens": 1855,
+    "api_call_count": 10
+  },
+  "summary": {
+    "intent": "Fix compilation errors on the `fix-mcp-naming` branch caused by missing `display_name` field in `McpServerEntry` struct initializers in `doctor_commands.rs`.",
+    "outcome": "Added `display_name: None` to all 5 `McpServerEntry` struct initializers in `doctor_commands.rs`, verified clean compilation, committed, and pushed to the remote branch.",
+    "learnings": {
+      "repo": [
+        "The `moltis_config::schema::McpServerEntry` struct has a `display_name` field (likely recently added as part of the MCP naming work) that must be explicitly set — it has no default and is not `#[derive(Default)]`.",
+        "CI runs a lint/build step (`local/lint`) that caught the missing field; it took 376s to surface the error."
+      ],
+      "code": [
+        {
+          "path": "crates/cli/src/doctor_commands.rs",
+          "line": 859,
+          "end_line": 859,
+          "finding": "McpServerEntry initializer missing `display_name` field — fixed with `display_name: None`"
+        },
+        {
+          "path": "crates/cli/src/doctor_commands.rs",
+          "line": 880,
+          "end_line": 880,
+          "finding": "McpServerEntry initializer missing `display_name` field — fixed with `display_name: None`"
+        },
+        {
+          "path": "crates/cli/src/doctor_commands.rs",
+          "line": 901,
+          "end_line": 901,
+          "finding": "McpServerEntry initializer missing `display_name` field — fixed with `display_name: None`"
+        },
+        {
+          "path": "crates/cli/src/doctor_commands.rs",
+          "line": 922,
+          "end_line": 922,
+          "finding": "McpServerEntry initializer missing `display_name` field — fixed with `display_name: None`"
+        },
+        {
+          "path": "crates/cli/src/doctor_commands.rs",
+          "line": 946,
+          "end_line": 946,
+          "finding": "McpServerEntry initializer missing `display_name` field — fixed with `display_name: None`"
+        }
+      ],
+      "workflow": [
+        "The branch was pushed before verifying compilation; the CI lint step caught the struct field errors post-push.",
+        "Worktrees are used under `~/.superset/worktrees/moltis/temikus/` for branch isolation."
+      ]
+    },
+    "friction": [
+      "The `display_name` field was missing from all 5 `McpServerEntry` initializers in `doctor_commands.rs` — this was likely introduced when the field was added to the schema as part of the broader MCP naming refactor but `doctor_commands.rs` was not updated to match.",
+      "Errors were only caught after pushing, requiring an additional fix commit rather than catching locally before push."
+    ],
+    "open_items": [
+      "Verify whether other crates or files that construct `McpServerEntry` also need `display_name` populated with a real value rather than `None` — the doctor commands may need to surface display names in their output eventually.",
+      "Consider whether `display_name` should be `#[serde(default)]` or have a `Default` impl to prevent similar breakage when the schema evolves."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-23T10:40:34.2041Z",
+    "agent_lines": 5,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 5,
+    "agent_percentage": 100
+  }
+}
