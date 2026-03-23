@@ -302,6 +302,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Teams channel management in the web UI (add/edit/remove accounts, sender review, session/channel badges)
 - Guided Teams bootstrap tooling via `moltis channels teams bootstrap` plus an in-UI endpoint generator in Settings → Channels
 - Multi-agent personas with per-agent workspaces (`data_dir()/agents/<id>/`), `agents.*` RPC methods, and session-level `agent_id` binding/switching across web + Telegram flows
+- System prompt profile CRUD: create, delete, and set-default profile from the
+  settings UI via new `system_prompt.config.create`, `.delete`, and
+  `.set_default` RPC methods.
+- Section Options panel in system prompt settings: toggle runtime, user details,
+  memory bootstrap, and datetime tail options per profile with live preview.
+- Enabled Sections toggle grid: enable/disable individual prompt sections per
+  profile (required sections are locked).
+- Resolved profile name now shown in the Live Preview header.
+- Template variables list is collapsible (hidden by default).
+- Model overrides UI: route specific providers/models to different prompt
+  profiles using glob patterns. Flattened `[[prompt_profiles.overrides]]` TOML
+  schema (backward compatible) and new `system_prompt.config.overrides.save` RPC.
 - `chat.peek` RPC method returning real-time session state (active flag, thinking text, active tool calls) for any session key
 - Active tool call tracking per-session in `LiveChatService` with camelCase-serialized `ActiveToolCall` structs
 - Web UI: inline red "Stop" button inside thinking indicator, `aborted` broadcast handler that cleans up streaming state
@@ -337,6 +349,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed extra indentation in settings page for system-prompt, security,
+  tailscale, voice, notifications, and config sections.
+- Deduplicated `parse_optional_trimmed_string_param` between chat.rs and
+  methods.rs (single `pub` copy in chat.rs).
 - **OpenAI Codex OAuth in Docker**: the web UI no longer overrides the provider's pre-registered `redirect_uri`, which caused OpenAI to reject the authorization request with `unknown_error`. The OAuth callback server now also respects the gateway bind address (`0.0.0.0` in Docker) so the callback port (1455) is reachable from the host. Docker image now exposes port 1455 for OAuth callbacks (#207)
 - **Slow SQLite writes**: `moltis.db` and `memory.db` now use `journal_mode=WAL` and `synchronous=NORMAL` (matching `metrics.db`), eliminating multi-second write contention that caused 3–10 s INSERT times under concurrent access
 - Channel image delivery now parses the actual MIME type from data URIs instead of hardcoding `image/png`
