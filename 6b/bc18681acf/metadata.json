@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "6bbc18681acf",
+  "strategy": "manual-commit",
+  "branch": "bennyhodl/fix/exec-node-schema-ghost-param",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/gateway/src/state.rs",
+    "crates/gateway/src/ws.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/6b/bc18681acf/0/metadata.json",
+      "transcript": "/6b/bc18681acf/0/full.jsonl",
+      "context": "/6b/bc18681acf/0/context.md",
+      "content_hash": "/6b/bc18681acf/0/content_hash.txt",
+      "prompt": "/6b/bc18681acf/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 22,
+    "cache_creation_tokens": 4405,
+    "cache_read_tokens": 664007,
+    "output_tokens": 1894,
+    "api_call_count": 14
+  }
+}
