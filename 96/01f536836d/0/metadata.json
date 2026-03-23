@@ -1,0 +1,102 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "9601f536836d",
+  "session_id": "e91ffe16-fa98-4282-a0ba-74c510e0faa5",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-23T16:02:27.428301Z",
+  "branch": "httpd-crate",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/node-host/src/service.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "5141383068af",
+  "token_usage": {
+    "input_tokens": 1462,
+    "cache_creation_tokens": 165944,
+    "cache_read_tokens": 12469989,
+    "output_tokens": 32201,
+    "api_call_count": 167
+  },
+  "summary": {
+    "intent": "Maintain the httpd-crate branch by merging main repeatedly, resolving conflicts, and addressing all greptile code review comments on the PR.",
+    "outcome": "All merges completed, 23+ conflicts resolved, greptile findings fixed across two PR review rounds, but git-filter-repo rewrote all commit SHAs causing PR #296 to close; a new squashed PR #465 was created.",
+    "learnings": {
+      "repo": [
+        "rustls crypto provider `install_default()` must be called in `prepare_gateway` (not `start_gateway`) so both the normal and embedded/swift-bridge startup paths get TLS initialized",
+        "browser_tool_for_warmup must be extracted from the PreparedGatewayCore destructure and threaded through BannerMeta to reach start_browser_warmup_after_listener",
+        "_proxy_shutdown_tx in PreparedGateway must be held in the struct — dropping it via `..` pattern kills the trusted-network proxy",
+        "/ws route alias must be registered alongside /ws/chat for node-add generated commands to work",
+        "Session event enrichment (label, model, preview, channel binding) was lost when gateway logic moved to httpd — needed to be ported explicitly",
+        "httpd crate required moltis-agents as an explicit Cargo.toml dependency to reference AgentTool type",
+        "web/src/lib.rs had duplicate route registrations introduced during the merge",
+        "node-host launchd plist generation was vulnerable to XML injection from user-controlled paths (bin, log, data_dir)",
+        "node-host systemd unit file had unquoted values susceptible to injection/splitting",
+        "nightly rustfmt enforces grouped use blocks (merging separate `use moltis_gateway` and `use moltis_httpd` into a single braced block)"
+      ],
+      "code": [
+        {
+          "path": "crates/httpd/src/server.rs",
+          "finding": "prepare_gateway is the correct place for rustls::crypto::ring::default_provider().install_default() — covers both start_gateway and prepare_gateway_embedded paths"
+        },
+        {
+          "path": "crates/httpd/src/server.rs",
+          "finding": "PreparedGateway struct must hold proxy_shutdown_tx to keep the proxy alive; destructuring with .. silently dropped it"
+        },
+        {
+          "path": "crates/gateway/src/server.rs",
+          "finding": "start_browser_warmup_after_listener signature was updated to accept browser_tool parameter; the field on PreparedGatewayCore needed pub visibility"
+        },
+        {
+          "path": "crates/browser/src/pool.rs",
+          "line": 276,
+          "finding": "Local MAX_LIFETIME constant was shadowed by module-level MAX_BROWSER_INSTANCE_LIFETIME; the local one was unused"
+        },
+        {
+          "path": "crates/node-host/src/service.rs",
+          "finding": "Plist string values must be XML-escaped; systemd unit values must be quoted to prevent injection from user-controlled paths"
+        },
+        {
+          "path": "crates/config/src/loader.rs",
+          "line": 1885,
+          "finding": "Extra blank line before test function caused nightly rustfmt failure"
+        },
+        {
+          "path": "crates/httpd/tests/heartbeat_cron.rs",
+          "line": 14,
+          "finding": "Test file added in main under crates/gateway/tests/ needed to live in crates/httpd/tests/ on this branch; imports also needed updating from moltis_gateway to moltis_httpd for build_gateway_base and finalize_gateway_app"
+        }
+      ],
+      "workflow": [
+        "git-filter-repo removes the 'origin' remote as a safety measure — must re-add with `git remote add origin` before pushing",
+        "Force-pushing rewritten history (filter-repo rewrites all SHAs) causes GitHub to close open PRs; they cannot be reopened via `gh pr reopen` after history divergence",
+        "gh CLI requires `gh repo set-default` in worktrees that lack a configured default remote",
+        "When filter-repo rewrites the entire repo history, the branch loses its common ancestor with main; cleanest recovery is to create a new branch from origin/main and apply the diff as a squashed commit",
+        "release.yml had a pattern of redundant pre-version build steps in each platform job (4 jobs × 1 wasted build each)"
+      ]
+    },
+    "friction": [
+      "git-filter-repo silently removed origin remote, which was not anticipated",
+      "Force-push after filter-repo closed PR #296 — GitHub cannot reopen a PR whose branch history no longer shares ancestry with base",
+      "filter-repo rewrote the entire repo history (all 2027 commits), not just branch commits, making rebase onto origin/main impossible without squashing",
+      "gh CLI needed repo set-default in the worktree context before any PR operations worked",
+      "Greptile findings required 3 separate fix-and-push rounds across two PRs (#296 and #465)",
+      "moltis-agents missing from httpd Cargo.toml caused a compile error mid-fix that required discovering and patching the dependency"
+    ],
+    "open_items": [
+      "PR #465 is a single squashed commit — individual commit history from the httpd-crate branch was lost; original per-feature commits are gone",
+      "Old PR #296 is closed and cannot be recovered; reviewers and comments from that PR are orphaned",
+      "The XML-escaping fix for plist is a best-effort string replacement — a proper XML builder library would be more robust long-term",
+      "release.yml redundant build removal was done for 4 jobs but should be audited for any additional platform variants added in future"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-23T16:01:39.245636Z",
+    "agent_lines": 0,
+    "human_added": 8,
+    "human_modified": 10,
+    "human_removed": 0,
+    "total_committed": 8,
+    "agent_percentage": 0
+  }
+}
