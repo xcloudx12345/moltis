@@ -1,0 +1,82 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "32a224dd48e0",
+  "session_id": "d54b36d5-9de2-4437-9d28-5af3740a34a6",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-23T11:26:29.593794Z",
+  "branch": "feat/send-document-v2",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/tools/src/send_document.rs",
+    "crates/web/src/api.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "6fdbbe910626",
+  "token_usage": {
+    "input_tokens": 82,
+    "cache_creation_tokens": 80751,
+    "cache_read_tokens": 3647834,
+    "output_tokens": 14673,
+    "api_call_count": 68
+  },
+  "summary": {
+    "intent": "Replace a manual MIME type extension mapping function with the `mime_guess` crate, then address code review comments on PR #464 including an XSS vulnerability and missing blocked extensions.",
+    "outcome": "Successfully replaced `mime_from_extension` with `mime_guess` (keeping fallbacks for `text`, `log`, `ppm`), fixed an XSS vulnerability by removing `text/html` from inline disposition, added missing scripting extensions to the blocked list, and warmed the `container_cli` OnceLock at startup to avoid blocking async workers.",
+    "learnings": {
+      "repo": [
+        "The workspace uses a centralized `Cargo.toml` for dependency versions; new crates should be added there first and referenced with `{ workspace = true }` in crate-level Cargo.toml files.",
+        "`mime_guess` was already a transitive dependency (v2.0.5) before being added as a direct dependency.",
+        "There is a `spawn_post_listener_warmups` function in `crates/gateway/src/server.rs` used as the established pattern for warming up resources at startup.",
+        "`container_cli` is re-exported publicly from `moltis_tools::sandbox`, so it's accessible from the gateway crate without visibility changes.",
+        "The `moltis-web` crate requires a compiled Tailwind CSS asset to build, preventing its tests from running in isolation without the asset present.",
+        "`extension_for_mime` was intentionally kept as a manual mapping to preserve opinionated preferred extensions (e.g., `jpg` over `jpeg`, `bin` as fallback)."
+      ],
+      "code": [
+        {
+          "path": "crates/media/src/mime.rs",
+          "finding": "mime_from_extension replaced with mime_guess::from_ext().first_raw(), with manual fallbacks only for 'text', 'log', and 'ppm' which mime_guess does not recognize."
+        },
+        {
+          "path": "crates/web/src/api.rs",
+          "finding": "text/html must NOT be in the inline content-disposition allowlist — serving HTML inline creates an XSS vector. Test `content_disposition_inline_for_html` was updated to expect `attachment`."
+        },
+        {
+          "path": "crates/tools/src/send_document.rs",
+          "finding": "BLOCKED_EXTENSIONS list was missing scripting language extensions that were added per PR review feedback."
+        },
+        {
+          "path": "crates/gateway/src/server.rs",
+          "finding": "container_cli() OnceLock is now warmed via spawn_blocking inside spawn_post_listener_warmups to avoid blocking async workers on first HTTP request."
+        },
+        {
+          "path": "crates/tools/src/sandbox/containers.rs",
+          "finding": "container_cli() uses OnceLock and std::process::Command (blocking), which can block async workers if called for the first time from an async context."
+        }
+      ],
+      "workflow": [
+        "mime_guess returns more extensions than expected (e.g., bmp, svg, xyz as chemical format) — tests asserting None for those needed updating when switching from a manual allowlist to a library.",
+        "When expanding MIME support via a library, tests using 'obscure' extensions as stand-ins for 'unsupported' need to be updated to truly unknown extensions (e.g., `.qqqq`).",
+        "PR review comments from Greptile and human reviewers were fetched via `gh api` and resolved by replying to the comment thread after pushing the fix."
+      ]
+    },
+    "friction": [
+      "mime_guess recognizes far more extensions than the manual list (bmp, svg, xyz/chemical), causing multiple test failures that required investigation and fixes.",
+      "The `moltis-web` crate cannot be compiled/tested without a pre-built Tailwind CSS asset, blocking verification of the content-disposition test change.",
+      "mime_guess was already in the lockfile as a transitive dep but not in workspace deps, requiring several grep passes to confirm its availability and version."
+    ],
+    "open_items": [
+      "`extension_for_mime` reverse mapping is kept manual — could eventually be replaced with mime_guess::get_mime_extensions_str() if the opinionated preferred-extension behavior is no longer needed.",
+      "The content-disposition HTML test change (`content_disposition_attachment_for_html`) could not be verified by running the test suite due to the missing CSS asset build dependency.",
+      "The `api_check_packages_handler` at api.rs:792 calls container_cli() directly — now safe after warmup, but worth documenting why it's safe in async context."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-23T11:25:58.980087Z",
+    "agent_lines": 9,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 9,
+    "agent_percentage": 100
+  }
+}
