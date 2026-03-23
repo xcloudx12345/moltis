@@ -1,0 +1,93 @@
+merge main to this branch, solve conflicts and push
+
+---
+
+~/t/m/skill-creation claude/skill-creation-confirmation-vB5WZ ❯ ./scripts/local-validate.sh 50
+Detected macOS without nvcc; forcing non-CUDA local validation commands (no --all-features).
+Override with LOCAL_VALIDATE_LINT_CMD / LOCAL_VALIDATE_TEST_CMD / LOCAL_VALIDATE_BUILD_CMD / LOCAL_VALIDATE_COVERAGE_CMD if needed.
+Validating PR #50 (cb6ebd526eed2ab4b0b71cf7179049ba9bac58c7) in moltis-org/moltis
+Publishing commit statuses to: moltis-org/moltis
+Current CI workflow: https://github.com/moltis-org/moltis/actions/runs/23445369128
+Removing cached llama build dir: target/debug/build/llama-cpp-sys-2-058c21c61e5e3330
+Removing cached llama build dir: target/debug/build/llama-cpp-sys-2-f31c828233bd54c5
+crates/web/src/assets/js/page-skills.js format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✖ File content differs from formatting output
+
+    349 349 │                           return;
+    350 350 │                   }
+    351     │ - → → var·allowed_tools·=·toolsRaw·?·toolsRaw.split(",").map((t)·=>·t.trim()).filter(Boolean)·:·[];
+        351 │ + → → var·allowed_tools·=·toolsRaw
+        352 │ + → → → ?·toolsRaw
+        353 │ + → → → → → .split(",")
+        354 │ + → → → → → .map((t)·=>·t.trim())
+        355 │ + → → → → → .filter(Boolean)
+        356 │ + → → → :·[];
+    352 357 │                   saving.value = true;
+    353     │ - → → sendRpc("skills.skill.save",·{·name:·name,·description:·description,·body:·body,·allowed_tools:·allowed_tools·}).then(
+    354     │ - → → → (res)·=>·{
+    355     │ - → → → → saving.value·=·false;
+    356     │ - → → → → if·(res?.ok)·{
+    357     │ - → → → → → showToast(isForking·?·`Forked·"${name}"·to·personal·skills`·:·`Saved·"${name}"`,·"success");
+    358     │ - → → → → → fetchAll();
+    359     │ - → → → → → props.onClose();
+    360     │ - → → → → }·else·{
+    361     │ - → → → → → showToast(`Save·failed:·${res?.error?.message·||·res?.error·||·"unknown"}`,·"error");
+    362     │ - → → → → }
+    363     │ - → → → },
+    364     │ - → → );
+        358 │ + → → sendRpc("skills.skill.save",·{
+        359 │ + → → → name:·name,
+        360 │ + → → → description:·description,
+        361 │ + → → → body:·body,
+        362 │ + → → → allowed_tools:·allowed_tools,
+        363 │ + → → }).then((res)·=>·{
+        364 │ + → → → saving.value·=·false;
+        365 │ + → → → if·(res?.ok)·{
+        366 │ + → → → → showToast(isForking·?·`Forked·"${name}"·to·personal·skills`·:·`Saved·"${name}"`,·"success");
+        367 │ + → → → → fetchAll();
+        368 │ + → → → → props.onClose();
+        369 │ + → → → }·else·{
+        370 │ + → → → → showToast(`Save·failed:·${res?.error?.message·||·res?.error·||·"unknown"}`,·"error");
+        371 │ + → → → }
+        372 │ + → → });
+    365 373 │           }
+    366 374 │
+
+
+Checked 133 files in 81ms. No fixes applied.
+Found 1 error.
+ci ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✖ Some errors were emitted while running checks.
+
+
+cargo +nightly-2025-11-30 fmt --all -- --check
+i18n parity OK: 3 locales, 18 namespaces.
+🌈 zizmor v1.22.0
+ INFO audit: zizmor: 🌈 completed ./.github/actions/sign-artifacts/action.yml
+Diff in /Users/penso/tmp/molt/skill-creation/crates/gateway/src/services.rs:176:
+     html_output
+ }
+
+-
+ // ── Skills (Noop — complex impl that depends on gateway-specific crates) ────
+
+ pub struct NoopSkillsService;
+[local/biome] failed in 1s
+[local/i18n] passed in 1s
+error: Recipe `format-check` failed on line 14 with exit code 1
+[local/fmt] failed in 2s
+[local/fmt] total 3s
+[local/biome] total 2s
+[local/i18n] total 2s
+One or more parallel local checks failed.
+~/t/m/skill-creation claude/skill-creation-confirmation-vB5WZ ❯  INFO audit: zizmor: 🌈 completed ./.github/workflows/ci.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/codspeed.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/docs.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/e2e.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/homebrew.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/release.yml
+No findings to report. Good job! (14 ignored, 47 suppressed)
+[local/zizmor] passed in 9s
+~/t/m/skill-creation claude/skill-creation-confirmation-vB5WZ ❯
