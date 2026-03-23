@@ -1,0 +1,75 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "cf6ef2abee12",
+  "session_id": "d54b36d5-9de2-4437-9d28-5af3740a34a6",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-23T10:54:38.707537Z",
+  "branch": "feat/send-document-v2",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "Cargo.lock",
+    "Cargo.toml",
+    "crates/media/Cargo.toml",
+    "crates/media/src/mime.rs",
+    "crates/tools/src/send_document.rs",
+    "crates/tools/src/send_image.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "01a8ba3749d7",
+  "token_usage": {
+    "input_tokens": 41,
+    "cache_creation_tokens": 56274,
+    "cache_read_tokens": 1355371,
+    "output_tokens": 7523,
+    "api_call_count": 33
+  },
+  "summary": {
+    "intent": "Replace a manual MIME type lookup function with the `mime_guess` crate to reduce maintenance burden and expand extension coverage.",
+    "outcome": "Successfully replaced the manual `mime_from_extension` match with `mime_guess` (plus 3 edge-case overrides), added the crate to workspace deps, and updated tests across three crates to reflect expanded extension support. All tests pass and changes were committed and pushed.",
+    "learnings": {
+      "repo": [
+        "The project uses a Cargo workspace with centralized dependencies in the root Cargo.toml; new crates should be added there first, then referenced with `{ workspace = true }` in individual crate Cargo.toml files.",
+        "`mime_guess` was already a transitive dependency (v2.0.5) before being promoted to a direct dependency.",
+        "`extension_for_mime` (reverse mapping) is kept manual intentionally to encode opinionated preferred extensions (e.g. 'jpg' not 'jpeg', 'bin' as fallback).",
+        "MIME logic is centralized in `crates/media/src/mime.rs`, consumed by both `crates/tools/src/send_document.rs` and `crates/tools/src/send_image.rs`."
+      ],
+      "code": [
+        {
+          "path": "crates/media/src/mime.rs",
+          "finding": "Only 'text', 'log', and 'ppm' required manual overrides after delegating to mime_guess; everything else in the original 30-line match is handled by the crate."
+        },
+        {
+          "path": "crates/tools/src/send_image.rs",
+          "finding": "send_image filters MIME results with `.filter(|m| m.starts_with(\"image/\"))`, so expanding extension coverage caused previously-None extensions like 'bmp' and 'svg' to become valid image types."
+        },
+        {
+          "path": "crates/tools/src/send_document.rs",
+          "finding": "Test for unsupported extension used '.xyz' which mime_guess recognizes as 'chemical/x-xyz'; had to change to a truly unknown extension."
+        }
+      ],
+      "workflow": [
+        "`mime_guess::from_ext(ext).first_raw()` is a drop-in for `Option\u003c\u0026'static str\u003e` MIME lookups; reverse direction via `mime_guess::get_mime_extensions_str` returns a slice requiring `.and_then(|exts| exts.first())`.",
+        "When expanding a lookup table via a comprehensive crate, existing tests asserting None for edge-case extensions often need updating since the crate covers far more types than hand-written matches.",
+        "Using '.qqqq' or similarly nonsensical extensions is a reliable sentinel for 'truly unknown' in MIME tests."
+      ]
+    },
+    "friction": [
+      "Multiple test fixes needed across three separate crates because mime_guess recognizes extensions (bmp, svg, xyz) that the original manual table did not, causing tests asserting None to fail.",
+      "mime_guess was not in workspace dependencies despite being a transitive dep, requiring manual addition in two Cargo.toml files.",
+      "Had to iterate twice on the 'unknown extension' sentinel in tests (first .xyz, then .qqqq) because mime_guess's coverage is broader than expected."
+    ],
+    "open_items": [
+      "`extension_for_mime` (reverse MIME-to-extension mapping) is still a manual match — could potentially be replaced or augmented with `mime_guess::get_mime_extensions_str`, but was intentionally left manual to preserve opinionated extension preferences.",
+      "The 'ppm' and 'text'/'log' special cases in mime_from_extension could be upstreamed or filed as issues against mime_guess if those are legitimate gaps in the crate."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-23T10:54:16.041228Z",
+    "agent_lines": 27,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 27,
+    "agent_percentage": 100
+  }
+}
