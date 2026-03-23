@@ -1,0 +1,69 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "8b5b14566dc7",
+  "session_id": "3df1076c-16af-4e58-9c98-fa030b518d53",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-23T23:17:38.769179Z",
+  "branch": "grizzled-climb",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/tools/src/exec.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "051e9956b9fc",
+  "token_usage": {
+    "input_tokens": 69,
+    "cache_creation_tokens": 75186,
+    "cache_read_tokens": 2870238,
+    "output_tokens": 14864,
+    "api_call_count": 57
+  },
+  "summary": {
+    "intent": "Fix GitHub issue #427 where the exec tool confused models about the `node` parameter when no remote nodes were configured, causing repeated failed attempts with values like `\"\"` and `\"host\"`.",
+    "outcome": "Implemented two defensive fixes in `exec.rs`: empty/whitespace node values are filtered out, and node routing is skipped when no nodes are connected. Added 4 tests, passed clippy/rustfmt, committed, pushed, created PR #474, then addressed reviewer feedback about `default_node` error behavior and resolved discussions.",
+    "learnings": {
+      "repo": [
+        "Tool schemas are rebuilt dynamically per turn via `list_schemas()` → `parameters_schema()`, so runtime state (like `has_connected_nodes()`) correctly gates parameter visibility.",
+        "The `node` parameter visibility in the schema (`exec.rs:321`) and the system prompt's `NODE_ROUTING_GUIDANCE` (`prompt.rs:492-495`) are separate code paths that must stay in sync — both gated on node presence but independently.",
+        "`node_provider` is always wired up in `server.rs:3597-3606`; `has_connected_nodes()` relies on a runtime atomic counter, not provider existence.",
+        "Less capable models (e.g., Qwen3-Coder-Next-FP8 via OpenRouter) may hallucinate parameters from system prompt context even when those parameters are absent from the tool schema."
+      ],
+      "code": [
+        {
+          "path": "crates/tools/src/exec.rs",
+          "line": 360,
+          "end_line": 411,
+          "finding": "Execution path unconditionally read `node` from params regardless of schema contents. Fixed by adding `.filter(|s| !s.trim().is_empty())` on extraction and a `has_connected_nodes()` guard before `resolve_node_id()`."
+        },
+        {
+          "path": "crates/tools/src/exec.rs",
+          "line": 321,
+          "end_line": 321,
+          "finding": "`node` parameter is conditionally included in schema via `has_connected_nodes()` — schema gating was already correct; execution path was the gap."
+        }
+      ],
+      "workflow": [
+        "When nesting brace structures gets messy mid-edit, it's cleaner to rewrite the entire block with a guard clause (early return/skip) rather than incrementally patching.",
+        "Reviewer feedback on `default_node` behavior (should error when nodes disconnected rather than silently fall through) was incorporated as a follow-up commit on the same branch before resolving discussions."
+      ]
+    },
+    "friction": [
+      "Initial edit of the node routing block produced incorrect indentation and mismatched braces, requiring a second edit pass to clean up.",
+      "Test compilation failed initially due to bare `Result` instead of `anyhow::Result`, requiring a fixup edit.",
+      "The new test count (36) wasn't clearly visible in truncated test output, causing a false alarm about whether the new test actually ran."
+    ],
+    "open_items": [
+      "No integration-level tests exist for node routing behavior — only unit tests with mocked providers were added.",
+      "The two separate code paths for node presence (tool schema vs. system prompt `NODE_ROUTING_GUIDANCE`) could diverge; no synchronization mechanism or shared predicate enforces consistency between them."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-23T23:17:15.280136Z",
+    "agent_lines": 77,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 77,
+    "agent_percentage": 100
+  }
+}
