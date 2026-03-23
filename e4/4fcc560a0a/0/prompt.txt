@@ -1,0 +1,276 @@
+Fix the main CI fail: https://github.com/moltis-org/moltis/actions/runs/23450229322/job/68225148152
+
+---
+
+<task-notification>
+<task-id>bzrcnl5by</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-penso-tmp-molt-moltis/887130b6-e278-488c-9ae6-34e0970cd37e/tasks/bzrcnl5by.output</output-file>
+<status>completed</status>
+<summary>Background command "Check workspace compiles" completed (exit code 0)</summary>
+</task-notification>
+Read the output file to retrieve the result: /private/tmp/claude-501/-Users-penso-tmp-molt-moltis/887130b6-e278-488c-9ae6-34e0970cd37e/tasks/bzrcnl5by.output
+
+---
+
+CI is still failing: https://github.com/moltis-org/moltis/actions/runs/23451072059/job/68228196826
+
+---
+
+Fix those failing tests:
+
+  ✓  211 …arding Anthropic provider › continue without selecting a model still persists Anthropic credentials (584ms)
+
+
+  1) [default] › e2e/specs/sandboxes.spec.js:112:2 › Sandboxes page – Running Containers › running containers section renders with heading and refresh button
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('button', { name: 'Refresh', exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for getByRole('button', { name: 'Refresh', exact: true })
+
+
+      116 |             await expect(page.getByRole("heading", { name: "Sandboxes", exact: true })).toBeVisible();
+      117 |             await expect(page.getByText("Running Containers")).toBeVisible();
+    > 118 |             await expect(page.getByRole("button", { name: "Refresh", exact: true })).toBeVisible();
+          |                                                                                      ^
+      119 |
+      120 |             expect(pageErrors).toEqual([]);
+      121 |     });
+        at /Users/penso/tmp/molt/moltis/crates/web/ui/e2e/specs/sandboxes.spec.js:118:76
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/sandboxes-Sandboxes-page-–-4ab2e--heading-and-refresh-button-default/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: error-context (text/markdown) ───────────────────────────────────────────────────
+    ## Error Context
+
+    **Test**: running containers section renders with heading and refresh button
+    **Status**: failed
+
+    ### Page 1: e2e-bot
+    - **URL**: http://127.0.0.1:56987/settings/sandboxes
+
+    ```
+    e2e-bot
+    337MB · 13GB free / 68GB
+    Settings
+    Report issue
+    An update is available v0.10.18
+    View release
+    Dismiss...
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/sandboxes-Sandboxes-page-–-4ab2e--heading-and-refresh-button-default/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/sandboxes-Sandboxes-page-–-4ab2e--heading-and-refresh-button-default/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/sandboxes-Sandboxes-page-–-4ab2e--heading-and-refresh-button-default/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [default] › e2e/specs/sandboxes.spec.js:123:2 › Sandboxes page – Running Containers › refresh button triggers container list fetch
+
+    Test timeout of 45000ms exceeded.
+
+    Error: page.waitForResponse: Test timeout of 45000ms exceeded.
+
+      125 |             await navigateAndWait(page, "/settings/sandboxes");
+      126 |
+    > 127 |             const fetchPromise = page.waitForResponse((r) => r.url().includes("/api/sandbox/containers") && r.status() === 200);
+          |                                       ^
+      128 |             await page.getByRole("button", { name: "Refresh", exact: true }).click();
+      129 |             const response = await fetchPromise;
+      130 |             const data = await response.json();
+        at /Users/penso/tmp/molt/moltis/crates/web/ui/e2e/specs/sandboxes.spec.js:127:29
+
+    Error: locator.click: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'Refresh', exact: true })
+
+
+      126 |
+      127 |             const fetchPromise = page.waitForResponse((r) => r.url().includes("/api/sandbox/containers") && r.status() === 200);
+    > 128 |             await page.getByRole("button", { name: "Refresh", exact: true }).click();
+          |                                                                              ^
+      129 |             const response = await fetchPromise;
+      130 |             const data = await response.json();
+      131 |             expect(data).toHaveProperty("containers");
+        at /Users/penso/tmp/molt/moltis/crates/web/ui/e2e/specs/sandboxes.spec.js:128:68
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/sandboxes-Sandboxes-page-–-a17c5-iggers-container-list-fetch-default/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: error-context (text/markdown) ───────────────────────────────────────────────────
+    ## Error Context
+
+    **Test**: refresh button triggers container list fetch
+    **Status**: timedOut
+
+    ### Page 1: e2e-bot
+    - **URL**: http://127.0.0.1:56987/settings/sandboxes
+
+    ```
+    e2e-bot
+    337MB · 12GB free / 68GB
+    Settings
+    Report issue
+    An update is available v0.10.18
+    View release
+    Dismiss
+    Back to Chats
+    GENER...
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/sandboxes-Sandboxes-page-–-a17c5-iggers-container-list-fetch-default/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/sandboxes-Sandboxes-page-–-a17c5-iggers-container-list-fetch-default/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [default] › e2e/specs/sandboxes.spec.js:193:2 › Sandboxes page – Running Containers › refresh button also fetches disk usage
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('button', { name: 'Refresh', exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for getByRole('button', { name: 'Refresh', exact: true })
+
+
+      203 |             await navigateAndWait(page, "/settings/sandboxes");
+      204 |             const refreshBtn = page.getByRole("button", { name: "Refresh", exact: true });
+    > 205 |             await expect(refreshBtn).toBeVisible();
+          |                                      ^
+      206 |
+      207 |             // Page mount fires the first disk-usage fetch.
+      208 |             const mountCount = diskFetchCount;
+        at /Users/penso/tmp/molt/moltis/crates/web/ui/e2e/specs/sandboxes.spec.js:205:28
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/sandboxes-Sandboxes-page-–-3585f-ton-also-fetches-disk-usage-default/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: error-context (text/markdown) ───────────────────────────────────────────────────
+    ## Error Context
+
+    **Test**: refresh button also fetches disk usage
+    **Status**: failed
+
+    ### Page 1: e2e-bot
+    - **URL**: http://127.0.0.1:56987/settings/sandboxes
+
+    ```
+    e2e-bot
+    338MB · 11GB free / 68GB
+    Settings
+    Report issue
+    An update is available v0.10.18
+    View release
+    Dismiss
+    Back to Chats
+    GENERAL
+    Ident...
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/sandboxes-Sandboxes-page-–-3585f-ton-also-fetches-disk-usage-default/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/sandboxes-Sandboxes-page-–-3585f-ton-also-fetches-disk-usage-default/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/sandboxes-Sandboxes-page-–-3585f-ton-also-fetches-disk-usage-default/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [default] › e2e/specs/sandboxes.spec.js:218:2 › Sandboxes page – Running Containers › clean all endpoint responds correctly
+
+    Test timeout of 45000ms exceeded.
+
+    Error: page.evaluate: Test timeout of 45000ms exceeded.
+
+      221 |
+      222 |             // Call the clean all API directly to verify the endpoint works
+    > 223 |             const result = await page.evaluate(async () => {
+          |                                       ^
+      224 |                     const r = await fetch("/api/sandbox/containers/clean", { method: "POST" });
+      225 |                     return { status: r.status, data: await r.json() };
+      226 |             });
+        at /Users/penso/tmp/molt/moltis/crates/web/ui/e2e/specs/sandboxes.spec.js:223:29
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/sandboxes-Sandboxes-page-–-8a181-endpoint-responds-correctly-default/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: error-context (text/markdown) ───────────────────────────────────────────────────
+    ## Error Context
+
+    **Test**: clean all endpoint responds correctly
+    **Status**: timedOut
+
+    ### Page 1: e2e-bot
+    - **URL**: http://127.0.0.1:56987/settings/sandboxes
+
+    ```
+    e2e-bot
+    338MB · 11GB free / 68GB
+    Settings
+    Report issue
+    An update is available v0.10.18
+    View release
+    Dismiss
+    Back to Chats
+    GENERAL
+    Iden...
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/sandboxes-Sandboxes-page-–-8a181-endpoint-responds-correctly-default/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/sandboxes-Sandboxes-page-–-8a181-endpoint-responds-correctly-default/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/sandboxes-Sandboxes-page-–-8a181-endpoint-responds-correctly-default/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4 failed
+    [default] › e2e/specs/sandboxes.spec.js:112:2 › Sandboxes page – Running Containers › running containers section renders with heading and refresh button
+    [default] › e2e/specs/sandboxes.spec.js:123:2 › Sandboxes page – Running Containers › refresh button triggers container list fetch
+    [default] › e2e/specs/sandboxes.spec.js:193:2 › Sandboxes page – Running Containers › refresh button also fetches disk usage
+    [default] › e2e/specs/sandboxes.spec.js:218:2 › Sandboxes page – Running Containers › clean all endpoint responds correctly
+  1 skipped
+  22 did not run
+  206 passed (6.1m)
+[local/e2e] failed in 366s
+~/t/m/moltis main ❯
+
+---
+
+try again
+
+---
+
+CI failed: https://github.com/moltis-org/moltis/actions/runs/23458032493/job/68252415653 but tests are runnning ok locally

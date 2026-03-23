@@ -1,0 +1,88 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "e44fcc560a0a",
+  "session_id": "f375a003-eedb-4402-81f3-e047690d4b8c",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-23T21:01:23.400459Z",
+  "branch": "main",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/ui/e2e/specs/send-document.spec.js"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "dfdcd8c0678d",
+  "token_usage": {
+    "input_tokens": 143,
+    "cache_creation_tokens": 159686,
+    "cache_read_tokens": 8691371,
+    "output_tokens": 25923,
+    "api_call_count": 127
+  },
+  "summary": {
+    "intent": "Fix multiple CI failures in the moltis repo: first Rust clippy errors on Linux, then Playwright E2E test failures related to the Sandboxes page and send-document rendering.",
+    "outcome": "All three categories of failures were resolved: clippy cfg-gating issues were fixed, sandboxes E2E tests were fixed by mocking slow Apple Container API endpoints, and the send-document flaky test was stabilized with a longer timeout and more specific locator. All fixes were committed and pushed.",
+    "learnings": {
+      "repo": [
+        "The `apple` module in `crates/tools/src/sandbox/` is gated with `#[cfg(target_os = \"macos\")]` but tests were importing it with `#[cfg(any(target_os = \"macos\", test))]`, causing Linux CI failures when --all-targets enables the test cfg.",
+        "CI runs on Linux, so macOS-only sandbox tests must be explicitly gated with `#[cfg(target_os = \"macos\")]`.",
+        "Apple Container operations (listing containers, cleaning containers) are slow VM operations that can easily exceed E2E test timeouts — these endpoints should be mocked in UI behavior tests.",
+        "The Sandboxes page 'Refresh' button text changes to 'Loading…' during `fetchContainers()`, so tests looking for the exact text 'Refresh' fail if the initial fetch hasn't completed.",
+        "The settings page routing maps `/settings/sandboxes` using a prefix/suffix system in `router.js` where slashes become colons and then back.",
+        "E2E tests share server-side sessions (e.g., 'main') and accumulated tool call state across tests in the same file can affect later tests in the suite."
+      ],
+      "code": [
+        {
+          "path": "crates/tools/src/sandbox/tests.rs",
+          "finding": "The `use super::apple::*` import was gated with `cfg(any(target_os = \"macos\", test))` but the module declaration only has `cfg(target_os = \"macos\")`, causing Linux build failures with --all-targets."
+        },
+        {
+          "path": "crates/tools/src/sandbox/platform.rs",
+          "finding": "`scope_name` and `property_args` methods on `CgroupSandbox` were private `fn` but tested from a submodule; fixed by making them `pub(crate)`."
+        },
+        {
+          "path": "crates/web/src/assets/js/page-images.js",
+          "line": 437,
+          "end_line": 437,
+          "finding": "The Refresh button text is `loadingContainers.value ? 'Loading…' : 'Refresh'`, so it won't be findable by exact name 'Refresh' until the initial container fetch completes."
+        },
+        {
+          "path": "crates/web/ui/e2e/specs/sandboxes.spec.js",
+          "line": 118,
+          "end_line": 118,
+          "finding": "Test was looking for 'Refresh' button before the initial container fetch completed; needed route mocking for /api/sandbox/containers to get fast response."
+        },
+        {
+          "path": "crates/web/ui/e2e/specs/send-document.spec.js",
+          "line": 157,
+          "end_line": 157,
+          "finding": "Third test in the file was flaky on CI — 5s timeout for `.document-container` was insufficient; increased to 10s and used more specific locator with the tool call ID."
+        }
+      ],
+      "workflow": [
+        "When E2E tests fail only on CI but pass locally, the first suspects are: slower CI machines causing timeouts, and shared session state accumulation across tests in the same file.",
+        "Mocking slow backend API endpoints is the correct approach for E2E tests that verify UI behavior (button state, response shape) rather than actual backend operations.",
+        "YubiKey confirmation was required for git push, causing retry delays — git signing is enforced in this repo."
+      ]
+    },
+    "friction": [
+      "The CI failure required multiple fix iterations: first fix introduced new failures (apple module functions now unreachable in tests), requiring a second round of diagnosis.",
+      "YubiKey tap required for git push caused a failed push attempt and manual retry loop.",
+      "The send-document flaky test required analyzing CI retry logs and error context diffs to distinguish the real root cause (slow rendering on CI) from a false lead (session state accumulation).",
+      "Reading CI logs required multiple bash tool calls and intermediate parsing steps to extract the relevant error messages."
+    ],
+    "open_items": [
+      "The send-document test flakiness was mitigated with a longer timeout but the root cause (slow WebSocket event propagation on Linux CI) was not fully resolved — may recur.",
+      "The websocket.spec.js test at line 250 was observed as flaky during this session but was not fixed (deemed unrelated to current changes).",
+      "Shared server-side session state across E2E tests in the same file is a latent source of test pollution — tests could benefit from per-test session isolation."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-23T21:00:50.65782Z",
+    "agent_lines": 5,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 5,
+    "agent_percentage": 100
+  }
+}
