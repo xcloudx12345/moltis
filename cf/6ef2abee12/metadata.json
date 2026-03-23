@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "cf6ef2abee12",
+  "strategy": "manual-commit",
+  "branch": "feat/send-document-v2",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "Cargo.lock",
+    "Cargo.toml",
+    "crates/media/Cargo.toml",
+    "crates/media/src/mime.rs",
+    "crates/tools/src/send_document.rs",
+    "crates/tools/src/send_image.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/cf/6ef2abee12/0/metadata.json",
+      "transcript": "/cf/6ef2abee12/0/full.jsonl",
+      "context": "/cf/6ef2abee12/0/context.md",
+      "content_hash": "/cf/6ef2abee12/0/content_hash.txt",
+      "prompt": "/cf/6ef2abee12/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 41,
+    "cache_creation_tokens": 56274,
+    "cache_read_tokens": 1355371,
+    "output_tokens": 7523,
+    "api_call_count": 33
+  }
+}
