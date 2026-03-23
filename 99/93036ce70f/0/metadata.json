@@ -1,0 +1,73 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "9993036ce70f",
+  "session_id": "e91ffe16-fa98-4282-a0ba-74c510e0faa5",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-23T13:59:37.337273Z",
+  "branch": "httpd-crate",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/httpd/src/ws.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "9645b1ffcab5",
+  "token_usage": {
+    "input_tokens": 1302,
+    "cache_creation_tokens": 94978,
+    "cache_read_tokens": 1130455,
+    "output_tokens": 5768,
+    "api_call_count": 31
+  },
+  "summary": {
+    "intent": "Merge the main branch into the httpd-crate branch twice (two separate sessions), resolving all conflicts, and push the result.",
+    "outcome": "Both merges completed successfully. First merge resolved 23 conflicts, fixed a rustls crypto provider initialization that needed to move from gateway to httpd crate, and removed an unused MAX_LIFETIME constant. Second merge resolved a single conflict by relocating a new test file and updating its imports to match the refactored module structure.",
+    "learnings": {
+      "repo": [
+        "The httpd-crate branch moved TLS/rustls dependencies from the gateway crate to the httpd crate — gateway's tls feature is now empty.",
+        "Integration tests were moved from crates/gateway/tests/ to crates/httpd/tests/ as part of this branch's refactoring.",
+        "Functions build_gateway_base and finalize_gateway_app were moved from moltis_gateway to moltis_httpd.",
+        "The rustls crypto provider (install_default()) must be initialized early in httpd's start_gateway function, not in gateway's server.rs."
+      ],
+      "code": [
+        {
+          "path": "crates/gateway/src/server.rs",
+          "finding": "Removed rustls::crypto provider init block — the tls feature in gateway is now empty and httpd handles TLS directly."
+        },
+        {
+          "path": "crates/httpd/src/server.rs",
+          "finding": "Added rustls::crypto::aws_lc_rs::default_provider().install_default() early in start_gateway to replace the removed gateway-side init."
+        },
+        {
+          "path": "crates/browser/src/pool.rs",
+          "line": 276,
+          "finding": "Local MAX_LIFETIME constant was shadowed by module-level MAX_BROWSER_INSTANCE_LIFETIME; the local one was unused and was removed."
+        },
+        {
+          "path": "crates/httpd/tests/heartbeat_cron.rs",
+          "finding": "Test added in main under crates/gateway/tests/ needed to be relocated to crates/httpd/tests/ and its imports updated from moltis_gateway to moltis_httpd."
+        }
+      ],
+      "workflow": [
+        "Cargo.lock merge conflicts are best resolved by taking main's version and running cargo fetch rather than manually resolving markers.",
+        "After a large merge, grepping for \u003c\u003c\u003c\u003c\u003c\u003c\u003c markers is a reliable way to confirm all conflicts are resolved before attempting compilation.",
+        "Parallel agent dispatch is effective for resolving large numbers of independent file conflicts (23 files split into 3 groups).",
+        "Compilation output is the authoritative check — a clean build confirms both conflict resolution and semantic correctness."
+      ]
+    },
+    "friction": [
+      "23 conflicts in the first merge required significant parallel resolution effort across many files.",
+      "The rustls install_default() call was silently missing from the httpd crate after the TLS code was restructured — only caught via compile error post-merge.",
+      "Git placed the conflicting test file in crates/httpd/tests/ but its imports still referenced the old moltis_gateway crate, requiring a manual fix."
+    ],
+    "open_items": []
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-23T13:59:17.876735Z",
+    "agent_lines": 0,
+    "human_added": 1894,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1894,
+    "agent_percentage": 0
+  }
+}
