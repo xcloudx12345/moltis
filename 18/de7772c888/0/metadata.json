@@ -1,0 +1,57 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "18de7772c888",
+  "session_id": "91e4c6d0-3619-4a13-a4ad-ab4d17b41bec",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-23T23:04:06.730519Z",
+  "branch": "bloom-porcupine",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "docs/src/whatsapp.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "c4f298190edd",
+  "checkpoint_transcript_start": 223,
+  "transcript_lines_at_start": 223,
+  "token_usage": {
+    "input_tokens": 10,
+    "cache_creation_tokens": 3484,
+    "cache_read_tokens": 540754,
+    "output_tokens": 1656,
+    "api_call_count": 8
+  },
+  "summary": {
+    "intent": "Fix review comments on PR #473 in the moltis repo, including log level changes, field cleanup, and unit tests, then resolve all review conversations.",
+    "outcome": "All review threads resolved: downgraded warn! to info! for sticker/reaction/poll events, removed already-handled fields from describe_message_fields, added 3 unit tests, and updated docs to match the new log level.",
+    "learnings": {
+      "repo": [
+        "Logging guidelines distinguish between unexpected system events (warn) and common user actions (info) — stickers, reactions, and polls fall into the latter category.",
+        "describe_message_fields is used for logging unhandled fields; fields already dispatched by classify_message should be excluded to avoid misleading output.",
+        "Documentation lives in docs/src/whatsapp.md and must stay in sync with code-level log levels."
+      ],
+      "code": [
+        {
+          "path": "docs/src/whatsapp.md",
+          "finding": "Referenced warn-level logging that was changed to info! in code; required a follow-up doc fix after the initial PR review round."
+        }
+      ],
+      "workflow": [
+        "PR review threads can be resolved via GitHub API after addressing each comment; resolving all threads signals review completion.",
+        "A second pass over the PR after the initial fix round caught a doc/code mismatch that was missed in the first round."
+      ]
+    },
+    "friction": [
+      "A doc/code inconsistency (warn vs info in whatsapp.md) was not caught in the first fix pass and required a second review cycle to identify and resolve."
+    ],
+    "open_items": []
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-23T23:03:54.865239Z",
+    "agent_lines": 1,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1,
+    "agent_percentage": 100
+  }
+}
