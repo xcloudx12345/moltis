@@ -1,0 +1,87 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "a55f81456c1b",
+  "session_id": "492f3e72-6fd6-4a75-95a5-abf3069e973d",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-23T16:58:10.954082Z",
+  "branch": "honeysuckle-grapple",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/agents/src/tool_registry.rs",
+    "crates/agents/src/runner.rs",
+    "crates/agents/src/lazy_tools.rs",
+    "crates/chat/src/lib.rs",
+    "crates/gateway/src/server.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "e4783ea43839",
+  "token_usage": {
+    "input_tokens": 136,
+    "cache_creation_tokens": 102682,
+    "cache_read_tokens": 10571378,
+    "output_tokens": 38135,
+    "api_call_count": 124
+  },
+  "summary": {
+    "intent": "Implement a lazy tool registry mode that shows a single meta-tool (`tool_search`) instead of all tool schemas each LLM turn, dramatically reducing token usage when many MCP servers are connected.",
+    "outcome": "All four phases implemented and merged into PR #467: ToolRegistry plumbing with activated map, ToolSearchTool + wrap_registry_lazy, config wiring (ToolRegistryMode enum), system prompt hints, and docs. PR review feedback addressed in a follow-up commit.",
+    "learnings": {
+      "repo": [
+        "The worktree branch `honeysuckle-grapple` is based on a local `main` that is 1566 commits ahead of `origin/main` — PRs must be rebased onto `origin/main` before pushing.",
+        "Chat dispatch integration point for post-filter registry wrapping is in `crates/chat/src/lib.rs` around line 5994, inside the `run_with_tools` function using `persona.config` for config access.",
+        "ToolRegistry uses `Arc\u003cdyn AgentTool\u003e` internally via `ToolEntry`; the `get()` method returns `Arc\u003cdyn AgentTool\u003e` which derefs correctly for async `.execute()` calls.",
+        "Config schema map for TOML validation lives in `crates/config/src/validate.rs` `build_schema_map()` and must be updated when adding new config fields.",
+        "The `beads`/dolt issue tracking tool was attempted but failed to start — the project uses a dolt-backed issue tracker that was not available in this environment.",
+        "Clippy flagged a `map_or` suggestion on an `Option` chain in `tool_registry.rs` that needed fixing before merge."
+      ],
+      "code": [
+        {
+          "path": "crates/agents/src/tool_registry.rs",
+          "finding": "Added `ActivatedTools = Arc\u003cMutex\u003cHashMap\u003cString, Arc\u003cdyn AgentTool\u003e\u003e\u003e\u003e` field; `get()` checks static tools first then activated map; `list_schemas()` and `list_names()` append activated entries; clone methods produce fresh empty activated sets; `get_arc()` was removed in PR review — callers migrated to `get()`."
+        },
+        {
+          "path": "crates/agents/src/runner.rs",
+          "finding": "Both `run_agent_loop_with_context` and `run_agent_loop_streaming` had `tool_schemas`/`schemas_for_api` moved from before the loop to inside it, so newly activated tools appear on the next iteration. Max iterations multiplied by 3 when lazy mode detected (via config, not `has_activated_tools()` after PR review fix)."
+        },
+        {
+          "path": "crates/agents/src/lazy_tools.rs",
+          "finding": "NEW file: `ToolSearchTool` scores matches as name-exact=100, name-contains=50, word-overlap=10×count, caps at 15 results. `wrap_registry_lazy()` shares the activated Arc between the new registry and ToolSearchTool. Returns `Err` (not empty Ok) when called with no params (fixed in PR review). Source metadata preserved on activation after PR review."
+        },
+        {
+          "path": "crates/config/src/schema.rs",
+          "finding": "`ToolRegistryMode` enum added with `#[serde(rename_all = \"kebab-case\")]` and `#[default] Full` variant; added as `registry_mode` field on `ToolsConfig`."
+        },
+        {
+          "path": "crates/agents/src/prompt.rs",
+          "finding": "Lazy mode detected by checking if `tool_search` is in schemas but `memory_search` is not; injects a hint telling the model to use `tool_search` to discover memory tools."
+        }
+      ],
+      "workflow": [
+        "When a worktree branch diverges from remote main, `git rebase origin/main` with a single commit on top works cleanly — the warnings about skipped commits are benign when the commit replays cleanly.",
+        "Force push (`git push --force-with-lease`) is required after rebase to update the remote tracking branch before PR creation.",
+        "PR review fixes were batched into a single follow-up commit rather than interactive rebase amending — cleaner history for review.",
+        "Running `cargo clippy` after `cargo fmt` caught a `map_or` lint before merge."
+      ]
+    },
+    "friction": [
+      "Local `main` was 1566 commits ahead of `origin/main`, causing `gh pr create` to fail with no common history — required rebase onto `origin/main` before the PR could be created.",
+      "The `beads`/dolt issue tracker tool failed to start and could not be used for task tracking.",
+      "Initial `gh pr create` call failed silently; needed explicit `--base origin/main` flag and investigation of remote state to diagnose."
+    ],
+    "open_items": [
+      "Manual QA: set `registry_mode = \"lazy\"` in moltis.toml, connect an MCP server with 50+ tools, and verify the model uses `tool_search` to discover and call tools correctly.",
+      "Token comparison benchmark: measure input tokens per turn in full vs lazy mode with 50+ MCP tools to quantify the improvement.",
+      "Phase 3+4 are intentionally in the same PR (not split as the plan suggested for PR2) — the plan's PR strategy of splitting config wiring into a separate PR was collapsed.",
+      "Sub-agents do not inherit the activated tools map (fresh empty map on clone) — if sub-agent tool inheritance is ever needed, this will require revisiting the clone behavior."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-23T16:57:30.448018Z",
+    "agent_lines": 31,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 31,
+    "agent_percentage": 100
+  }
+}
