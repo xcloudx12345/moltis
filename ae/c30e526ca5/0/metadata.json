@@ -1,0 +1,61 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "aec30e526ca5",
+  "session_id": "bce6fabe-92a0-49ee-bfa1-3c46087c7291",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-23T15:34:08.915695Z",
+  "branch": "settings-system-prompt",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "CHANGELOG.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "b7d6e731b9e5",
+  "checkpoint_transcript_start": 188,
+  "transcript_lines_at_start": 188,
+  "token_usage": {
+    "input_tokens": 9,
+    "cache_creation_tokens": 2885,
+    "cache_read_tokens": 458430,
+    "output_tokens": 1385,
+    "api_call_count": 7
+  },
+  "summary": {
+    "intent": "Recreate and push PR #190 (settings-system-prompt feature) as PR #466 after a repo history rewrite caused the original branch to diverge from main.",
+    "outcome": "PR #466 was successfully created with the same title and description as #190, but CI failed due to unintended CHANGELOG.md modifications that needed to be reverted.",
+    "learnings": {
+      "repo": [
+        "The moltis repo underwent a history rewrite that changed commit SHAs, causing existing feature branches to diverge from origin/main.",
+        "CI enforces that CHANGELOG.md must not be modified in feature PRs — changelog changes cause CI failure."
+      ],
+      "code": [
+        {
+          "path": "CHANGELOG.md",
+          "finding": "CHANGELOG.md was inadvertently included in the rebased diff and must not be changed in feature PRs per CI rules."
+        }
+      ],
+      "workflow": [
+        "When rebasing after a repo history rewrite, apply feature-only diffs carefully to exclude housekeeping files like CHANGELOG.md.",
+        "Creating a backup branch before destructive rebase operations (e.g. settings-system-prompt-backup) is a safe practice for preserving original history."
+      ]
+    },
+    "friction": [
+      "Repo history rewrite invalidated the existing feature branch, requiring manual rebase work (16 files, ~3.9K lines).",
+      "3 minor E2E test conflicts had to be resolved during rebase.",
+      "CI caught an inadvertent CHANGELOG.md change that had to be separately reverted after the PR was already created."
+    ],
+    "open_items": [
+      "Backup branch settings-system-prompt-backup still exists and may need cleanup once PR #466 is merged.",
+      "CI status after the CHANGELOG.md revert should be confirmed to ensure all checks pass."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-23T15:33:56.651866Z",
+    "agent_lines": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 0,
+    "agent_percentage": 0
+  }
+}

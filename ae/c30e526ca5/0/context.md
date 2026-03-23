@@ -1,0 +1,12 @@
+# Session Context
+
+## User Prompts
+
+### Prompt 1
+
+PR 190 was closed because I forced push, recreate a Pr with the same title/description
+
+### Prompt 2
+
+CI failed: https://github.com/moltis-org/moltis/actions/runs/23445560080/job/68208176424?pr=466 no changelog should be changed,
+
