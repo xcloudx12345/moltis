@@ -1,0 +1,36 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "d82f650d44a0",
+  "strategy": "manual-commit",
+  "branch": "honeysuckle-grapple",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/agents/src/lazy_tools.rs",
+    "crates/agents/src/lib.rs",
+    "crates/agents/src/prompt.rs",
+    "crates/agents/src/runner.rs",
+    "crates/agents/src/tool_registry.rs",
+    "crates/chat/src/lib.rs",
+    "crates/config/src/lib.rs",
+    "crates/config/src/schema.rs",
+    "crates/config/src/template.rs",
+    "crates/config/src/validate.rs",
+    "docs/src/tool-registry.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/d8/2f650d44a0/0/metadata.json",
+      "transcript": "/d8/2f650d44a0/0/full.jsonl",
+      "context": "/d8/2f650d44a0/0/context.md",
+      "content_hash": "/d8/2f650d44a0/0/content_hash.txt",
+      "prompt": "/d8/2f650d44a0/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 82,
+    "cache_creation_tokens": 83485,
+    "cache_read_tokens": 5610346,
+    "output_tokens": 27814,
+    "api_call_count": 78
+  }
+}

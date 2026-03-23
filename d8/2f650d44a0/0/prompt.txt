@@ -1,0 +1,133 @@
+Implement the following plan:
+
+# Lazy Tool Registry — Implementation Plan
+
+## Context
+
+Every LLM turn includes full JSON schemas of all registered tools. With a few MCP servers connected this easily burns 15,000+ tokens per turn before the model reads a single user message. PR #330 proposed a solution but was too large (72K additions, mostly unrelated). This plan extracts the core lazy-tool idea and implements it cleanly.
+
+## Design
+
+When `registry_mode = "lazy"` is set in config, the model sees one meta-tool (`tool_search`) instead of all tool schemas:
+
+- `tool_search(query="memory")` -> name + description pairs, no schemas, max 15 results
+- `tool_search(name="tool_name")` -> full schema returned, tool **activated** in session
+- On next iteration, model calls tool directly — standard runner pipeline, hooks fire normally
+
+Key mechanism: `ToolRegistry` gains an `activated: Arc<Mutex<HashMap<String, Arc<dyn AgentTool>>>>` field (using `std::sync::Mutex`, NOT tokio — lock held for microseconds, keeps `list_schemas()` sync). `ToolSearchTool` shares this Arc and inserts entries when activating. Runner re-computes schemas each iteration so activated tools appear immediately.
+
+## Phases
+
+### Phase 1: ToolRegistry plumbing + runner refactor
+
+**Files:**
+- `crates/agents/src/tool_registry.rs` — Add `activated: Arc<Mutex<HashMap<String, Arc<dyn AgentTool>>>>`
+- `crates/agents/src/runner.rs` — Move `list_schemas()` inside loop, use `get_arc()` for dispatch
+
+**ToolRegistry changes:**
+1. Add `pub(crate) activated: Arc<Mutex<HashMap<String, Arc<dyn AgentTool>>>>` field
+2. Initialize empty in `new()` — always present (simpler than Option)
+3. `get_arc()`: check `tools` first, then `activated` map
+4. `list_schemas()`: append schemas from `activated` map after static tools
+5. Add `list_names()` update to include activated tools
+6. All `clone_*` methods: new registry gets fresh empty `activated` (sub-agents don't inherit)
+
+**Runner changes (both `run_agent_loop_with_context` and `run_agent_loop_streaming`):**
+1. Move `let tool_schemas = tools.list_schemas()` from before the loop to inside it
+2. Move `schemas_for_api` computation inside the loop
+3. Change `tools.get()` to `tools.get_arc()` for tool dispatch (checks activated map)
+4. When registry has activated tools mechanism, multiply `max_iterations` by 3
+
+### Phase 2: ToolSearchTool + wrap_registry_lazy
+
+**Files:**
+- `crates/agents/src/lazy_tools.rs` (NEW)
+- `crates/agents/src/lib.rs` — add `pub mod lazy_tools`
+
+**ToolSearchTool:**
+```rust
+pub struct ToolSearchTool {
+    full_registry: Arc<ToolRegistry>,
+    activated: Arc<Mutex<HashMap<String, Arc<dyn AgentTool>>>>,
+}
+```
+
+- Keyword search: match query against all tool names/descriptions, return top 15 as `{name, description}` pairs (no schemas)
+- Name activation: look up in `full_registry`, insert into `activated`, return full schema + hint
+- Scoring: name match (100) > name contains (50) > word overlap (10)
+
+**`wrap_registry_lazy(full: ToolRegistry) -> ToolRegistry`:**
+1. Wrap `full` in `Arc`
+2. Create new empty `ToolRegistry`
+3. Share the new registry's `activated` Arc with `ToolSearchTool`
+4. Register `ToolSearchTool` into the new registry
+5. Return the new registry (contains only `tool_search`, but `ToolSearchTool` can search/activate from `full`)
+
+### Phase 3: Config + chat integration
+
+**Files:**
+- `crates/config/src/schema.rs` — Add `ToolRegistryMode` enum (Full/Lazy), add `registry_mode` to `ToolsConfig`
+- `crates/config/src/validate.rs` — Update `build_schema_map()`
+- `crates/config/src/lib.rs` — Re-export `ToolRegistryMode`
+- `crates/config/src/template.rs` — Document new field
+
+**Config:**
+```rust
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ToolRegistryMode {
+    #[default]
+    Full,
+    Lazy,
+}
+```
+
+**Chat integration (`crates/chat/src/lib.rs` ~line 5994):**
+After `apply_runtime_tool_filters()` and `install_agent_scoped_memory_tools()`:
+```rust
+if matches!(config.tools.registry_mode, ToolRegistryMode::Lazy) {
+    filtered_registry = moltis_agents::lazy_tools::wrap_registry_lazy(filtered_registry);
+}
+```
+
+### Phase 4: System prompt + docs
+
+**Files:**
+- `crates/agents/src/prompt.rs` — Adapt memory section for lazy mode
+- `docs/src/tool-registry-lazy.md` (NEW)
+- `docs/src/SUMMARY.md` — Add page
+
+**Prompt changes:**
+- When `tool_search` is in schemas but `memory_search` isn't, tell model about memory tools being discoverable
+- Detect lazy mode via `has_tool_schema(tool_schemas, "tool_search")`
+
+## Critical Files
+
+| File | Role |
+|------|------|
+| `crates/agents/src/tool_registry.rs` | Core: activated map, get_arc, list_schemas |
+| `crates/agents/src/runner.rs` | Loop: re-fetch schemas each iteration, get_arc dispatch |
+| `crates/agents/src/lazy_tools.rs` | NEW: ToolSearchTool + wrap_registry_lazy |
+| `crates/chat/src/lib.rs:5994` | Integration point: wrap registry when config says lazy |
+| `crates/config/src/schema.rs` | ToolRegistryMode enum + ToolsConfig field |
+| `crates/agents/src/prompt.rs` | Prompt hints for lazy mode |
+
+## Verification
+
+1. `cargo test` — all existing tests pass (no behavior change in full mode)
+2. Unit tests in `lazy_tools.rs` — search, activate, unknown tool, max results, compact output
+3. Unit tests in `tool_registry.rs` — get_arc finds activated tools, list_schemas includes them
+4. Manual QA: set `registry_mode = "lazy"` in moltis.toml, connect MCP server, verify model uses tool_search to discover and call tools
+5. Token comparison: count input tokens per turn in full vs lazy mode with 50+ MCP tools
+
+## PR Strategy
+
+- **PR 1** (Phases 1+2): `feat(agents): lazy tool registry with tool_search meta-tool` — core implementation, all tests, no config wiring yet (dead code behind `wrap_registry_lazy`)
+- **PR 2** (Phases 3+4): `feat(tools): wire lazy registry mode to config and chat dispatch` — makes it user-facing, adds docs
+
+
+If you need specific details from before exiting plan mode (like exact code snippets, error messages, or content you generated), read the full transcript at: /Users/penso/.claude/projects/-Users-penso--superset-worktrees-moltis-honeysuckle-grapple/da61293c-5bbd-41b8-a8b1-360a52aee43c.jsonl
+
+---
+
+commit and push, create a PR

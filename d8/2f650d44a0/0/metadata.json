@@ -1,0 +1,93 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "d82f650d44a0",
+  "session_id": "492f3e72-6fd6-4a75-95a5-abf3069e973d",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-23T15:26:08.272743Z",
+  "branch": "honeysuckle-grapple",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/agents/src/lazy_tools.rs",
+    "crates/agents/src/lib.rs",
+    "crates/agents/src/prompt.rs",
+    "crates/agents/src/runner.rs",
+    "crates/agents/src/tool_registry.rs",
+    "crates/chat/src/lib.rs",
+    "crates/config/src/lib.rs",
+    "crates/config/src/schema.rs",
+    "crates/config/src/template.rs",
+    "crates/config/src/validate.rs",
+    "docs/src/tool-registry.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "f65b9b7a4d58",
+  "token_usage": {
+    "input_tokens": 82,
+    "cache_creation_tokens": 83485,
+    "cache_read_tokens": 5610346,
+    "output_tokens": 27814,
+    "api_call_count": 78
+  },
+  "summary": {
+    "intent": "Implement a lazy tool registry feature that shows the model a single meta-tool (`tool_search`) instead of all tool schemas, reducing token consumption when many MCP servers are connected.",
+    "outcome": "All four phases fully implemented: ToolRegistry plumbing with activated map, ToolSearchTool with keyword/activation search, config wiring via `registry_mode = \"lazy\"`, system prompt hints, and docs. All 435 tests pass, clippy clean.",
+    "learnings": {
+      "repo": [
+        "ToolRegistry is in `crates/agents/src/tool_registry.rs` and used by both streaming and non-streaming runner loops in `runner.rs`",
+        "Chat integration point for post-filter registry wrapping is in `crates/chat/src/lib.rs` around the `run_with_tools` function, using `persona.config` (type `MoltisConfig`) for config access",
+        "Config schema additions require updates in 4 places: `schema.rs` (struct/enum), `validate.rs` (`build_schema_map`), `lib.rs` (re-export), and `template.rs` (docs)",
+        "Sub-agents should not inherit activated tools — clone methods produce fresh empty `activated` sets intentionally",
+        "The workspace has a pre-existing unrelated build error (missing CSS file) that does not affect agent/chat/config crates"
+      ],
+      "code": [
+        {
+          "path": "crates/agents/src/tool_registry.rs",
+          "finding": "Added `ActivatedTools` type alias (`Arc\u003cMutex\u003cHashMap\u003cString, Arc\u003cdyn AgentTool\u003e\u003e\u003e\u003e`), `activated` field, `get_arc()`, `has_activated_tools()`, and `entry_to_schema()` helper. Uses std::sync::Mutex (not tokio) since lock is held for microseconds and list_schemas() must remain sync."
+        },
+        {
+          "path": "crates/agents/src/runner.rs",
+          "finding": "Moved `tool_schemas`/`schemas_for_api` computation inside both loop bodies (non-streaming and streaming) so newly activated tools appear on the next iteration. Added 3x max_iterations multiplier when lazy mode detected."
+        },
+        {
+          "path": "crates/chat/src/lib.rs",
+          "line": 5994,
+          "end_line": 5998,
+          "finding": "Registry wrapping with `wrap_registry_lazy` inserted after `apply_runtime_tool_filters()` and `install_agent_scoped_memory_tools()`, guarded by `persona.config.tools.registry_mode == ToolRegistryMode::Lazy`"
+        },
+        {
+          "path": "crates/agents/src/lazy_tools.rs",
+          "finding": "ToolSearchTool scoring: exact name match=100, name contains=50, word overlap=10×count, max 15 results returned as name+description pairs without schemas. Name activation inserts into shared Arc\u003cMutex\u003cHashMap\u003e\u003e and returns full schema."
+        },
+        {
+          "path": "crates/agents/src/prompt.rs",
+          "finding": "Lazy mode detected via presence of `tool_search` in schemas and absence of `memory_search`; adds hint to discover memory tools via tool_search"
+        }
+      ],
+      "workflow": [
+        "Beads/dolt issue tracking was unavailable (server wouldn't start); implementation proceeded without it",
+        "Compiling individual crates with `cargo build -p \u003ccrate\u003e` is faster for iterative feedback than full workspace builds",
+        "Running `cargo clippy` after implementation caught a needless `.into_iter()` call that required a fix before finalizing"
+      ]
+    },
+    "friction": [
+      "Beads/dolt issue tracker server failed to start, making structured task tracking unavailable — had to proceed without it",
+      "Pre-existing workspace build error (missing CSS file) created noise when checking compilation status of unrelated crates",
+      "Finding the exact chat integration point required multiple grep/read iterations across a large `lib.rs` file to locate `persona.config` vs a bare `config` variable"
+    ],
+    "open_items": [
+      "PR split strategy from the plan: Phase 1+2 as PR 1 (dead code behind wrap_registry_lazy, no config wiring) and Phase 3+4 as PR 2 — the implementation was committed as a single commit instead, which may need splitting before merge review",
+      "Manual QA not yet done: set `registry_mode = \"lazy\"` in moltis.toml, connect MCP server, verify model uses tool_search to discover and call tools",
+      "Token comparison benchmark not yet run: count input tokens per turn in full vs lazy mode with 50+ MCP tools",
+      "The `docs/src/SUMMARY.md` update mentioned in the plan was not performed (lazy registry docs were added inline to existing tool-registry.md instead)"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-23T15:25:37.676347Z",
+    "agent_lines": 626,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 626,
+    "agent_percentage": 100
+  }
+}
