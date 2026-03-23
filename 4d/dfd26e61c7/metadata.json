@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "4ddfd26e61c7",
+  "strategy": "manual-commit",
+  "branch": "bloom-porcupine",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/whatsapp/src/handlers.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/4d/dfd26e61c7/0/metadata.json",
+      "transcript": "/4d/dfd26e61c7/0/full.jsonl",
+      "context": "/4d/dfd26e61c7/0/context.md",
+      "content_hash": "/4d/dfd26e61c7/0/content_hash.txt",
+      "prompt": "/4d/dfd26e61c7/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 16,
+    "cache_creation_tokens": 15958,
+    "cache_read_tokens": 826947,
+    "output_tokens": 3955,
+    "api_call_count": 14
+  }
+}
