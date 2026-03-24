@@ -1,0 +1,71 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "9186604ce174",
+  "session_id": "3d38aa64-69e7-4684-8468-3d428990882a",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-24T10:19:22.205812Z",
+  "branch": "lemon-dress",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/openclaw-import/src/lib.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "ab04c2243c75",
+  "token_usage": {
+    "input_tokens": 24,
+    "cache_creation_tokens": 30509,
+    "cache_read_tokens": 706884,
+    "output_tokens": 4343,
+    "api_call_count": 20
+  },
+  "summary": {
+    "intent": "Fix a bug (GH-458) where importing from OpenClaw overwrites the commented config template in moltis.toml, replacing ~700 lines of documented options with a bare ~20-line config.",
+    "outcome": "Successfully fixed by redirecting the local `save_config_to_path` in openclaw-import to delegate to `moltis_config::loader::save_config_to_path`, which uses `toml_edit` to merge values while preserving comments. Added a regression test and all 127 tests pass with no clippy warnings.",
+    "learnings": {
+      "repo": [
+        "moltis_config::loader::save_config_to_path (line 981) uses toml_edit to merge new values into existing TOML documents while preserving comments — this is the canonical comment-preserving save path.",
+        "openclaw-import has its own local save_config_to_path (lines 496-503) that did raw toml::to_string_pretty() + fs::write(), bypassing the comment-preserving path in moltis_config.",
+        "The toml crate dependency in openclaw-import must be retained because it is used in load_or_default_config and test code (toml::from_str), not just the now-replaced serialization path.",
+        "The openclaw-import Error type has a FromMessage variant that allows mapping foreign errors via .to_string()."
+      ],
+      "code": [
+        {
+          "path": "crates/openclaw-import/src/lib.rs",
+          "line": 496,
+          "end_line": 503,
+          "finding": "Local save_config_to_path that did raw toml::to_string_pretty() + fs::write() — replaced to delegate to moltis_config::loader::save_config_to_path."
+        },
+        {
+          "path": "crates/config/src/loader.rs",
+          "line": 981,
+          "end_line": 981,
+          "finding": "moltis_config::loader::save_config_to_path is the comment-preserving save function using toml_edit; falls back to plain fs::write() when the file doesn't exist yet."
+        },
+        {
+          "path": "crates/openclaw-import/src/error.rs",
+          "finding": "Error enum has a Toml variant derived from toml::ser::Error; considered removing it since direct serialization was eliminated, but retained to avoid breaking external matches."
+        }
+      ],
+      "workflow": [
+        "Check all usages of a dependency before removing it — toml crate stayed because of test and non-serialization usages.",
+        "When delegating to a library function, verify its error type and available conversion paths before writing the wrapper."
+      ]
+    },
+    "friction": [
+      "The Toml/ser::Error variant in the error enum created ambiguity about whether it could be safely removed after eliminating the direct toml::to_string_pretty() call — required checking all usages before deciding to keep it."
+    ],
+    "open_items": [
+      "The toml::ser::Error variant in openclaw-import's Error enum may now be dead code (no production code produces it); could be removed in a follow-up cleanup if confirmed unused.",
+      "The 'no file yet' edge case (import runs before discover_and_load creates the template) is handled by moltis_config's fallback but has no dedicated test coverage."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-24T10:19:02.751552Z",
+    "agent_lines": 57,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 57,
+    "agent_percentage": 100
+  }
+}

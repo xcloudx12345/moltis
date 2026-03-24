@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "9186604ce174",
+  "strategy": "manual-commit",
+  "branch": "lemon-dress",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/openclaw-import/src/lib.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/91/86604ce174/0/metadata.json",
+      "transcript": "/91/86604ce174/0/full.jsonl",
+      "context": "/91/86604ce174/0/context.md",
+      "content_hash": "/91/86604ce174/0/content_hash.txt",
+      "prompt": "/91/86604ce174/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 24,
+    "cache_creation_tokens": 30509,
+    "cache_read_tokens": 706884,
+    "output_tokens": 4343,
+    "api_call_count": 20
+  }
+}
