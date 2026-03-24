@@ -1,0 +1,55 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "a4fa975fff93",
+  "session_id": "37170bcd-b1cc-4fce-8fd0-8656cda5606a",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-24T11:20:43.57428Z",
+  "branch": "twilight-lychee",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "docs/src/mcp.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "f6ba4263ded3",
+  "checkpoint_transcript_start": 270,
+  "transcript_lines_at_start": 270,
+  "token_usage": {
+    "input_tokens": 8,
+    "cache_creation_tokens": 1994,
+    "cache_read_tokens": 398277,
+    "output_tokens": 939,
+    "api_call_count": 6
+  },
+  "summary": {
+    "intent": "Review and resolve open comment threads on GitHub PR #479 in the moltis repository, addressing feedback about CI/scripting safety and Docker caching.",
+    "outcome": "Resolved review threads by fixing NodeSource curl/pipefail handling, adding a named Docker volume for npx cache persistence, and updating docs/src/mcp.md based on new comments.",
+    "learnings": {
+      "repo": [
+        "moltis uses worktrees stored under /Users/penso/.superset/worktrees/moltis/",
+        "MCP documentation lives at docs/src/mcp.md",
+        "PR reviews are tracked on github.com/moltis-org/moltis"
+      ],
+      "code": [
+        {
+          "path": "docs/src/mcp.md",
+          "finding": "MCP containerized example required a named Docker volume (moltis-npx-cache) to persist npm packages across container restarts"
+        }
+      ],
+      "workflow": [
+        "NodeSource setup scripts should be downloaded to a temp file before piping to bash so curl failures propagate non-zero exit codes instead of silently falling through",
+        "PR review threads are fetched via GitHub API/gh CLI before resolving to catch new comments"
+      ]
+    },
+    "friction": [],
+    "open_items": []
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-24T11:20:34.365483Z",
+    "agent_lines": 7,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 7,
+    "agent_percentage": 100
+  }
+}

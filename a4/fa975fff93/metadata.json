@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "a4fa975fff93",
+  "strategy": "manual-commit",
+  "branch": "twilight-lychee",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "docs/src/mcp.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/a4/fa975fff93/0/metadata.json",
+      "transcript": "/a4/fa975fff93/0/full.jsonl",
+      "context": "/a4/fa975fff93/0/context.md",
+      "content_hash": "/a4/fa975fff93/0/content_hash.txt",
+      "prompt": "/a4/fa975fff93/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 8,
+    "cache_creation_tokens": 1994,
+    "cache_read_tokens": 398277,
+    "output_tokens": 939,
+    "api_call_count": 6
+  }
+}
