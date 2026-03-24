@@ -1,0 +1,61 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "4d93978f9c62",
+  "session_id": "625aa372-f873-4243-b39c-f13a81d37a1e",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-24T00:13:28.256013Z",
+  "branch": "shiny-anise",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/providers/src/anthropic.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "e1000e6e5245",
+  "checkpoint_transcript_start": 775,
+  "transcript_lines_at_start": 775,
+  "token_usage": {
+    "input_tokens": 24,
+    "cache_creation_tokens": 12795,
+    "cache_read_tokens": 3121910,
+    "output_tokens": 5772,
+    "api_call_count": 22
+  },
+  "summary": {
+    "intent": "Address PR review comments on a branch that separates datetime injection from stable system prompts, fixing the Anthropic provider's handling of multiple system messages.",
+    "outcome": "Reverted an incorrect fix that would have caused consecutive user messages (invalid for Anthropic's API), kept Anthropic merging all system messages into the top-level system field, added a test, and pushed the corrected commit.",
+    "learnings": {
+      "repo": [
+        "Anthropic provider merges all system messages into a single top-level `system` field via `to_anthropic_messages`",
+        "The datetime injection system message is inserted before the user message in the message array, not appended after history",
+        "KV cache stability for local LLMs is the primary goal of the PR; Anthropic prompt caching via cache_control annotations is a separate, unimplemented feature"
+      ],
+      "code": [
+        {
+          "path": "crates/providers/src/anthropic.rs",
+          "finding": "to_anthropic_messages merges all ChatMessage::System variants into the top-level system field; converting subsequent system messages to user-role messages causes consecutive user message errors rejected by Anthropic's API"
+        }
+      ],
+      "workflow": [
+        "Anthropic's API requires strictly alternating user/assistant messages — consecutive user messages are rejected",
+        "When fixing review comments, verify API constraints before applying a seemingly clean refactor"
+      ]
+    },
+    "friction": [
+      "Initial fix (converting trailing system messages to user messages) violated Anthropic's alternating message requirement, requiring a second reverting edit",
+      "No existing tests for to_anthropic_messages meant the constraint wasn't caught earlier"
+    ],
+    "open_items": [
+      "Anthropic prompt caching via cache_control breakpoints is not implemented — system message stability for Anthropic's KV cache is deferred",
+      "The datetime injection still gets concatenated into Anthropic's system field on every request, defeating cache stability for Anthropic specifically"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-24T00:13:12.367055Z",
+    "agent_lines": 35,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 35,
+    "agent_percentage": 100
+  }
+}
