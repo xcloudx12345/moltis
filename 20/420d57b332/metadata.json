@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "20420d57b332",
+  "strategy": "manual-commit",
+  "branch": "plastic-playground",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "Cargo.lock",
+    "crates/browser/Cargo.toml",
+    "crates/browser/src/pool.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/20/420d57b332/0/metadata.json",
+      "transcript": "/20/420d57b332/0/full.jsonl",
+      "context": "/20/420d57b332/0/context.md",
+      "content_hash": "/20/420d57b332/0/content_hash.txt",
+      "prompt": "/20/420d57b332/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 36,
+    "cache_creation_tokens": 47352,
+    "cache_read_tokens": 1048501,
+    "output_tokens": 6033,
+    "api_call_count": 28
+  }
+}
