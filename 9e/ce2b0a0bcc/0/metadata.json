@@ -1,0 +1,100 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "9ece2b0a0bcc",
+  "session_id": "e91ffe16-fa98-4282-a0ba-74c510e0faa5",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-24T08:57:39.596479Z",
+  "branch": "httpd-crate",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/gateway/src/server.rs",
+    "crates/httpd/src/server.rs",
+    "crates/node-host/src/service.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "fe96961d987b",
+  "token_usage": {
+    "input_tokens": 1533,
+    "cache_creation_tokens": 470419,
+    "cache_read_tokens": 20457408,
+    "output_tokens": 41664,
+    "api_call_count": 228
+  },
+  "summary": {
+    "intent": "Develop and maintain the `httpd-crate` branch by merging main repeatedly, resolving conflicts, addressing code review comments from greptile on PR #465, and fixing test/CI failures.",
+    "outcome": "Branch was successfully merged with main multiple times, all greptile review comments were fixed and resolved across multiple rounds, a squashed PR #465 was created after git history rewrite complications, and most test failures were fixed (sandbox failures identified as pre-existing on main).",
+    "learnings": {
+      "repo": [
+        "The `httpd-crate` branch moves TLS/gateway functionality from `moltis_gateway` to `moltis_httpd` crate — rustls provider init, browser warmup, and session event enrichment all had to migrate.",
+        "The `moltis-gateway` crate's `PreparedGatewayCore` uses `..` destructure patterns that silently drop fields like `_proxy_shutdown_tx` and `browser_tool_for_warmup` — these must be explicitly extracted and stored.",
+        "Nightly rustfmt enforces grouped `use` blocks — separate `use moltis_gateway::...` and `use moltis_httpd::...` must be merged into a single `use { ... }` block.",
+        "The `PreparedGateway` struct in httpd has private fields; making `_proxy_shutdown_tx` public (`pub _proxy_shutdown_tx`) is required for the swift-bridge crate to access it.",
+        "Metrics collection interval in httpd is intentionally 30s (not 10s) — a merge conflict resolution accidentally set it to 10s.",
+        "The sandbox E2E tests (`sandboxes.spec.js`) fail when Docker/container runtime is unavailable — these are pre-existing failures unrelated to branch changes.",
+        "The `/ws` route alias alongside `/ws/chat` is required so node-add generated commands work correctly.",
+        "Session event enrichment (label, model, preview, channel binding) was simplified/lost during the gateway→httpd migration and needed to be ported back.",
+        "git-filter-repo removes the `origin` remote as a safety measure after rewriting history — must re-add manually before pushing."
+      ],
+      "code": [
+        {
+          "path": "crates/httpd/src/server.rs",
+          "finding": "rustls::crypto::ring::default_provider().install_default() must be called in prepare_gateway (not start_gateway) so both the direct and swift-bridge/embedded startup paths initialize the TLS provider."
+        },
+        {
+          "path": "crates/httpd/src/server.rs",
+          "finding": "PreparedGateway struct needs pub _proxy_shutdown_tx field to keep the trusted-network proxy alive; dropping it via .. pattern kills the proxy immediately."
+        },
+        {
+          "path": "crates/gateway/src/server.rs",
+          "finding": "start_browser_warmup_after_listener needs to accept browser_tool_for_warmup as a parameter — it was extracted from the PreparedGatewayCore destructure and threaded through BannerMeta."
+        },
+        {
+          "path": "crates/node-host/src/service.rs",
+          "finding": "systemd ExecStart arguments (--node-id, --host, --token, display name, working dir) must be quoted to handle spaces; launchd plist values need xml_escape for \u0026, \u003c, \u003e characters."
+        },
+        {
+          "path": "crates/web/src/lib.rs",
+          "finding": "Duplicate /api/sessions route registrations were introduced — axum panics at startup on duplicate routes."
+        },
+        {
+          "path": "crates/web/src/assets/js/components/session-header.js",
+          "finding": "Merge conflict resolution incorrectly chose !(isMain || isCron) instead of main's !isMain, hiding the delete button for cron sessions — test expects cron sessions to be deletable."
+        },
+        {
+          "path": "crates/browser/src/pool.rs",
+          "finding": "Local MAX_LIFETIME constant shadowed by module-level MAX_BROWSER_INSTANCE_LIFETIME — the local one was unused dead code introduced during merge."
+        }
+      ],
+      "workflow": [
+        "git filter-repo rewrites the entire history including the base branch commits, breaking the shared ancestor with origin/main — the fix is to create a new branch from origin/main and apply the diff as a squashed commit.",
+        "When filter-repo rewrites history, GitHub closes open PRs because the branch SHA association is lost — a new PR must be created.",
+        "gh CLI requires `gh repo set-default` to be configured before most operations work in a worktree context.",
+        "Greptile review comments are fetchable via GitHub API (`gh api repos/.../pulls/.../comments`) and resolvable via the review threads API.",
+        "After squashing a multi-commit branch into one commit for a PR, subsequent `git push` may fail due to upstream tracking mismatch — use `git push --set-upstream origin \u003cbranch\u003e`."
+      ]
+    },
+    "friction": [
+      "git filter-repo removed the origin remote automatically, which was unexpected and caused the PR to close when force-pushing.",
+      "The rewritten history had no common ancestor with origin/main, requiring manual branch reconstruction (new branch from origin/main + cherry-picked diff) instead of a simple force push.",
+      "gh pr reopen failed because filter-repo had rewritten commit SHAs, making GitHub unable to associate the branch with the old PR.",
+      "moltis-agents was not a dependency of the httpd crate, causing a compile error when trying to use AgentTool type — required adding the dependency to Cargo.toml.",
+      "Multiple rounds of greptile comments across the same PR required repeated fetch-fix-resolve cycles.",
+      "A merge conflict resolution in session-header.js introduced a regression (hiding cron delete button) that wasn't caught until E2E tests ran.",
+      "PreparedGatewayCore private field visibility blocked swift-bridge compilation and required making the field pub."
+    ],
+    "open_items": [
+      "Sandbox E2E tests (sandboxes.spec.js) fail when container runtime is unavailable — identified as pre-existing on main but not fixed; may need environment setup or test skipping logic.",
+      "The squashed single-commit PR loses the detailed per-commit history of the httpd-crate refactor — consider whether the PR description adequately documents the changes.",
+      "The `cron session shows delete button in more controls` test fix reverted to main behavior (!isMain) — if cron sessions should eventually be non-deletable, this needs a separate intentional change with a test update."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-24T08:56:55.179208Z",
+    "agent_lines": 0,
+    "human_added": 4709,
+    "human_modified": 8,
+    "human_removed": 0,
+    "total_committed": 4709,
+    "agent_percentage": 0
+  }
+}
