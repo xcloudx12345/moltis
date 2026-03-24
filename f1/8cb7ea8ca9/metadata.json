@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "f18cb7ea8ca9",
+  "strategy": "manual-commit",
+  "branch": "twilight-lychee",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "Dockerfile",
+    "docs/src/mcp.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/f1/8cb7ea8ca9/0/metadata.json",
+      "transcript": "/f1/8cb7ea8ca9/0/full.jsonl",
+      "context": "/f1/8cb7ea8ca9/0/context.md",
+      "content_hash": "/f1/8cb7ea8ca9/0/content_hash.txt",
+      "prompt": "/f1/8cb7ea8ca9/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 12,
+    "cache_creation_tokens": 4057,
+    "cache_read_tokens": 500866,
+    "output_tokens": 1827,
+    "api_call_count": 8
+  }
+}
