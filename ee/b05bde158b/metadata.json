@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "eeb05bde158b",
+  "strategy": "manual-commit",
+  "branch": "plastic-playground",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/browser/src/pool.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/ee/b05bde158b/0/metadata.json",
+      "transcript": "/ee/b05bde158b/0/full.jsonl",
+      "context": "/ee/b05bde158b/0/context.md",
+      "content_hash": "/ee/b05bde158b/0/content_hash.txt",
+      "prompt": "/ee/b05bde158b/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 7,
+    "cache_creation_tokens": 1445,
+    "cache_read_tokens": 287260,
+    "output_tokens": 423,
+    "api_call_count": 5
+  }
+}
