@@ -1,0 +1,68 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "db47371d0c1f",
+  "session_id": "eb35d8bf-ebc6-4c6c-8eb9-acfcee60f19c",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-27T14:46:21.499754Z",
+  "branch": "main",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/config/src/version.rs",
+    "crates/gateway/src/update_check.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "b1e99bc008a9",
+  "checkpoint_transcript_start": 310,
+  "transcript_lines_at_start": 310,
+  "token_usage": {
+    "input_tokens": 19,
+    "cache_creation_tokens": 11743,
+    "cache_read_tokens": 1181406,
+    "output_tokens": 3427,
+    "api_call_count": 17
+  },
+  "summary": {
+    "intent": "Fix a false 'update available' banner showing in local dev builds, and confirm that the upcoming YYYYMMDD.XX versioning scheme will correctly trigger updates for existing users on 0.10.18.",
+    "outcome": "Added a `is_dev_build()` guard in version.rs and update_check.rs to skip update checks when MOLTIS_VERSION env var is not set. Confirmed date-based versions are already handled correctly for update triggering. Changes committed and pushed to main.",
+    "learnings": {
+      "repo": [
+        "Dev builds without MOLTIS_VERSION env var default to Cargo.toml version 0.1.0, which is less than any published semver release, causing false update banners.",
+        "The update check compares local version against releases.json; the is_newer_version() function at line 119 of update_check.rs already treats any date-based version (YYYYMMDD.XX) as newer than any semver version.",
+        "The release pipeline's update-deploy-tags job updates releases.json only for non-dry-run, non-pre-release tagged releases."
+      ],
+      "code": [
+        {
+          "path": "crates/config/src/version.rs",
+          "finding": "Added is_dev_build() const that returns true when MOLTIS_VERSION is not set at compile time."
+        },
+        {
+          "path": "crates/gateway/src/update_check.rs",
+          "line": 119,
+          "finding": "is_newer_version() treats date-based versions as automatically newer than semver versions, so YYYYMMDD.XX will correctly notify 0.10.18 users."
+        },
+        {
+          "path": "crates/gateway/src/update_check.rs",
+          "finding": "Updated fetch_update_availability to early-return when is_dev_build() is true."
+        }
+      ],
+      "workflow": [
+        "Push required a YubiKey tap for SSH signing, and the remote had diverged requiring a rebase before the push succeeded.",
+        "Running the full update_check test suite (16 tests) was sufficient to validate the change before committing."
+      ]
+    },
+    "friction": [
+      "Push blocked on YubiKey tap requirement, requiring a manual retry.",
+      "Remote had new commits requiring a rebase before push could succeed."
+    ],
+    "open_items": []
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-27T14:46:09.011011Z",
+    "agent_lines": 0,
+    "human_added": 73,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 73,
+    "agent_percentage": 0
+  }
+}
