@@ -1,0 +1,102 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "aaa91dba6e2d",
+  "session_id": "d8cd7d44-6c62-4c44-bbd5-ba07a8a8b4b1",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-28T14:56:29.832372Z",
+  "branch": "main",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/telegram/src/topic.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "b689a148eb51",
+  "token_usage": {
+    "input_tokens": 113,
+    "cache_creation_tokens": 482114,
+    "cache_read_tokens": 9110855,
+    "output_tokens": 17371,
+    "api_call_count": 89
+  },
+  "summary": {
+    "intent": "Fix a clippy lint error (manual_div_ceil) in the telegram crate, then investigate and fix a recurring install script bug (issue #496) where .deb filenames had a spurious -1 revision suffix, add regression tests, and ship a new release.",
+    "outcome": "All three lint fixes were committed and pushed (div_ceil, install.sh deb naming, topic.rs unwrap_used in tests), a new check script with 13 assertions was added to both CI and local-validate.sh, and release 20260328.01 was tagged and pushed.",
+    "learnings": {
+      "repo": [
+        "cargo-deb with --deb-version produces filenames without a revision suffix (moltis_VERSION_ARCH.deb), while cargo-generate-rpm and the Arch packaging workflow both produce filenames with -1 revision (moltis-VERSION-1.ARCH.rpm, moltis-VERSION-1-ARCH.pkg.tar.zst).",
+        "install.sh and website/install.sh are kept identical; .polyphony/ copies are untracked and not part of the repo.",
+        "The workspace-level clippy config denies both unwrap_used and expect_used everywhere including tests; test modules must add #[allow(clippy::unwrap_used, clippy::expect_used)] explicitly.",
+        "CI already ran check-website-install-sync.sh before this session; the new check-install-package-names.sh is additive.",
+        "The release workflow uses cargo deb ... --deb-version \"$MOLTIS_VERSION\" with no --deb-revision flag, which is the root cause of the -1 mismatch.",
+        "Version scheme is date-based (20260327.05) for releases; release_tag() outputs bare string for date-based and v-prefixed for semver.",
+        "scripts/prepare-release.sh auto-computes the next version."
+      ],
+      "code": [
+        {
+          "path": "crates/telegram/src/handlers.rs",
+          "line": 2307,
+          "end_line": 2307,
+          "finding": "Manual div_ceil pattern (x + 2) / 3 replaced with MAX_INLINE_DOCUMENT_BYTES.div_ceil(3) per clippy::manual_div_ceil lint."
+        },
+        {
+          "path": "install.sh",
+          "line": 347,
+          "end_line": 347,
+          "finding": "deb_file constructed with -1 revision suffix but cargo-deb --deb-version produces no revision suffix; removed -1 from both install.sh and website/install.sh."
+        },
+        {
+          "path": "crates/telegram/src/topic.rs",
+          "line": 27,
+          "end_line": 43,
+          "finding": "Test functions used .unwrap() which is denied by workspace clippy config; fixed by adding #[allow(clippy::unwrap_used, clippy::expect_used)] on the test module."
+        },
+        {
+          "path": "crates/chat/src/lib.rs",
+          "line": 10035,
+          "end_line": 10095,
+          "finding": "Three spots needed nightly rustfmt reformatting (assert_eq! line length, Arc construction, multi-arg assert_eq!)."
+        },
+        {
+          "path": "scripts/check-install-package-names.sh",
+          "line": 1,
+          "finding": "New script with 13 checks validating filename patterns for all package types against the release workflow; macOS grep does not support -P (PCRE) so the script uses plain ERE patterns."
+        },
+        {
+          "path": ".github/workflows/ci.yml",
+          "finding": "Added check-install-package-names.sh as a CI step."
+        },
+        {
+          "path": "scripts/local-validate.sh",
+          "finding": "Added install-names check as a parallel fast check alongside fmt/biome/i18n/zizmor."
+        }
+      ],
+      "workflow": [
+        "local-validate.sh E2E tests are flaky (clearChatAndWait timeouts, shiki highlighter timeouts); retrying is the correct response.",
+        "macOS grep lacks PCRE (-P flag); use ERE patterns with -E instead when writing portable shell scripts.",
+        "Sourcing install.sh and intercepting download/sudo calls is fragile for testing; grepping for filename patterns directly is more robust.",
+        "A rebase was needed before the final push of the install fix, indicating concurrent activity on main."
+      ]
+    },
+    "friction": [
+      "E2E tests are flaky (required 3 attempts for local-validate.sh to pass clean).",
+      "macOS grep PCRE incompatibility caused the first version of check-install-package-names.sh to fail and required a rewrite.",
+      "The first approach to testing install scripts (sourcing and intercepting) was abandoned as too fragile.",
+      "A rebase was required mid-session due to concurrent pushes to main.",
+      "The previous fix for issue #493 fixed the tag URL but missed the -1 suffix bug, showing the fix was incomplete."
+    ],
+    "open_items": [
+      "Monitor the release 20260328.01 CI workflow to confirm all packages (deb, rpm, arch, binary tarballs, macOS app) build and publish successfully.",
+      "Issue #496 was fixed but not explicitly closed in the transcript — may need to be closed manually.",
+      "The flaky E2E tests (clearChatAndWait, shiki highlighter timeout) are a recurring issue not addressed in this session."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-28T14:55:54.281051Z",
+    "agent_lines": 1,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1,
+    "agent_percentage": 100
+  }
+}
