@@ -1,0 +1,28 @@
+# Session Context
+
+## User Prompts
+
+### Prompt 1
+
+Look at fireworks.ai documentation and add is a primary provider in moltis. Including and ENV variable, models detection, etc.
+
+### Prompt 2
+
+Add this default model which I have for the fire-pass:
+
+
+Kimi K2.5 Turbo
+Use this model
+Use this model wherever you use OpenAI models
+
+Set base URL to https://api.fireworks.ai/inference/v1
+Set model name to accounts/fireworks/routers/kimi-k2p5-turbo
+Use this model wherever you use Anthropic models
+
+Set base URL to https://api.fireworks.ai/inference
+Set model name to accounts/fireworks/routers/kimi-k2p5-turbo
+
+### Prompt 3
+
+commit, push, create a PR
+

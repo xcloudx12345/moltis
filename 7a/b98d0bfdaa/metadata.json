@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "7ab98d0bfdaa",
+  "strategy": "manual-commit",
+  "branch": "evanescent-bergamot",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "crates/config/src/template.rs",
+    "crates/config/src/validate.rs",
+    "crates/provider-setup/src/lib.rs",
+    "crates/providers/src/lib.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/7a/b98d0bfdaa/0/metadata.json",
+      "transcript": "/7a/b98d0bfdaa/0/full.jsonl",
+      "context": "/7a/b98d0bfdaa/0/context.md",
+      "content_hash": "/7a/b98d0bfdaa/0/content_hash.txt",
+      "prompt": "/7a/b98d0bfdaa/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 1384,
+    "cache_creation_tokens": 70634,
+    "cache_read_tokens": 2191236,
+    "output_tokens": 10822,
+    "api_call_count": 43
+  }
+}
