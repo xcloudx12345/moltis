@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "38dddac7b136",
+  "strategy": "manual-commit",
+  "branch": "fix/forum-topic-reply-routing",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/chat/src/lib.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/38/dddac7b136/0/metadata.json",
+      "transcript": "/38/dddac7b136/0/full.jsonl",
+      "context": "/38/dddac7b136/0/context.md",
+      "content_hash": "/38/dddac7b136/0/content_hash.txt",
+      "prompt": "/38/dddac7b136/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 49,
+    "cache_creation_tokens": 83360,
+    "cache_read_tokens": 2497386,
+    "output_tokens": 17588,
+    "api_call_count": 41
+  }
+}
