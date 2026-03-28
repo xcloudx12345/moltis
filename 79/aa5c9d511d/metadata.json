@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "79aa5c9d511d",
+  "strategy": "manual-commit",
+  "branch": "time-fabrosaurus",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/chat/src/lib.rs",
+    "crates/provider-setup/src/lib.rs",
+    "crates/web/src/assets/js/providers.js"
+  ],
+  "sessions": [
+    {
+      "metadata": "/79/aa5c9d511d/0/metadata.json",
+      "transcript": "/79/aa5c9d511d/0/full.jsonl",
+      "context": "/79/aa5c9d511d/0/context.md",
+      "content_hash": "/79/aa5c9d511d/0/content_hash.txt",
+      "prompt": "/79/aa5c9d511d/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 14,
+    "cache_creation_tokens": 14570,
+    "cache_read_tokens": 1070474,
+    "output_tokens": 5147,
+    "api_call_count": 12
+  }
+}
