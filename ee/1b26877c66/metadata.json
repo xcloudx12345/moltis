@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "ee1b26877c66",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "crates/telegram/src/handlers.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/ee/1b26877c66/0/metadata.json",
+      "transcript": "/ee/1b26877c66/0/full.jsonl",
+      "context": "/ee/1b26877c66/0/context.md",
+      "content_hash": "/ee/1b26877c66/0/content_hash.txt",
+      "prompt": "/ee/1b26877c66/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 26,
+    "cache_creation_tokens": 77409,
+    "cache_read_tokens": 798899,
+    "output_tokens": 2071,
+    "api_call_count": 16
+  }
+}
