@@ -1,0 +1,79 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "439ba960ae5c",
+  "session_id": "d8cd7d44-6c62-4c44-bbd5-ba07a8a8b4b1",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-28T08:34:24.103061Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "install.sh",
+    "website/install.sh"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "321636fad3ee",
+  "checkpoint_transcript_start": 99,
+  "transcript_lines_at_start": 99,
+  "token_usage": {
+    "input_tokens": 46,
+    "cache_creation_tokens": 127782,
+    "cache_read_tokens": 4492758,
+    "output_tokens": 11110,
+    "api_call_count": 42
+  },
+  "summary": {
+    "intent": "Fix a reported install script bug (#496) where the .deb package filename had a spurious `-1` revision suffix, then add regression tests to prevent recurrence.",
+    "outcome": "Removed the `-1` suffix from the .deb filename in both `install.sh` and `website/install.sh`, wrote a new `scripts/check-install-package-names.sh` test validating all package type naming conventions, integrated it into CI and `local-validate.sh`, and committed everything.",
+    "learnings": {
+      "repo": [
+        "`install.sh` and `website/install.sh` are kept identical and a `scripts/check-website-install-sync.sh` script enforces this in CI.",
+        "`.deb` files are built with `cargo deb --deb-version \"$MOLTIS_VERSION\"` which produces no `-1` revision suffix, unlike RPM (`cargo-generate-rpm`) and Arch (manual tar) which do include `-1`.",
+        "Package naming conventions by type: tarball=`moltis-{ver}-{target}.tar.gz`, deb=`moltis_{ver}_{arch}.deb`, rpm=`moltis-{ver}-1.{arch}.rpm`, arch=`moltis-{ver}-1-{arch}.pkg.tar.zst`.",
+        "The previous related fix (#493) corrected the tag URL `v` prefix but missed the `-1` deb suffix issue, leaving a latent bug.",
+        "`.polyphony/` copies of install scripts are untracked and not part of the repo."
+      ],
+      "code": [
+        {
+          "path": "website/install.sh",
+          "line": 347,
+          "end_line": 347,
+          "finding": "Bug site: `deb_file=\"moltis_${version}-1_${deb_arch}.deb\"` — the `-1` revision suffix is not produced by `cargo deb` and must be absent."
+        },
+        {
+          "path": "install.sh",
+          "line": 347,
+          "end_line": 347,
+          "finding": "Mirror of the same bug; both files are identical so both required the same fix."
+        },
+        {
+          "path": ".github/workflows/release.yml",
+          "line": 334,
+          "end_line": 334,
+          "finding": "`cargo deb ... --deb-version \"$MOLTIS_VERSION\"` is the authoritative source of .deb naming — no revision suffix appended."
+        }
+      ],
+      "workflow": [
+        "macOS `grep` does not support `-P` (PCRE); portable shell scripts must use ERE (`-E`) or basic regex instead.",
+        "Sourcing install.sh and intercepting download/sudo calls is fragile across platforms; grepping for filename patterns directly is more robust for install script validation.",
+        "CI already ran the install-sync check; the new package-name check was added as a parallel fast check alongside fmt/biome/i18n/zizmor in both CI and local-validate."
+      ]
+    },
+    "friction": [
+      "macOS `grep -P` (PCRE) not supported, requiring a rewrite of the test script from a source-and-intercept approach to direct pattern matching.",
+      "The previous fix (#493) was incomplete — it fixed one symptom (tag URL) but not the root cause (deb filename convention mismatch), requiring this follow-up."
+    ],
+    "open_items": [
+      "No test validates that the release workflow and install script stay in sync at the build level (e.g. parsing the workflow YAML to extract actual produced filenames and comparing to install script patterns).",
+      "Issue #496 was fixed and committed but the transcript ends before confirming it was closed on GitHub."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-28T08:34:00.509963Z",
+    "agent_lines": 4,
+    "human_added": 213,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 217,
+    "agent_percentage": 1.8433179723502304
+  }
+}
