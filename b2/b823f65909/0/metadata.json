@@ -1,0 +1,97 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "b2b823f65909",
+  "session_id": "ad969afa-9599-47bf-b932-3f444487f5cf",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-29T12:45:55.177047Z",
+  "branch": "meowing-musician",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "crates/config/src/provider_env.rs",
+    "crates/config/src/template.rs",
+    "crates/provider-setup/src/lib.rs",
+    "crates/providers/src/lib.rs",
+    "docs/src/providers.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "8a016c5d3948",
+  "token_usage": {
+    "input_tokens": 23,
+    "cache_creation_tokens": 29810,
+    "cache_read_tokens": 658777,
+    "output_tokens": 6445,
+    "api_call_count": 17
+  },
+  "summary": {
+    "intent": "Add a second Z.AI provider (`zai-code`) targeting the Coding plan endpoint to fix 'insufficient balance' errors for Z.AI Coding plan users (GitHub issue #414).",
+    "outcome": "Successfully added `zai-code` provider across all 5 required files, all tests pass, formatting is clean, and changes were committed and pushed with a PR created.",
+    "learnings": {
+      "repo": [
+        "Adding a new OpenAI-compatible provider requires changes in 5 places: crates/providers/src/lib.rs, crates/provider-setup/src/lib.rs, crates/config/src/provider_env.rs, crates/config/src/template.rs, and docs/src/providers.md",
+        "Provider test arrays in provider-setup/src/lib.rs must be updated in 4 places when adding a new KnownProvider",
+        "Z.AI models are referenced via a shared ZAI_MODELS constant, so the new zai-code provider reuses the same model list",
+        "The project uses a flat provider pattern (no smart auto-detection) — separate provider entries for plan variants is the established convention per Cstewart-HC"
+      ],
+      "code": [
+        {
+          "path": "crates/providers/src/lib.rs",
+          "line": 1014,
+          "end_line": 1022,
+          "finding": "OpenAiCompatDef for zai-code inserted after existing zai entry; uses Z_CODE_API_KEY and https://api.z.ai/api/coding/paas/v4"
+        },
+        {
+          "path": "crates/providers/src/lib.rs",
+          "line": 3092,
+          "end_line": 3092,
+          "finding": "Test zai_code_registers_with_api_key added after zai_registers_with_api_key following the same pattern"
+        },
+        {
+          "path": "crates/provider-setup/src/lib.rs",
+          "line": 855,
+          "end_line": 862,
+          "finding": "KnownProvider for zai-code with display_name 'Z.AI (Coding Plan)' added after zai entry"
+        },
+        {
+          "path": "crates/provider-setup/src/lib.rs",
+          "line": 4062,
+          "end_line": 4062,
+          "finding": "Env key mapping ('zai-code', 'Z_CODE_API_KEY') added alongside existing ('zai', 'Z_API_KEY')"
+        },
+        {
+          "path": "crates/config/src/provider_env.rs",
+          "line": 93,
+          "end_line": 93,
+          "finding": "Normalization aliases added: 'zai-code' | 'zai-coding' | 'zhipu-code' =\u003e 'zai-code'"
+        },
+        {
+          "path": "crates/config/src/template.rs",
+          "line": 99,
+          "end_line": 99,
+          "finding": "zai-code added to commented provider list for discoverability"
+        }
+      ],
+      "workflow": [
+        "cargo test with a hyphenated filter (e.g., 'zai-code') won't match test functions with underscores — use underscore filter or full function name instead",
+        "The project uses 'just lint' for clippy and 'cargo +nightly-2025-11-30 fmt --all -- --check' for formatting verification",
+        "Background task completion notifications require reading the output file to retrieve results"
+      ]
+    },
+    "friction": [
+      "Background test task used a hyphenated filter ('zai') that matched zero test names because Rust test functions use underscores — required re-running tests with corrected filter names",
+      "Had to poll the background task multiple times waiting for workspace compilation to complete before seeing test results"
+    ],
+    "open_items": [
+      "No smart auto-detection of Z.AI plan type — users must manually choose between 'zai' and 'zai-code' providers; this was intentionally deferred per Cstewart-HC's recommendation",
+      "Documentation update limited to providers.md table row — may need more detailed guidance on when Coding plan users should use zai-code vs zai"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-29T12:45:35.508677Z",
+    "agent_lines": 40,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 40,
+    "agent_percentage": 100
+  }
+}

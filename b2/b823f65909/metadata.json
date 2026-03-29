@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "b2b823f65909",
+  "strategy": "manual-commit",
+  "branch": "meowing-musician",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "crates/config/src/provider_env.rs",
+    "crates/config/src/template.rs",
+    "crates/provider-setup/src/lib.rs",
+    "crates/providers/src/lib.rs",
+    "docs/src/providers.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/b2/b823f65909/0/metadata.json",
+      "transcript": "/b2/b823f65909/0/full.jsonl",
+      "context": "/b2/b823f65909/0/context.md",
+      "content_hash": "/b2/b823f65909/0/content_hash.txt",
+      "prompt": "/b2/b823f65909/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 23,
+    "cache_creation_tokens": 29810,
+    "cache_read_tokens": 658777,
+    "output_tokens": 6445,
+    "api_call_count": 17
+  }
+}
