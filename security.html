@@ -376,8 +376,9 @@ The encryption key is derived from the user’s password via Argon2id.</p>
 in Settings &gt; Authentication), unseals automatically on login, and
 re-seals on server restart. A recovery key is provided at initialization
 for emergency access.</p>
-<p>When the vault is sealed, a middleware layer blocks API requests with
-<code>423 Locked</code> to prevent serving stale data.</p>
+<p>When the vault is sealed, a middleware layer blocks vault-protected API
+requests with <code>423 Locked</code>. Session history and bootstrap endpoints remain
+available because those payloads are not yet encrypted at rest.</p>
 <p>For full details on the key hierarchy, vault states, API endpoints, and
 cryptographic parameters, see <a href="vault.html">Encryption at Rest (Vault)</a>.</p>
 <h2 id="network-security"><a class="header" href="#network-security">Network Security</a></h2>
