@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "952b11838e32",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/ios/GraphQL/Schema/schema.graphqls",
+    "crates/web/ui/e2e/specs/auth.spec.js"
+  ],
+  "sessions": [
+    {
+      "metadata": "/95/2b11838e32/0/metadata.json",
+      "transcript": "/95/2b11838e32/0/full.jsonl",
+      "context": "/95/2b11838e32/0/context.md",
+      "content_hash": "/95/2b11838e32/0/content_hash.txt",
+      "prompt": "/95/2b11838e32/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 103,
+    "cache_creation_tokens": 160866,
+    "cache_read_tokens": 4139398,
+    "output_tokens": 14548,
+    "api_call_count": 87
+  }
+}
