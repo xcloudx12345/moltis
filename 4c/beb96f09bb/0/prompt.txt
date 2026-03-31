@@ -1,0 +1,17 @@
+https://github.com/moltis-org/moltis/issues/523 is true, chats should be renamable even when coming from Discord. Plan this.
+
+---
+
+Proceed
+
+---
+
+commit, push, create a PR
+
+---
+
+do it again
+
+---
+
+try again
