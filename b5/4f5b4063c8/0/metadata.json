@@ -1,0 +1,104 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "b54f5b4063c8",
+  "session_id": "cc80b4cc-7ce0-4760-ade8-ffd73779df0d",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-31T15:52:29.784166Z",
+  "branch": "glistening-amazonsaurus",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/src/assets/js/onboarding-view.js",
+    "crates/web/src/assets/js/page-channels.js"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "e7a3dc34348f",
+  "token_usage": {
+    "input_tokens": 6058,
+    "cache_creation_tokens": 305693,
+    "cache_read_tokens": 44365020,
+    "output_tokens": 116306,
+    "api_call_count": 209
+  },
+  "summary": {
+    "intent": "Improve the moltis Microsoft Teams channel implementation by adding missing features compared to openclaw, then improve onboarding and documentation.",
+    "outcome": "Comprehensive Teams channel overhaul delivered: JWT auth, retry/backoff, async webhook handling, Adaptive Cards, streaming, file attachments, Graph API tools (search, pins, reactions, member info), full documentation, improved web UI with Tailscale-aware public URL detection, and a merged PR (#529).",
+    "learnings": {
+      "repo": [
+        "msteams crate lives at crates/msteams/src/ with modules: lib, config, activity, state, outbound, plugin, auth, channel_webhook_verifier",
+        "Agent tools are registered in crates/gateway/src/server.rs after SendMessageTool and live in crates/gateway/src/teams_agent_tools.rs",
+        "Channel descriptors (supports_threads, supports_interactive, supports_reactions) are set in crates/channels/src/plugin.rs",
+        "Default offered channels list is in crates/config/src/schema.rs with a matching test that must be updated when channels are added",
+        "RedactedConfig serialization uses a hardcoded field count that must match the actual number of always-present fields — getting this wrong causes runtime panics",
+        "Tailscale status is fetched at onboarding startup and available as data.tailscale; API endpoints are /api/tailscale/status and /api/tailscale/configure",
+        "Config validation in validate.rs uses Map(Box::new(Leaf)) for channel configs — actual field validation happens via serde deserialization, not validate.rs",
+        "Locale files are Telegram-only; all other channels have a gap in fr/zh localization",
+        "CLI bootstrap prints setup links and can open them; Teams Developer Portal link was missing and needed adding",
+        "Worktree path pattern: /Users/penso/.superset/worktrees/moltis/\u003cworktree-name\u003e/",
+        "secrecy::Secret\u003cString\u003e is used for credentials; outbound uses constant-time comparison for webhook secrets"
+      ],
+      "code": [
+        {
+          "path": "crates/msteams/src/config.rs",
+          "finding": "RedactedConfig had hardcoded count of 9 but there were 14 always-present fields — this would cause runtime serialization panics"
+        },
+        {
+          "path": "crates/msteams/src/plugin.rs",
+          "finding": "std::sync::RwLockWriteGuard held across .await points causes 'not Send' compile errors; must scope guards so they drop before any await"
+        },
+        {
+          "path": "crates/httpd/src/server.rs",
+          "finding": "Teams webhook must return 202 Accepted immediately and process in background via tokio::spawn to prevent Teams retry storms on slow LLM responses"
+        },
+        {
+          "path": "crates/msteams/src/chunking.rs",
+          "finding": "splits_at_space test had wrong expected value — rfind(' ') on exactly max_len window returns the space position, not the whole string"
+        },
+        {
+          "path": "crates/web/src/assets/js/onboarding-view.js",
+          "finding": "data.tailscale is available in the onboarding component from startup fetch; can be used to auto-fill public base URL for Teams"
+        },
+        {
+          "path": "crates/gateway/src/teams_agent_tools.rs",
+          "finding": "Agent tools access Teams Graph API via MsTeamsPlugin::graph_client() helper that returns (reqwest::Client, Secret\u003cString\u003e); edit/delete go through new public plugin methods delegating to outbound"
+        }
+      ],
+      "workflow": [
+        "When adding pub(crate) API methods that are not yet called, use #[allow(dead_code)] to avoid clippy warnings rather than forcing artificial callers",
+        "tokio::spawn closures must be Send + 'static — clone Arcs before the spawn block, never capture RwLock guards",
+        "Biome is used for JS linting (biome check), not eslint",
+        "Cargo workspace deps must be added to root Cargo.toml [workspace.dependencies] before individual crate Cargo.toml can reference them",
+        "Full compilation check workflow: cargo check --workspace, then cargo test, then cargo clippy, then cargo fmt --check",
+        "Commit before merging main to preserve branch work; 'git merge main' was clean with no conflicts after committing",
+        "PR creation via gh pr create with HEREDOC body formatting"
+      ]
+    },
+    "friction": [
+      "Multiple compilation cycles needed: SendOutcome visibility, RwLockWriteGuard Send issue, tokio::spawn clone pattern — each required a separate read-fix-compile loop",
+      "outbound.rs had mime_type field but code was written with content_type, requiring a grep-and-fix pass",
+      "Clippy produced many warnings (field_reassign_with_default, collapsible_if, unwrap_used in tests) requiring a subagent fix pass",
+      "chunking.rs test expectation was wrong after implementation, caught only at test run time",
+      "RedactedConfig hardcoded field count bug was only caught during a follow-up audit, not during initial implementation",
+      "graph.rs had a clamp-style clippy lint that was only caught in the final clippy pass",
+      "Teams Developer Portal link was missing from CLI bootstrap print_setup_links — caught in follow-up audit pass",
+      "The onboarding public URL requirement problem was only raised by the user after PR creation, not caught during implementation review"
+    ],
+    "open_items": [
+      "Localization (fr/zh) for Teams channel strings — intentionally deferred as a cross-cutting concern affecting all channels",
+      "E2E Playwright tests for Teams channel setup — no channel currently has dedicated e2e setup tests",
+      "Wiring poll vote tracking with persistent conversation store (in-memory only currently)",
+      "Per-team/channel config overrides UI in the edit modal (backend supports it, UI does not expose nested team/channel config)",
+      "Graph API permissions documentation — teams.md lists required permissions but there is no automated check or warning when Graph features are used without the right scopes configured",
+      "Feedback (thumbs up/down) Adaptive Cards with reflection prompt and cooldown — listed in comparison but not implemented",
+      "Welcome card for group chats using group_welcome_card config field — config exists but group welcome logic may need verification"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-31T15:51:41.704164Z",
+    "agent_lines": 0,
+    "human_added": 144,
+    "human_modified": 2,
+    "human_removed": 0,
+    "total_committed": 144,
+    "agent_percentage": 0
+  }
+}
