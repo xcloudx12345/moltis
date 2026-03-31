@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "da2402740c07",
+  "strategy": "manual-commit",
+  "branch": "claude/gpg-sign-releases-92GMZ",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "docs/src/release-verification.md",
+    "scripts/gpg-sign-release.sh",
+    "scripts/verify-release.sh"
+  ],
+  "sessions": [
+    {
+      "metadata": "/da/2402740c07/0/metadata.json",
+      "transcript": "/da/2402740c07/0/full.jsonl",
+      "context": "/da/2402740c07/0/context.md",
+      "content_hash": "/da/2402740c07/0/content_hash.txt",
+      "prompt": "/da/2402740c07/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 20,
+    "cache_creation_tokens": 11120,
+    "cache_read_tokens": 685362,
+    "output_tokens": 6132,
+    "api_call_count": 16
+  }
+}
