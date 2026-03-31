@@ -610,6 +610,17 @@ rate_limit_window_secs = 300  # 5 per 5 minutes
 <h3 id="7-keep-software-updated"><a class="header" href="#7-keep-software-updated">7. Keep Software Updated</a></h3>
 <p>Subscribe to security advisories and update promptly when vulnerabilities are
 disclosed.</p>
+<h2 id="release-signing-and-verification"><a class="header" href="#release-signing-and-verification">Release Signing and Verification</a></h2>
+<p>All release artifacts are signed with two independent methods:</p>
+<ol>
+<li><strong>Sigstore keyless signing</strong> (automated in CI) — proves the artifact was
+built by the <code>moltis-org/moltis</code> GitHub Actions pipeline</li>
+<li><strong>GPG signing</strong> (maintainer’s YubiKey hardware key) — proves a specific
+maintainer authorized the release</li>
+</ol>
+<p>Checksums (SHA-256 and SHA-512) are generated for every artifact.</p>
+<p>See <a href="release-verification.html">Release Verification</a> for detailed verification
+instructions, artifact file extensions, and maintainer signing workflow.</p>
 <h2 id="reporting-security-issues"><a class="header" href="#reporting-security-issues">Reporting Security Issues</a></h2>
 <p>Report security vulnerabilities privately to the maintainers. Do not open
 public issues for security bugs.</p>
