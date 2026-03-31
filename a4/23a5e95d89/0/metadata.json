@@ -1,0 +1,90 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "a423a5e95d89",
+  "session_id": "cc80b4cc-7ce0-4760-ade8-ffd73779df0d",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-31T16:03:50.98925Z",
+  "branch": "glistening-amazonsaurus",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/web/src/assets/js/onboarding-view.js"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "6b2c3f2ec399",
+  "token_usage": {
+    "input_tokens": 6071,
+    "cache_creation_tokens": 309788,
+    "cache_read_tokens": 46588301,
+    "output_tokens": 117680,
+    "api_call_count": 216
+  },
+  "summary": {
+    "intent": "Implement missing Microsoft Teams channel features in the moltis codebase by comparing against the openclaw reference implementation, then improve onboarding UX for Teams setup.",
+    "outcome": "Full Teams channel feature parity achieved: JWT auth, Adaptive Cards, streaming, retries, Graph API tools (search/pins/member-info/reactions), per-team config overrides, agent tools wired to Graph API, and Tailscale Funnel integration in the setup flow. PR #529 created and merged with main.",
+    "learnings": {
+      "repo": [
+        "msteams crate lives at crates/msteams/ with modules: lib.rs, config.rs, activity.rs, state.rs, outbound.rs, plugin.rs, auth.rs, channel_webhook_verifier.rs",
+        "Gateway agent tools are registered in crates/gateway/src/server.rs after SendMessageTool; new tool modules go in crates/gateway/src/",
+        "Channel descriptor capabilities (supports_interactive, supports_threads, supports_reactions) are declared in crates/channels/src/plugin.rs",
+        "RedactedConfig requires a hardcoded field count that must be manually kept in sync with the struct — msteams had count=9 but actually had 14 always-present fields, which would cause runtime serialization panics",
+        "Default offered channels list is in crates/config/src/schema.rs and has accompanying tests that check the exact list",
+        "Tailscale status is fetched at onboarding startup and available as data.tailscale; public access API is at /api/tailscale/status and /api/tailscale/configure",
+        "std::sync::RwLockWriteGuard is not Send and cannot be held across .await points — must scope guards to drop before any async call",
+        "Config validation in validate.rs uses Map(Box::new(Leaf)) for msteams which accepts any keys; actual validation happens via serde deserialization into typed structs",
+        "Teams requires a public HTTPS endpoint with no polling/socket-mode alternative; Graph change notifications via Azure Event Hub exist but are read-only observer mode only"
+      ],
+      "code": [
+        {
+          "path": "crates/msteams/src/config.rs",
+          "finding": "RedactedConfig had hardcoded field count=9 vs actual 14 always-present fields — runtime serialization bug fixed to count=14 with conditional serialization for optional fields"
+        },
+        {
+          "path": "crates/httpd/src/server.rs",
+          "finding": "Teams webhook handler now returns 202 Accepted immediately and processes in tokio::spawn background task; requires cloning the Arc before spawn to avoid Send bounds issues"
+        },
+        {
+          "path": "crates/msteams/src/plugin.rs",
+          "finding": "welcomed_conversations uses std::sync::RwLock; guards must be scoped to drop before any .await to satisfy Send requirement for tokio::spawn"
+        },
+        {
+          "path": "crates/gateway/src/teams_agent_tools.rs",
+          "finding": "Agent tools hold Arc\u003cRwLock\u003cMsTeamsPlugin\u003e\u003e and use account_id param or fall back to first configured account; Graph calls go through MsTeamsPlugin::graph_client() helper"
+        },
+        {
+          "path": "crates/config/src/schema.rs",
+          "finding": "Default offered channels list has tests checking exact contents — must update tests when adding msteams to defaults"
+        }
+      ],
+      "workflow": [
+        "When std::sync::RwLockWriteGuard is not Send, scope the guard in a block before any async call rather than switching to tokio::sync::RwLock",
+        "Dead code warnings on new pub(crate) API methods that aren't yet called should use #[allow(dead_code)] rather than removing the methods",
+        "Running cargo check -p \u003ccrate\u003e is faster than workspace check for iterating on compilation errors in a specific crate",
+        "Clippy catches collapsible_if, field_reassign_with_default, and unwrap_in_tests — delegate bulk clippy fixes to a subagent to avoid context pollution",
+        "Teams webhooks have ~15s timeout before retry — returning 202 immediately and processing async prevents duplicate messages from Teams retries"
+      ]
+    },
+    "friction": [
+      "Multiple compilation iteration cycles needed: pub(crate) visibility, Send bounds for tokio::spawn, RwLockWriteGuard held across await, dead_code warnings on new API methods",
+      "Chunking test failure after implementation — test expected 'word1 word2' at max_len=11 but rfind(' ') returned wrong split point",
+      "RedactedConfig field count bug was silent — no compiler error, would only panic at runtime when serializing channel config",
+      "Clippy generated many warnings requiring a subagent pass to fix efficiently without polluting main context",
+      "JS biome linting required after each web UI edit to catch issues"
+    ],
+    "open_items": [
+      "Localization of Teams UI strings into fr/zh locale files — all channels have this gap, needs cross-cutting fix",
+      "E2E Playwright tests for Teams channel setup flow — no channel currently has dedicated e2e setup tests",
+      "Wiring poll vote tracking with persistence (in-memory store only for now)",
+      "Graph API permissions documentation for each agent tool (Chat.Read.All, User.Read.All, Chat.ReadWrite.All) — users need to grant these in Azure AD",
+      "Per-team config overrides UI in the edit channel modal — backend supports teams.\u003cteamId\u003e.channels.\u003cchannelId\u003e nesting but no UI to configure it"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-31T16:03:09.207337Z",
+    "agent_lines": 0,
+    "human_added": 0,
+    "human_modified": 1,
+    "human_removed": 1,
+    "total_committed": 0,
+    "agent_percentage": 0
+  }
+}
