@@ -726,6 +726,19 @@ impl SkillsService for NoopSkillsStub {
 #[async_trait]
 pub trait BrowserService: Send + Sync {
     async fn request(&self, params: Value) -> ServiceResult;
+    /// List all active browser sessions.
+    async fn list_sessions(&self) -> ServiceResult {
+        Ok(serde_json::json!({ "sessions": [] }))
+    }
+    /// Subscribe to screencast frames for a session. Returns a broadcast
+    /// receiver that yields serialized frame payloads (JSON values) suitable
+    /// for sending as `browser.screencast.frame` events.
+    async fn subscribe_screencast(
+        &self,
+        _session_id: &str,
+    ) -> Option<tokio::sync::broadcast::Receiver<Value>> {
+        None
+    }
     /// Initialize browser internals opportunistically after startup.
     async fn warmup(&self) {}
     /// Clean up idle browser instances (called periodically).

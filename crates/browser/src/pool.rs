@@ -26,6 +26,16 @@ use crate::{
 
 pub(crate) const MAX_BROWSER_INSTANCE_LIFETIME: Duration = Duration::from_secs(30 * 60);
 
+/// Information about an active browser session.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct BrowserSessionInfo {
+    pub session_id: String,
+    pub sandboxed: bool,
+    pub url: String,
+    pub age_secs: u64,
+    pub idle_secs: u64,
+}
+
 /// Get current system memory usage as a percentage (0-100).
 fn get_memory_usage_percent() -> u8 {
     let mut sys = System::new();
@@ -321,6 +331,28 @@ impl BrowserPool {
     /// Get the number of active instances.
     pub async fn active_count(&self) -> usize {
         self.instances.read().await.len()
+    }
+
+    /// List all active session IDs with their metadata.
+    pub async fn list_sessions(&self) -> Vec<BrowserSessionInfo> {
+        let instances = self.instances.read().await;
+        let mut sessions = Vec::with_capacity(instances.len());
+        for (sid, instance) in instances.iter() {
+            let inst = instance.lock().await;
+            let url = if let Some(page) = inst.pages.values().next() {
+                page.url().await.ok().flatten().unwrap_or_default()
+            } else {
+                String::new()
+            };
+            sessions.push(BrowserSessionInfo {
+                session_id: sid.clone(),
+                sandboxed: inst.sandboxed,
+                url,
+                age_secs: inst.created_at.elapsed().as_secs(),
+                idle_secs: inst.last_used.elapsed().as_secs(),
+            });
+        }
+        sessions
     }
 
     /// Launch a new browser instance.

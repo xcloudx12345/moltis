@@ -1371,6 +1371,62 @@ impl BrowserService for RealBrowserService {
         Ok(serde_json::to_value(&response).map_err(|e| format!("serialization error: {e}"))?)
     }
 
+    async fn list_sessions(&self) -> ServiceResult {
+        if let Some(manager) = self.manager_if_initialized() {
+            let sessions = manager.list_sessions().await;
+            let screencast_sessions = manager.screencasts().active_sessions().await;
+            let enriched: Vec<Value> = sessions
+                .into_iter()
+                .map(|s| {
+                    let screencasting = screencast_sessions.contains(&s.session_id);
+                    let mut v = serde_json::to_value(&s).unwrap_or_default();
+                    if let Some(obj) = v.as_object_mut() {
+                        obj.insert(
+                            "screencasting".to_string(),
+                            serde_json::json!(screencasting),
+                        );
+                    }
+                    v
+                })
+                .collect();
+            Ok(serde_json::json!({ "sessions": enriched }))
+        } else {
+            Ok(serde_json::json!({ "sessions": [] }))
+        }
+    }
+
+    async fn subscribe_screencast(
+        &self,
+        session_id: &str,
+    ) -> Option<tokio::sync::broadcast::Receiver<Value>> {
+        let manager = self.manager_if_initialized()?;
+        let raw_rx = manager.screencasts().subscribe(session_id).await?;
+
+        // Create a Value-typed broadcast channel and spawn an adapter task
+        // that serializes ScreencastFrame → serde_json::Value.
+        let (tx, rx) = tokio::sync::broadcast::channel::<Value>(4);
+        tokio::spawn({
+            let mut raw_rx = raw_rx;
+            async move {
+                loop {
+                    match raw_rx.recv().await {
+                        Ok(frame) => {
+                            if let Ok(val) = serde_json::to_value(&frame) {
+                                if tx.send(val).is_err() {
+                                    break; // no subscribers
+                                }
+                            }
+                        },
+                        Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
+                        Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
+                    }
+                }
+            }
+        });
+
+        Some(rx)
+    }
+
     async fn warmup(&self) {
         let started = std::time::Instant::now();
         let _ = self.manager().await;

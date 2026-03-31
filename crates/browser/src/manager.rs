@@ -21,10 +21,14 @@ use {
 use crate::{
     error::Error,
     pool::BrowserPool,
+    screencast::ScreencastRegistry,
     snapshot::{
         extract_snapshot, find_element_by_ref, focus_element_by_ref, scroll_element_into_view,
     },
-    types::{BrowserAction, BrowserConfig, BrowserPreference, BrowserRequest, BrowserResponse},
+    types::{
+        BrowserAction, BrowserConfig, BrowserPreference, BrowserRequest, BrowserResponse,
+        ExportedCookie, KeyInputType, MouseInputButton, MouseInputType,
+    },
 };
 
 /// Extract session_id or return an error for actions that require an existing session.
@@ -38,6 +42,7 @@ fn require_session(session_id: Option<&str>, action: &str) -> Result<String, Err
 pub struct BrowserManager {
     pool: Arc<BrowserPool>,
     config: BrowserConfig,
+    screencasts: Arc<ScreencastRegistry>,
 }
 
 impl Default for BrowserManager {
@@ -70,6 +75,7 @@ impl BrowserManager {
         Self {
             pool: Arc::new(BrowserPool::new(config.clone())),
             config,
+            screencasts: Arc::new(ScreencastRegistry::new()),
         }
     }
 
@@ -224,6 +230,41 @@ impl BrowserManager {
             BrowserAction::Forward => self.go_forward(session_id, sandbox).await,
             BrowserAction::Refresh => self.refresh(session_id, sandbox).await,
             BrowserAction::Close => self.close(session_id, sandbox).await,
+            BrowserAction::StartScreencast {
+                quality,
+                max_width,
+                max_height,
+            } => {
+                self.start_screencast(session_id, sandbox, browser, quality, max_width, max_height)
+                    .await
+            },
+            BrowserAction::StopScreencast => self.stop_screencast(session_id, sandbox).await,
+            BrowserAction::MouseInput {
+                x,
+                y,
+                event_type,
+                button,
+                click_count,
+            } => {
+                self.mouse_input(session_id, x, y, event_type, button, click_count, sandbox)
+                    .await
+            },
+            BrowserAction::KeyboardInput {
+                event_type,
+                key,
+                text,
+                code,
+                modifiers,
+            } => {
+                self.keyboard_input(session_id, event_type, key, text, code, modifiers, sandbox)
+                    .await
+            },
+            BrowserAction::ExportCookies { domain } => {
+                self.export_cookies(session_id, domain, sandbox).await
+            },
+            BrowserAction::ImportCookies { cookies } => {
+                self.import_cookies(session_id, cookies, sandbox).await
+            },
         };
 
         // Detect stale connections for all non-Navigate actions
@@ -739,6 +780,251 @@ impl BrowserManager {
         ))
     }
 
+    /// Start a CDP screencast.
+    async fn start_screencast(
+        &self,
+        session_id: Option<&str>,
+        sandbox: bool,
+        browser: Option<BrowserPreference>,
+        quality: u8,
+        max_width: u32,
+        max_height: u32,
+    ) -> Result<(String, BrowserResponse), Error> {
+        let sid = self
+            .pool
+            .get_or_create(session_id, sandbox, browser)
+            .await?;
+        let page = self.pool.get_page(&sid).await?;
+
+        let _rx = self
+            .screencasts
+            .start(&sid, &page, quality, max_width, max_height)
+            .await?;
+
+        info!(
+            session_id = sid,
+            quality, max_width, max_height, "screencast started"
+        );
+
+        Ok((sid.clone(), BrowserResponse::success(sid, 0, sandbox)))
+    }
+
+    /// Stop a CDP screencast.
+    async fn stop_screencast(
+        &self,
+        session_id: Option<&str>,
+        sandbox: bool,
+    ) -> Result<(String, BrowserResponse), Error> {
+        let sid = require_session(session_id, "stop_screencast")?;
+        let page = self.pool.get_page(&sid).await.ok();
+        self.screencasts.stop(&sid, page.as_ref()).await?;
+
+        info!(session_id = sid, "screencast stopped");
+
+        Ok((sid.clone(), BrowserResponse::success(sid, 0, sandbox)))
+    }
+
+    /// Send a mouse input event to the page.
+    async fn mouse_input(
+        &self,
+        session_id: Option<&str>,
+        x: f64,
+        y: f64,
+        event_type: MouseInputType,
+        button: MouseInputButton,
+        click_count: u32,
+        sandbox: bool,
+    ) -> Result<(String, BrowserResponse), Error> {
+        let sid = require_session(session_id, "mouse_input")?;
+        let page = self.pool.get_page(&sid).await?;
+
+        let cdp_type = match event_type {
+            MouseInputType::Pressed => DispatchMouseEventType::MousePressed,
+            MouseInputType::Released => DispatchMouseEventType::MouseReleased,
+            MouseInputType::Moved => DispatchMouseEventType::MouseMoved,
+            MouseInputType::Wheel => DispatchMouseEventType::MouseWheel,
+        };
+
+        let cdp_button = match button {
+            MouseInputButton::Left => MouseButton::Left,
+            MouseInputButton::Right => MouseButton::Right,
+            MouseInputButton::Middle => MouseButton::Middle,
+        };
+
+        let cmd = DispatchMouseEventParams::builder()
+            .r#type(cdp_type)
+            .x(x)
+            .y(y)
+            .button(cdp_button)
+            .click_count(click_count as i64)
+            .build()
+            .map_err(|e| Error::Cdp(e.to_string()))?;
+        page.execute(cmd)
+            .await
+            .map_err(|e| Error::Cdp(e.to_string()))?;
+
+        debug!(session_id = sid, x, y, "mouse input dispatched");
+
+        Ok((sid.clone(), BrowserResponse::success(sid, 0, sandbox)))
+    }
+
+    /// Send a keyboard input event to the page.
+    async fn keyboard_input(
+        &self,
+        session_id: Option<&str>,
+        event_type: KeyInputType,
+        key: Option<String>,
+        text: Option<String>,
+        code: Option<String>,
+        modifiers: Option<i64>,
+        sandbox: bool,
+    ) -> Result<(String, BrowserResponse), Error> {
+        let sid = require_session(session_id, "keyboard_input")?;
+        let page = self.pool.get_page(&sid).await?;
+
+        let cdp_type = match event_type {
+            KeyInputType::KeyDown => DispatchKeyEventType::KeyDown,
+            KeyInputType::KeyUp => DispatchKeyEventType::KeyUp,
+            KeyInputType::Char => DispatchKeyEventType::Char,
+        };
+
+        let mut builder = DispatchKeyEventParams::builder().r#type(cdp_type);
+
+        if let Some(ref text) = text {
+            builder = builder.text(text.clone());
+        }
+        if let Some(ref key) = key {
+            builder = builder.key(key.clone());
+        }
+        if let Some(ref code) = code {
+            builder = builder.code(code.clone());
+        }
+        if let Some(modifiers) = modifiers {
+            builder = builder.modifiers(modifiers);
+        }
+
+        let cmd = builder.build().map_err(|e| Error::Cdp(e.to_string()))?;
+        page.execute(cmd)
+            .await
+            .map_err(|e| Error::Cdp(e.to_string()))?;
+
+        debug!(session_id = sid, ?key, "keyboard input dispatched");
+
+        Ok((sid.clone(), BrowserResponse::success(sid, 0, sandbox)))
+    }
+
+    /// Export cookies from the browser session.
+    async fn export_cookies(
+        &self,
+        session_id: Option<&str>,
+        domain: Option<String>,
+        sandbox: bool,
+    ) -> Result<(String, BrowserResponse), Error> {
+        use chromiumoxide::cdp::browser_protocol::network::GetCookiesParams;
+
+        let sid = require_session(session_id, "export_cookies")?;
+        let page = self.pool.get_page(&sid).await?;
+
+        let params = {
+            // Get the current URL to build a cookie URL filter
+            let url = page.url().await.ok().flatten().unwrap_or_default();
+            if url.is_empty() {
+                GetCookiesParams::default()
+            } else {
+                GetCookiesParams {
+                    urls: Some(vec![url]),
+                }
+            }
+        };
+
+        let result = page
+            .execute(params)
+            .await
+            .map_err(|e| Error::Cdp(format!("failed to get cookies: {e}")))?;
+
+        let cookies: Vec<ExportedCookie> = result
+            .cookies
+            .clone()
+            .into_iter()
+            .filter(|c| {
+                domain
+                    .as_ref()
+                    .is_none_or(|d| c.domain.contains(d.as_str()))
+            })
+            .map(|c| ExportedCookie {
+                name: c.name,
+                value: c.value,
+                domain: c.domain,
+                path: c.path,
+                secure: c.secure,
+                http_only: c.http_only,
+                expires: c.expires,
+                same_site: c.same_site.map(|s| format!("{s:?}")).unwrap_or_default(),
+                size: c.size as u32,
+            })
+            .collect();
+
+        info!(session_id = sid, count = cookies.len(), "exported cookies");
+
+        Ok((
+            sid.clone(),
+            BrowserResponse::success(sid, 0, sandbox).with_cookies(cookies),
+        ))
+    }
+
+    /// Import cookies into the browser session.
+    async fn import_cookies(
+        &self,
+        session_id: Option<&str>,
+        cookies: Vec<crate::types::CookieParam>,
+        sandbox: bool,
+    ) -> Result<(String, BrowserResponse), Error> {
+        use chromiumoxide::cdp::browser_protocol::network::{CookieSameSite, SetCookieParams};
+
+        let sid = require_session(session_id, "import_cookies")?;
+        let page = self.pool.get_page(&sid).await?;
+
+        for cookie in &cookies {
+            let mut params = SetCookieParams::builder()
+                .name(&cookie.name)
+                .value(&cookie.value);
+
+            if let Some(ref domain) = cookie.domain {
+                params = params.domain(domain);
+            }
+            if let Some(ref path) = cookie.path {
+                params = params.path(path);
+            }
+            if cookie.secure {
+                params = params.secure(true);
+            }
+            if cookie.http_only {
+                params = params.http_only(true);
+            }
+            if let Some(expires) = cookie.expires {
+                use chromiumoxide::cdp::browser_protocol::network::TimeSinceEpoch;
+                params = params.expires(TimeSinceEpoch::new(expires));
+            }
+            if let Some(ref ss) = cookie.same_site {
+                let same_site = match ss.to_lowercase().as_str() {
+                    "strict" => CookieSameSite::Strict,
+                    "lax" => CookieSameSite::Lax,
+                    _ => CookieSameSite::None,
+                };
+                params = params.same_site(same_site);
+            }
+
+            let cmd = params.build().map_err(|e| Error::Cdp(e.to_string()))?;
+            page.execute(cmd)
+                .await
+                .map_err(|e| Error::Cdp(format!("failed to set cookie '{}': {e}", cookie.name)))?;
+        }
+
+        info!(session_id = sid, count = cookies.len(), "imported cookies");
+
+        Ok((sid.clone(), BrowserResponse::success(sid, 0, sandbox)))
+    }
+
     /// Close the browser session.
     async fn close(
         &self,
@@ -801,14 +1087,38 @@ impl BrowserManager {
         self.pool.cleanup_idle().await;
     }
 
+    /// Get the screencast registry (for subscribing to frame events).
+    pub fn screencasts(&self) -> &Arc<ScreencastRegistry> {
+        &self.screencasts
+    }
+
+    /// Get a page by session ID (for direct CDP access from API handlers).
+    pub async fn get_page(&self, session_id: &str) -> Result<Page, Error> {
+        self.pool.get_page(session_id).await
+    }
+
     /// Shut down all browser instances.
     pub async fn shutdown(&self) {
+        self.screencasts.stop_all().await;
         self.pool.shutdown().await;
     }
 
     /// Get the number of active browser instances.
     pub async fn active_count(&self) -> usize {
         self.pool.active_count().await
+    }
+
+    /// List all active browser sessions with metadata.
+    pub async fn list_sessions(&self) -> Vec<crate::pool::BrowserSessionInfo> {
+        let mut sessions = self.pool.list_sessions().await;
+        // Annotate which sessions have active screencasts.
+        let screencast_sessions = self.screencasts.active_sessions().await;
+        for session in &mut sessions {
+            // The BrowserSessionInfo doesn't have a screencast field yet,
+            // but clients can check the screencast endpoint separately.
+            let _ = screencast_sessions.contains(&session.session_id);
+        }
+        sessions
     }
 }
 

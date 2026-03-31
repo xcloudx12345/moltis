@@ -72,10 +72,153 @@ pub enum BrowserAction {
 
     /// Close the browser session.
     Close,
+
+    /// Start streaming screenshots of the page (CDP screencast).
+    StartScreencast {
+        /// JPEG quality 1-100 (default 60).
+        #[serde(default = "default_screencast_quality")]
+        quality: u8,
+        /// Max width to downscale to (default 1280).
+        #[serde(default = "default_screencast_max_width")]
+        max_width: u32,
+        /// Max height to downscale to (default 800).
+        #[serde(default = "default_screencast_max_height")]
+        max_height: u32,
+    },
+
+    /// Stop the screencast stream.
+    StopScreencast,
+
+    /// Send a mouse event directly to the browser page.
+    MouseInput {
+        /// X coordinate in CSS pixels.
+        x: f64,
+        /// Y coordinate in CSS pixels.
+        y: f64,
+        /// Mouse event type.
+        event_type: MouseInputType,
+        /// Mouse button (default: left).
+        #[serde(default)]
+        button: MouseInputButton,
+        /// Click count (default: 1).
+        #[serde(default = "default_click_count")]
+        click_count: u32,
+    },
+
+    /// Send a keyboard event directly to the browser page.
+    KeyboardInput {
+        /// Keyboard event type.
+        event_type: KeyInputType,
+        /// Key identifier (e.g. "Enter", "a", "ArrowDown").
+        #[serde(default)]
+        key: Option<String>,
+        /// Text to insert (for char/keyDown events).
+        #[serde(default)]
+        text: Option<String>,
+        /// Physical key code (e.g. "KeyA", "Enter").
+        #[serde(default)]
+        code: Option<String>,
+        /// Modifier bitmask: Alt=1, Ctrl=2, Meta=4, Shift=8.
+        #[serde(default)]
+        modifiers: Option<i64>,
+    },
+
+    /// Export cookies from the browser session.
+    ExportCookies {
+        /// Optional domain filter (e.g. "example.com").
+        #[serde(default)]
+        domain: Option<String>,
+    },
+
+    /// Import cookies into the browser session.
+    ImportCookies {
+        /// Cookies to set.
+        cookies: Vec<CookieParam>,
+    },
 }
 
 fn default_wait_timeout_ms() -> u64 {
     30000
+}
+
+fn default_screencast_quality() -> u8 {
+    60
+}
+
+fn default_screencast_max_width() -> u32 {
+    1280
+}
+
+fn default_screencast_max_height() -> u32 {
+    800
+}
+
+fn default_click_count() -> u32 {
+    1
+}
+
+/// Mouse event type for direct input.
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum MouseInputType {
+    #[serde(rename = "mousePressed")]
+    Pressed,
+    #[serde(rename = "mouseReleased")]
+    Released,
+    #[serde(rename = "mouseMoved")]
+    Moved,
+    #[serde(rename = "mouseWheel")]
+    Wheel,
+}
+
+/// Mouse button for direct input.
+#[derive(Debug, Clone, Copy, Default, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum MouseInputButton {
+    #[default]
+    Left,
+    Right,
+    Middle,
+}
+
+/// Keyboard event type for direct input.
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum KeyInputType {
+    KeyDown,
+    KeyUp,
+    Char,
+}
+
+/// Cookie parameter for import.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct CookieParam {
+    pub name: String,
+    pub value: String,
+    pub domain: Option<String>,
+    pub path: Option<String>,
+    #[serde(default)]
+    pub secure: bool,
+    #[serde(default)]
+    pub http_only: bool,
+    /// Expiry as Unix timestamp (seconds).
+    pub expires: Option<f64>,
+    #[serde(default)]
+    pub same_site: Option<String>,
+}
+
+/// Exported cookie from the browser.
+#[derive(Debug, Clone, Serialize)]
+pub struct ExportedCookie {
+    pub name: String,
+    pub value: String,
+    pub domain: String,
+    pub path: String,
+    pub secure: bool,
+    pub http_only: bool,
+    pub expires: f64,
+    pub same_site: String,
+    pub size: u32,
 }
 
 /// Known Chromium-family browser engines we can launch.
@@ -182,6 +325,21 @@ impl fmt::Display for BrowserAction {
             Self::Forward => write!(f, "forward"),
             Self::Refresh => write!(f, "refresh"),
             Self::Close => write!(f, "close"),
+            Self::StartScreencast { .. } => write!(f, "start_screencast"),
+            Self::StopScreencast => write!(f, "stop_screencast"),
+            Self::MouseInput { x, y, .. } => write!(f, "mouse_input(x={x}, y={y})"),
+            Self::KeyboardInput { key, text, .. } => match (key, text) {
+                (Some(k), _) => write!(f, "keyboard_input(key={k})"),
+                (_, Some(t)) => write!(f, "keyboard_input(text={t})"),
+                _ => write!(f, "keyboard_input"),
+            },
+            Self::ExportCookies { domain } => match domain {
+                Some(d) => write!(f, "export_cookies(domain={d})"),
+                None => write!(f, "export_cookies"),
+            },
+            Self::ImportCookies { cookies } => {
+                write!(f, "import_cookies(count={})", cookies.len())
+            },
         }
     }
 }
@@ -334,6 +492,10 @@ pub struct BrowserResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
 
+    /// Exported cookies (for export_cookies action).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cookies: Option<Vec<ExportedCookie>>,
+
     /// Duration of the action in milliseconds.
     pub duration_ms: u64,
 }
@@ -351,6 +513,7 @@ impl BrowserResponse {
             result: None,
             url: None,
             title: None,
+            cookies: None,
             duration_ms,
         }
     }
@@ -367,6 +530,7 @@ impl BrowserResponse {
             result: None,
             url: None,
             title: None,
+            cookies: None,
             duration_ms,
         }
     }
@@ -394,6 +558,11 @@ impl BrowserResponse {
 
     pub fn with_title(mut self, title: String) -> Self {
         self.title = Some(title);
+        self
+    }
+
+    pub fn with_cookies(mut self, cookies: Vec<ExportedCookie>) -> Self {
+        self.cookies = Some(cookies);
         self
     }
 }
