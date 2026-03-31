@@ -1,0 +1,54 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "8c3976b76fbd",
+  "strategy": "manual-commit",
+  "branch": "glistening-amazonsaurus",
+  "checkpoints_count": 6,
+  "files_touched": [
+    "Cargo.lock",
+    "Cargo.toml",
+    "crates/channels/src/plugin.rs",
+    "crates/cli/src/channel_commands.rs",
+    "crates/config/src/schema.rs",
+    "crates/config/src/template.rs",
+    "crates/gateway/src/lib.rs",
+    "crates/gateway/src/server.rs",
+    "crates/gateway/src/teams_agent_tools.rs",
+    "crates/httpd/src/server.rs",
+    "crates/msteams/Cargo.toml",
+    "crates/msteams/src/activity.rs",
+    "crates/msteams/src/attachments.rs",
+    "crates/msteams/src/cards.rs",
+    "crates/msteams/src/chunking.rs",
+    "crates/msteams/src/config.rs",
+    "crates/msteams/src/errors.rs",
+    "crates/msteams/src/graph.rs",
+    "crates/msteams/src/jwt.rs",
+    "crates/msteams/src/lib.rs",
+    "crates/msteams/src/outbound.rs",
+    "crates/msteams/src/plugin.rs",
+    "crates/msteams/src/state.rs",
+    "crates/msteams/src/streaming.rs",
+    "crates/web/src/assets/js/onboarding-view.js",
+    "crates/web/src/assets/js/page-channels.js",
+    "docs/src/SUMMARY.md",
+    "docs/src/channels.md",
+    "docs/src/teams.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/8c/3976b76fbd/0/metadata.json",
+      "transcript": "/8c/3976b76fbd/0/full.jsonl",
+      "context": "/8c/3976b76fbd/0/context.md",
+      "content_hash": "/8c/3976b76fbd/0/content_hash.txt",
+      "prompt": "/8c/3976b76fbd/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 6018,
+    "cache_creation_tokens": 276252,
+    "cache_read_tokens": 33569426,
+    "output_tokens": 102261,
+    "api_call_count": 173
+  }
+}

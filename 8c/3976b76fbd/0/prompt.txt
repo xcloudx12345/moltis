@@ -1,0 +1,29 @@
+Look at my teams channel implementation, then compare with ~/code/openclaw implementation and give me a list of missing features and how to improve my implementation
+
+---
+
+Please implement all P0/P1/P2 and anything missing.
+
+---
+
+Can you figure anything else to add or fix compared to others like openclaw?
+
+---
+
+Improve the onboarding, web ui and documentation how how to add teams, where to create token and the bot.
+
+---
+
+Anything else to improve?
+
+---
+
+Anything else to improve?
+
+---
+
+Adding the GraphQL API methods as agent tool seems like a good idea indeed.
+
+---
+
+merge main to this branch, solve conflicts.
