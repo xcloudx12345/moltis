@@ -1,0 +1,69 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "42a252e4a873",
+  "session_id": "f121323c-d69f-4896-b4bd-8826347073cf",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-01T09:08:15.092858Z",
+  "branch": "claude/plan-browser-viewing-HOHno",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/src/assets/js/websocket.js"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "d26806c789f8",
+  "checkpoint_transcript_start": 1234,
+  "transcript_lines_at_start": 1234,
+  "token_usage": {
+    "input_tokens": 25,
+    "cache_creation_tokens": 13880,
+    "cache_read_tokens": 4582293,
+    "output_tokens": 5868,
+    "api_call_count": 22
+  },
+  "summary": {
+    "intent": "Debug why browser screencast frames were not reaching the WebSocket/JS client in the gateway service layer, despite CDP frames being produced correctly.",
+    "outcome": "Root cause identified and fixed: 'browser.screencast.frame' was missing from the WebSocket subscription list in websocket.js, causing the gateway to silently drop all screencast frames to the client.",
+    "learnings": {
+      "repo": [
+        "The gateway broadcast infrastructure uses a subscription filter at broadcast.rs:100-102 — clients must explicitly subscribe to event types or have subscriptions=None (wildcard).",
+        "The WebSocket client has two separate event maps: eventHandlers (used to build subscription list via Object.keys) and eventListeners (used by onEvent). Screencast events must be added to eventHandlers to be subscribed.",
+        "Sandbox mode uses browserless/chrome via apple-container VM isolation; host mode uses detected local browsers (chrome, edge, brave)."
+      ],
+      "code": [
+        {
+          "path": "crates/gateway/src/broadcast.rs",
+          "line": 100,
+          "end_line": 102,
+          "finding": "Subscription filter: clients without a matching subscription silently skip the event. subscriptions=None means wildcard (all events pass through)."
+        },
+        {
+          "path": "crates/web/src/assets/js/websocket.js",
+          "line": 1338,
+          "end_line": 1358,
+          "finding": "'browser.screencast.frame' was absent from the subscription list built from Object.keys(eventHandlers), causing the gateway to never deliver screencast frames to this client."
+        }
+      ],
+      "workflow": [
+        "Layered trace logging (subscribe_screencast, screencast relay, first frame received) was effective for binary-searching the broken link in a multi-hop pipeline.",
+        "Integration tests passing in host mode but failing in sandbox mode can indicate environment-specific subscription or relay wiring differences rather than core logic bugs."
+      ]
+    },
+    "friction": [
+      "Multiple redundant grep attempts for 'subscribeEvents' suggest the symbol name was uncertain or results were ambiguous — required several retries to locate the right file.",
+      "The gateway silently drops frames for unsubscribed events with no warning log, making the failure invisible without tracing added upstream."
+    ],
+    "open_items": [
+      "Verify the JS fix works end-to-end in sandbox mode with actual frame rendering in the browser UI.",
+      "Consider adding a warning log in the gateway broadcast path when an event is dropped due to no matching subscribers, to make future misconfigurations easier to diagnose."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-01T09:07:56.42677Z",
+    "agent_lines": 1,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1,
+    "agent_percentage": 100
+  }
+}
