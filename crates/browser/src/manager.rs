@@ -7,6 +7,7 @@ use {
     chromiumoxide::{
         Page,
         cdp::browser_protocol::{
+            emulation::SetDeviceMetricsOverrideParams,
             input::{
                 DispatchKeyEventParams, DispatchKeyEventType, DispatchMouseEventParams,
                 DispatchMouseEventType, MouseButton,
@@ -817,6 +818,22 @@ impl BrowserManager {
             .await?;
         let page = self.pool.get_page(&sid).await?;
 
+        // Resize the viewport to match the screencast area so websites
+        // render content at the visible resolution. Without this, a
+        // 2560x1440 viewport gets squished into 1280x800, making
+        // everything tiny. After resize, the page re-renders at the
+        // screencast size and content fills the canvas properly.
+        let resize = SetDeviceMetricsOverrideParams::builder()
+            .width(max_width)
+            .height(max_height)
+            .device_scale_factor(1.0)
+            .mobile(false)
+            .build()
+            .map_err(|e| Error::Cdp(e.to_string()))?;
+        if let Err(e) = page.execute(resize).await {
+            debug!(session_id = sid, error = %e, "viewport resize failed (non-fatal)");
+        }
+
         let _rx = self
             .screencasts
             .start(&sid, &page, quality, max_width, max_height)
@@ -824,7 +841,7 @@ impl BrowserManager {
 
         info!(
             session_id = sid,
-            quality, max_width, max_height, "screencast started"
+            quality, max_width, max_height, "screencast started (viewport resized)"
         );
 
         Ok((sid.clone(), BrowserResponse::success(sid, 0, sandbox)))
@@ -924,6 +941,12 @@ impl BrowserManager {
         }
         if let Some(ref key) = key {
             builder = builder.key(key.clone());
+            // CDP needs windowsVirtualKeyCode for special keys (Backspace,
+            // Enter, Tab, arrows, Delete, Escape, etc.) — without it,
+            // Chrome silently ignores the key event.
+            if let Some(vk) = key_to_windows_virtual_keycode(key) {
+                builder = builder.windows_virtual_key_code(vk);
+            }
         }
         if let Some(ref code) = code {
             builder = builder.code(code.clone());
@@ -1148,6 +1171,34 @@ impl BrowserManager {
             let _ = screencast_sessions.contains(&session.session_id);
         }
         sessions
+    }
+}
+
+/// Map DOM `KeyboardEvent.key` to Windows virtual key code for CDP.
+///
+/// CDP's `Input.dispatchKeyEvent` requires `windowsVirtualKeyCode` for
+/// non-printable keys (Backspace, Enter, arrows, etc.) to work correctly.
+fn key_to_windows_virtual_keycode(key: &str) -> Option<i64> {
+    match key {
+        "Backspace" => Some(8),
+        "Tab" => Some(9),
+        "Enter" => Some(13),
+        "Shift" => Some(16),
+        "Control" => Some(17),
+        "Alt" => Some(18),
+        "Escape" => Some(27),
+        " " => Some(32),
+        "PageUp" => Some(33),
+        "PageDown" => Some(34),
+        "End" => Some(35),
+        "Home" => Some(36),
+        "ArrowLeft" => Some(37),
+        "ArrowUp" => Some(38),
+        "ArrowRight" => Some(39),
+        "ArrowDown" => Some(40),
+        "Insert" => Some(45),
+        "Delete" => Some(46),
+        _ => None,
     }
 }
 

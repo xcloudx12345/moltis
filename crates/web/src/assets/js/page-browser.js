@@ -158,6 +158,8 @@ function ensureFrameListener() {
 		frameMime.value = "image/jpeg";
 		frameMeta.value = payload.metadata;
 		frameSeq.value = payload.sequence;
+		// Invalidate cached screenshot — live frame supersedes it
+		delete screenshotCache[payload.session_id];
 	});
 }
 
