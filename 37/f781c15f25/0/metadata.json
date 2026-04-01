@@ -1,0 +1,64 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "37f781c15f25",
+  "session_id": "f121323c-d69f-4896-b4bd-8826347073cf",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-01T20:55:31.768598Z",
+  "branch": "claude/plan-browser-viewing-HOHno",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/browser/src/pool.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "0e59023b40ab",
+  "checkpoint_transcript_start": 4779,
+  "transcript_lines_at_start": 4779,
+  "token_usage": {
+    "input_tokens": 16,
+    "cache_creation_tokens": 5075,
+    "cache_read_tokens": 6358817,
+    "output_tokens": 1743,
+    "api_call_count": 11
+  },
+  "summary": {
+    "intent": "Fix a browser session crash and ensure all sessions are logged to history, then debug a follow-up issue where Chrome failed to start in the sandbox container.",
+    "outcome": "The session crash fix (viewport resize on first screencast only) and session history logging were pushed. A subsequent Chrome startup failure was diagnosed as a dangling SingletonLock symlink and fixed by using symlink_metadata instead of exists() to detect and remove stale lock files.",
+    "learnings": {
+      "repo": [
+        "Repeated SetDeviceMetricsOverride calls destabilize Chrome in containers — viewport resize must only occur on the first screencast per session.",
+        "start_session uses INSERT OR IGNORE for idempotency so it can be called on every action without duplicating history entries.",
+        "The sandbox shared profile lives at sandbox/default/; old code used per-session directories, leaving no default/ directory on first run.",
+        "Chrome's SingletonLock is a symlink pointing to the container ID; when the container is gone the symlink is dangling."
+      ],
+      "code": [
+        {
+          "path": "crates/browser/src/pool.rs",
+          "finding": "lock.exists() follows symlinks and returns false for dangling symlinks, so stale SingletonLock symlinks were never removed. Fix: use symlink_metadata() instead, and also remove SingletonCookie and SingletonSocket alongside SingletonLock."
+        }
+      ],
+      "workflow": [
+        "On macOS, Path::exists() follows symlinks — use symlink_metadata() to detect dangling symlinks left by dead containers.",
+        "After fixing lock-cleanup logic, manually remove stale singleton files to unblock the running environment without requiring a restart."
+      ]
+    },
+    "friction": [
+      "Chrome probed for 43+ seconds before the root cause (dangling SingletonLock symlink) was identified — no fast-fail or clear error from the container.",
+      "The exists() vs symlink_metadata() footgun on macOS is silent: the lock check appeared correct but silently skipped dangling symlinks.",
+      "Old per-session profile directories left over from the previous code meant the new shared default/ profile was never created, masking the real cause initially."
+    ],
+    "open_items": [
+      "Old per-session profile directories in the sandbox remain and were not cleaned up — may want a migration or cleanup pass.",
+      "No fast-fail or timeout reduction when Chrome fails to start — 60s timeout with 1.4s probe interval means slow feedback on container failures.",
+      "Consider adding a container health check or startup log scraping so Chrome startup failures surface a clear error rather than silent probing."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-01T20:55:09.297811Z",
+    "agent_lines": 0,
+    "human_added": 4,
+    "human_modified": 6,
+    "human_removed": 0,
+    "total_committed": 4,
+    "agent_percentage": 0
+  }
+}
