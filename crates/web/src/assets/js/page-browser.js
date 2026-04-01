@@ -48,7 +48,11 @@ async function browserAction(params) {
 		var err = await res.json().catch(() => ({ error: "request failed" }));
 		throw new Error(err.error || err.code || "browser action failed");
 	}
-	return res.json();
+	var data = await res.json();
+	if (data.success === false) {
+		throw new Error(data.error || "browser action failed");
+	}
+	return data;
 }
 
 async function fetchSessions() {
@@ -184,15 +188,11 @@ async function exportCookies(sessionId) {
 async function navigateSession(sessionId, rawUrl) {
 	var url = normalizeUrl(rawUrl);
 	try {
-		var res = await browserAction({
+		await browserAction({
 			session_id: sessionId,
 			action: "navigate",
 			url: url,
 		});
-		if (!res.success) {
-			showToast(res.error || "Navigation failed", "error");
-			return;
-		}
 		await fetchSessions();
 		// Auto-start screencast after navigating to a real page
 		if (!screencasting.value && activeSession.value === sessionId) {
