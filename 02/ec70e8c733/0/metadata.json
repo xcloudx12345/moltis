@@ -1,0 +1,60 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "02ec70e8c733",
+  "session_id": "8ab6b798-adbb-41f6-b5c5-9dbe221f2487",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-01T19:25:10.724415Z",
+  "branch": "succinct-pyroraptor",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/src/assets/js/providers.js"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "c194355f07c1",
+  "checkpoint_transcript_start": 1433,
+  "transcript_lines_at_start": 1433,
+  "token_usage": {
+    "input_tokens": 13,
+    "cache_creation_tokens": 3952,
+    "cache_read_tokens": 2033443,
+    "output_tokens": 1816,
+    "api_call_count": 9
+  },
+  "summary": {
+    "intent": "Fix probe/validation error messages in model selectors to show inline errors with accurate, model-specific text instead of generic messages.",
+    "outcome": "Inline error display was added to the Preferred Models selector in providers.js (line 1248); error message fidelity was improved so 'permission' errors preserve the original message while HTTP 403/forbidden errors still show generic text.",
+    "learnings": {
+      "repo": [
+        "There are at least two separate model selector UI components: one in the onboarding flow and one in the Preferred Models section of providers.js — both needed the same inline error treatment.",
+        "Error badge rendering in the Preferred Models card uses a 'provider-item-badge warning' span with the error only in the title attribute (tooltip), not inline visible text."
+      ],
+      "code": [
+        {
+          "path": "crates/web/src/assets/js/providers.js",
+          "line": 1248,
+          "end_line": 1248,
+          "finding": "Model card rendering puts probe errors in the title attribute only; inline error div was added here to make errors visible without hover."
+        }
+      ],
+      "workflow": [
+        "Fixing the same UI pattern in one location (settings page) does not automatically fix sibling components — each distinct rendering path must be patched separately.",
+        "The user verified the fix by inspecting raw HTML of the rendered component, which revealed the error was in title only."
+      ]
+    },
+    "friction": [
+      "First push was believed to be complete but the user still saw the bug — the fix had only been applied to onboarding, not to the Preferred Models selector in providers.js, requiring a second investigation and fix."
+    ],
+    "open_items": [
+      "Consider unifying the model card rendering logic across onboarding and Preferred Models selectors to avoid needing duplicate fixes in the future."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-01T19:24:50.042687Z",
+    "agent_lines": 7,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 7,
+    "agent_percentage": 100
+  }
+}
