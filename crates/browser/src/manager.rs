@@ -97,6 +97,11 @@ impl BrowserManager {
 
         // Determine sandbox mode from request (defaults to false/host)
         let sandbox = request.sandbox.unwrap_or(false);
+        let profile_id = request
+            .profile_id
+            .as_deref()
+            .unwrap_or("default")
+            .to_string();
 
         // Log the action with execution mode for visibility
         let mode = if sandbox {
@@ -123,6 +128,7 @@ impl BrowserManager {
                 request.action,
                 sandbox,
                 request.browser,
+                &profile_id,
             ),
         )
         .await
@@ -195,11 +201,14 @@ impl BrowserManager {
         action: BrowserAction,
         sandbox: bool,
         browser: Option<BrowserPreference>,
+        profile_id: &str,
     ) -> Result<(String, BrowserResponse), Error> {
         // Navigate has its own retry-with-fresh-session logic, so handle it
         // separately to avoid double-cleanup.
         if let BrowserAction::Navigate { ref url } = action {
-            return self.navigate(session_id, url, sandbox, browser).await;
+            return self
+                .navigate(session_id, url, sandbox, browser, profile_id)
+                .await;
         }
 
         let action_name = action.to_string();
@@ -210,10 +219,20 @@ impl BrowserManager {
                 full_page,
                 highlight_ref,
             } => {
-                self.screenshot(session_id, full_page, highlight_ref, sandbox, browser)
+                self.screenshot(
+                    session_id,
+                    full_page,
+                    highlight_ref,
+                    sandbox,
+                    browser,
+                    profile_id,
+                )
+                .await
+            },
+            BrowserAction::Snapshot => {
+                self.snapshot(session_id, sandbox, browser, profile_id)
                     .await
             },
-            BrowserAction::Snapshot => self.snapshot(session_id, sandbox, browser).await,
             BrowserAction::Click { ref_ } => self.click(session_id, ref_, sandbox).await,
             BrowserAction::Type { ref_, text } => {
                 self.type_text(session_id, ref_, &text, sandbox).await
@@ -241,8 +260,10 @@ impl BrowserManager {
                 max_width,
                 max_height,
             } => {
-                self.start_screencast(session_id, sandbox, browser, quality, max_width, max_height)
-                    .await
+                self.start_screencast(
+                    session_id, sandbox, browser, quality, max_width, max_height, profile_id,
+                )
+                .await
             },
             BrowserAction::StopScreencast => self.stop_screencast(session_id, sandbox).await,
             BrowserAction::MouseInput {
@@ -306,6 +327,7 @@ impl BrowserManager {
         url: &str,
         sandbox: bool,
         browser: Option<BrowserPreference>,
+        profile_id: &str,
     ) -> Result<(String, BrowserResponse), Error> {
         // Validate URL before navigation
         validate_url(url)?;
@@ -320,7 +342,7 @@ impl BrowserManager {
 
         let sid = self
             .pool
-            .get_or_create(session_id, sandbox, browser)
+            .get_or_create(session_id, sandbox, browser, profile_id)
             .await?;
         let page = self.pool.get_page(&sid).await?;
 
@@ -337,7 +359,10 @@ impl BrowserManager {
                 );
                 let _ = self.pool.close_session(&sid).await;
                 // Retry with a fresh session (use same sandbox mode)
-                let new_sid = self.pool.get_or_create(None, sandbox, browser).await?;
+                let new_sid = self
+                    .pool
+                    .get_or_create(None, sandbox, browser, profile_id)
+                    .await?;
                 let new_page = self.pool.get_page(&new_sid).await?;
                 new_page
                     .goto(url)
@@ -386,10 +411,11 @@ impl BrowserManager {
         highlight_ref: Option<u32>,
         sandbox: bool,
         browser: Option<BrowserPreference>,
+        profile_id: &str,
     ) -> Result<(String, BrowserResponse), Error> {
         let sid = self
             .pool
-            .get_or_create(session_id, sandbox, browser)
+            .get_or_create(session_id, sandbox, browser, profile_id)
             .await?;
         let page = self.pool.get_page(&sid).await?;
 
@@ -463,10 +489,11 @@ impl BrowserManager {
         session_id: Option<&str>,
         sandbox: bool,
         browser: Option<BrowserPreference>,
+        profile_id: &str,
     ) -> Result<(String, BrowserResponse), Error> {
         let sid = self
             .pool
-            .get_or_create(session_id, sandbox, browser)
+            .get_or_create(session_id, sandbox, browser, profile_id)
             .await?;
         let page = self.pool.get_page(&sid).await?;
 
@@ -811,10 +838,11 @@ impl BrowserManager {
         quality: u8,
         max_width: u32,
         max_height: u32,
+        profile_id: &str,
     ) -> Result<(String, BrowserResponse), Error> {
         let sid = self
             .pool
-            .get_or_create(session_id, sandbox, browser)
+            .get_or_create(session_id, sandbox, browser, profile_id)
             .await?;
         let page = self.pool.get_page(&sid).await?;
 
@@ -1389,6 +1417,7 @@ mod tests {
             timeout_ms: 30000,
             sandbox: Some(sandbox),
             browser: None,
+            profile_id: None,
         };
         let resp = manager.handle_request(request).await;
         assert!(resp.success, "navigate failed: {:?}", resp.error);
@@ -1406,6 +1435,7 @@ mod tests {
             timeout_ms: 10000,
             sandbox: Some(sandbox),
             browser: None,
+            profile_id: None,
         };
         let resp = manager.handle_request(request).await;
         assert!(resp.success, "start_screencast failed: {:?}", resp.error);
@@ -1472,6 +1502,7 @@ mod tests {
                 timeout_ms: 30000,
                 sandbox: Some(false),
                 browser: None,
+                profile_id: None,
             })
             .await;
         assert!(resp.success, "navigate failed: {:?}", resp.error);
@@ -1514,6 +1545,7 @@ mod tests {
                     timeout_ms: 5000,
                     sandbox: Some(false),
                     browser: None,
+                    profile_id: None,
                 })
                 .await;
             assert!(resp.success, "mouse event failed: {:?}", resp.error);
@@ -1545,6 +1577,7 @@ mod tests {
                 timeout_ms: 5000,
                 sandbox: Some(false),
                 browser: None,
+                profile_id: None,
             })
             .await;
         assert!(resp.success, "scroll failed: {:?}", resp.error);
@@ -1574,6 +1607,7 @@ mod tests {
                 timeout_ms: 10000,
                 sandbox: Some(false),
                 browser: None,
+                profile_id: None,
             })
             .await;
         assert!(resp.success, "start_screencast failed: {:?}", resp.error);

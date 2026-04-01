@@ -113,6 +113,7 @@ impl BrowserPool {
         session_id: Option<&str>,
         sandbox: bool,
         browser: Option<BrowserPreference>,
+        profile_id: &str,
     ) -> Result<String, Error> {
         // Treat empty string as None (generate new session ID)
         let session_id = session_id.filter(|s| !s.is_empty());
@@ -166,7 +167,9 @@ impl BrowserPool {
             .map(String::from)
             .unwrap_or_else(generate_session_id);
 
-        let instance = self.launch_browser(&sid, sandbox, browser).await?;
+        let instance = self
+            .launch_browser(&sid, sandbox, browser, profile_id)
+            .await?;
         let instance = Arc::new(Mutex::new(instance));
 
         {
@@ -366,16 +369,21 @@ impl BrowserPool {
         session_id: &str,
         sandbox: bool,
         browser: Option<BrowserPreference>,
+        profile_id: &str,
     ) -> Result<BrowserInstance, Error> {
         if sandbox {
-            self.launch_sandboxed_browser(session_id).await
+            self.launch_sandboxed_browser(session_id, profile_id).await
         } else {
             self.launch_host_browser(session_id, browser).await
         }
     }
 
     /// Launch a browser inside a container (sandboxed mode).
-    async fn launch_sandboxed_browser(&self, session_id: &str) -> Result<BrowserInstance, Error> {
+    async fn launch_sandboxed_browser(
+        &self,
+        session_id: &str,
+        profile_id: &str,
+    ) -> Result<BrowserInstance, Error> {
         use crate::container;
 
         // All container operations (CLI checks, image pulls, container start +
@@ -392,7 +400,7 @@ impl BrowserPool {
             self.config.navigation_timeout_ms,
             MAX_BROWSER_INSTANCE_LIFETIME.as_secs(),
         );
-        let profile_dir = sandbox_profile_dir(self.config.resolved_profile_dir(), session_id);
+        let profile_dir = sandbox_profile_dir(self.config.resolved_profile_dir(), profile_id);
         let container_host = self.config.container_host.clone();
 
         let container = tokio::task::spawn_blocking(move || {
@@ -727,13 +735,15 @@ fn sanitize_session_component(session_id: &str) -> String {
 }
 
 /// Derive a per-session sandbox profile directory from a configured profile root.
-fn sandbox_profile_dir(profile_root: Option<PathBuf>, _session_id: &str) -> Option<PathBuf> {
-    // Use a single shared profile directory for all sandbox sessions so
-    // cookies, local storage, and login state persist across sessions and
-    // restarts. The profile is shared — each container gets a bind-mount to
-    // the same host directory. Chrome's SingletonLock is cleaned up before
-    // launch to avoid conflicts between consecutive sessions.
-    profile_root.map(|root| root.join("sandbox"))
+fn sandbox_profile_dir(profile_root: Option<PathBuf>, profile_id: &str) -> Option<PathBuf> {
+    // Each profile_id gets its own directory so agents with different
+    // profiles have isolated cookies/local storage, while sessions within
+    // the same profile share state and persist across restarts.
+    // Chrome's SingletonLock is cleaned up before launch to avoid conflicts.
+    profile_root.map(|root| {
+        root.join("sandbox")
+            .join(sanitize_session_component(profile_id))
+    })
 }
 
 /// Make a directory world-accessible so container processes (which run as a
@@ -776,13 +786,18 @@ mod tests {
     }
 
     #[test]
-    fn sandbox_profile_dir_is_shared() {
+    fn sandbox_profile_dir_uses_profile_id() {
         let base = PathBuf::from("/tmp/moltis-profile");
-        let path = sandbox_profile_dir(Some(base), "browser-abc123");
-        // All sessions share a single profile dir for cookie persistence
+        let path = sandbox_profile_dir(Some(base.clone()), "default");
         assert_eq!(
             path,
-            Some(PathBuf::from("/tmp/moltis-profile/sandbox"))
+            Some(PathBuf::from("/tmp/moltis-profile/sandbox/default"))
+        );
+
+        let path = sandbox_profile_dir(Some(base), "session:main");
+        assert_eq!(
+            path,
+            Some(PathBuf::from("/tmp/moltis-profile/sandbox/session_main"))
         );
     }
 

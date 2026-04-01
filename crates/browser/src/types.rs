@@ -375,6 +375,12 @@ pub struct BrowserRequest {
     /// - specific browser ("brave", "chrome", etc): use that browser
     #[serde(default)]
     pub browser: Option<BrowserPreference>,
+
+    /// Browser profile identifier for cookie isolation.
+    /// Sessions with the same profile_id share cookies and local storage.
+    /// Defaults to "default" when not specified.
+    #[serde(default)]
+    pub profile_id: Option<String>,
 }
 
 fn default_timeout_ms() -> u64 {

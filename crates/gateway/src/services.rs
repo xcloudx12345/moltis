@@ -1401,16 +1401,15 @@ impl RealBrowserService {
 #[async_trait]
 impl BrowserService for RealBrowserService {
     async fn request(&self, params: Value) -> ServiceResult {
-        // Inject default sandbox mode for UI-created requests that omit it.
-        let params = if self.default_sandbox {
-            let mut params = params;
-            if let Some(obj) = params.as_object_mut() {
+        // Inject defaults for UI-created requests that omit them.
+        let mut params = params;
+        if let Some(obj) = params.as_object_mut() {
+            if self.default_sandbox {
                 obj.entry("sandbox").or_insert(serde_json::json!(true));
             }
-            params
-        } else {
-            params
-        };
+            obj.entry("profile_id")
+                .or_insert(serde_json::json!("default"));
+        }
 
         // Extract action name and session_id for logging before consuming params
         let action_name = params
