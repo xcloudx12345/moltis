@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "5cf7b0137a3f",
+  "strategy": "manual-commit",
+  "branch": "succinct-pyroraptor",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/src/assets/js/onboarding-view.js"
+  ],
+  "sessions": [
+    {
+      "metadata": "/5c/f7b0137a3f/0/metadata.json",
+      "transcript": "/5c/f7b0137a3f/0/full.jsonl",
+      "context": "/5c/f7b0137a3f/0/context.md",
+      "content_hash": "/5c/f7b0137a3f/0/content_hash.txt",
+      "prompt": "/5c/f7b0137a3f/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 19,
+    "cache_creation_tokens": 5064,
+    "cache_read_tokens": 3323780,
+    "output_tokens": 2479,
+    "api_call_count": 13
+  }
+}

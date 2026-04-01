@@ -1,0 +1,59 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "5cf7b0137a3f",
+  "session_id": "8ab6b798-adbb-41f6-b5c5-9dbe221f2487",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-01T20:05:17.139502Z",
+  "branch": "succinct-pyroraptor",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/src/assets/js/onboarding-view.js"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "696f4d544e39",
+  "checkpoint_transcript_start": 1721,
+  "transcript_lines_at_start": 1721,
+  "token_usage": {
+    "input_tokens": 19,
+    "cache_creation_tokens": 5064,
+    "cache_read_tokens": 3323780,
+    "output_tokens": 2479,
+    "api_call_count": 13
+  },
+  "summary": {
+    "intent": "Fix the onboarding model list to sort models most-recent-first (matching the settings view) and collapse to show only the top 3 models with a 'view more' toggle.",
+    "outcome": "Added local expansion state, sorted filteredModels by recommended \u003e createdAt desc, sliced to top 3 by default, and added a 'Show more' toggle in OnboardingProviderRow in onboarding-view.js. Changes were linted, committed, and pushed.",
+    "learnings": {
+      "repo": [
+        "The settings view already sorts models most-recent-first, but onboarding-view.js had no sorting applied to filteredModels — a parity gap between the two views.",
+        "Model list expansion state is managed locally in OnboardingProviderRow with useState, not lifted to a parent."
+      ],
+      "code": [
+        {
+          "path": "crates/web/src/assets/js/onboarding-view.js",
+          "finding": "OnboardingProviderRow uses modelSearch as a prop; filteredModels is derived locally. Sorting (recommended \u003e createdAt desc) and slicing (top 3) were added here alongside a new showAllModels useState toggle."
+        }
+      ],
+      "workflow": [
+        "useState was already imported in onboarding-view.js, so no import changes were needed.",
+        "Lint + commit + push was run as a background task and verified via task notification output file."
+      ]
+    },
+    "friction": [
+      "The working tree was clean when 'commit and push' was requested mid-session, indicating a prior push had already captured in-flight changes — required a status check to confirm nothing was missed."
+    ],
+    "open_items": [
+      "The 'Show more models' toggle text and styling were not specified — may need design review for consistency with the rest of the onboarding UI.",
+      "No test coverage mentioned for the new sort/collapse behavior in onboarding-view.js."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-01T20:04:55.91792Z",
+    "agent_lines": 25,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 25,
+    "agent_percentage": 100
+  }
+}
