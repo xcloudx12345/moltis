@@ -1,0 +1,80 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "404370604901",
+  "session_id": "f121323c-d69f-4896-b4bd-8826347073cf",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-01T09:27:53.177531Z",
+  "branch": "claude/plan-browser-viewing-HOHno",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/browser/src/manager.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "ac47e7a5c3f0",
+  "checkpoint_transcript_start": 1339,
+  "transcript_lines_at_start": 1339,
+  "token_usage": {
+    "input_tokens": 26,
+    "cache_creation_tokens": 16989,
+    "cache_read_tokens": 4923526,
+    "output_tokens": 7000,
+    "api_call_count": 22
+  },
+  "summary": {
+    "intent": "Fix a bug where browser screencast frames were silently dropped, then add comprehensive e2e tests covering all sandbox modes (no sandbox, Apple container, Podman, Docker) to prevent regressions.",
+    "outcome": "Bug fixed and pushed. Parameterized Rust integration tests added to manager.rs covering all sandbox modes, a new Playwright e2e spec created for the full browser UI flow, and the browser route added to smoke tests. All tests pass clean.",
+    "learnings": {
+      "repo": [
+        "The v4 WebSocket protocol requires explicit client-side subscription to event types; missing subscriptions cause silent drops at the broadcast filter.",
+        "Sandbox backend detection lives in crates/tools/src/sandbox/containers.rs with functions like is_apple_container_available.",
+        "Browser container launching logic is in crates/browser/src/container.rs.",
+        "Playwright e2e tests are in crates/web/ui/e2e/specs/ with a shared base-test.js; the browser route was absent from smoke.spec.js before this session.",
+        "Test parameterization for sandbox modes is done inside crates/browser/src/manager.rs."
+      ],
+      "code": [
+        {
+          "path": "broadcast.rs",
+          "line": 100,
+          "end_line": 102,
+          "finding": "Broadcast filter silently drops events not in the subscription list; root cause of missing screencast frames."
+        },
+        {
+          "path": "websocket.js",
+          "finding": "browser.screencast.frame event type was missing from the client subscription list, causing the broadcast filter to drop all frames."
+        },
+        {
+          "path": "crates/browser/src/manager.rs",
+          "finding": "Integration tests are parameterized here to run across host and all sandbox modes."
+        },
+        {
+          "path": "crates/web/ui/e2e/specs/browser.spec.js",
+          "finding": "New Playwright spec covering the full browser UI flow, created fresh this session."
+        },
+        {
+          "path": "crates/web/ui/e2e/specs/smoke.spec.js",
+          "finding": "Browser route was not included in smoke tests prior to this session; now added."
+        }
+      ],
+      "workflow": [
+        "Grep for container_cli/detect_backend/backend_name is the right approach to locate sandbox detection logic in this repo.",
+        "Lint, Rust tests (host + sandbox), full browser test suite, fmt, and clippy were all run before committing — good CI hygiene pattern for this project."
+      ]
+    },
+    "friction": [
+      "The broadcast filter drop was silent with no logging, making the bug non-obvious to diagnose."
+    ],
+    "open_items": [
+      "Playwright e2e tests for the browser feature are written but not yet confirmed to run in CI across all sandbox environments — only Rust integration tests were verified locally.",
+      "No logging or error surfacing was added to the broadcast filter for future silent-drop cases."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-01T09:27:31.531844Z",
+    "agent_lines": 0,
+    "human_added": 169,
+    "human_modified": 17,
+    "human_removed": 0,
+    "total_committed": 169,
+    "agent_percentage": 0
+  }
+}
