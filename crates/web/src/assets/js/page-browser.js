@@ -219,7 +219,6 @@ async function createSession() {
 
 	// Don't stop previous screencast — let it run in background
 	screencasting.value = false;
-	}
 
 	var placeholderId = `creating-${Date.now()}`;
 	placeholderIds.add(placeholderId);
