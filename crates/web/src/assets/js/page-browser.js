@@ -291,9 +291,15 @@ function applyScreenshot(data, scale) {
 function canvasCoords(e, canvas) {
 	var meta = frameMeta.value;
 	if (!meta) return null;
+	// Map from canvas CSS position to CDP viewport coordinates.
+	// device_width/device_height are the CSS viewport size in DIP.
+	// offset_top accounts for browser chrome (infobar, etc).
 	var scaleX = meta.device_width / canvas.clientWidth;
 	var scaleY = meta.device_height / canvas.clientHeight;
-	return { x: e.offsetX * scaleX, y: e.offsetY * scaleY };
+	return {
+		x: e.offsetX * scaleX,
+		y: e.offsetY * scaleY + (meta.offset_top || 0),
+	};
 }
 
 var lastMoveTime = 0;
@@ -740,7 +746,7 @@ function BrowserCanvas() {
 		<canvas
 			ref=${canvasRefCallback}
 			class="w-full rounded-lg border border-[var(--border)] cursor-crosshair bg-black"
-			style="aspect-ratio: 16/10; object-fit: contain;"
+			style="aspect-ratio: ${frameMeta.value ? `${frameMeta.value.device_width} / ${frameMeta.value.device_height}` : '16 / 9'};"
 		/>
 	</div>`;
 }

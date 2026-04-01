@@ -873,12 +873,9 @@ impl BrowserManager {
             .button(cdp_button)
             .click_count(click_count as i64);
 
-        // Scroll deltas for mouseWheel events
-        if delta_x != 0.0 {
-            builder = builder.delta_x(delta_x);
-        }
-        if delta_y != 0.0 {
-            builder = builder.delta_y(delta_y);
+        // CDP requires both deltaX and deltaY for mouseWheel events
+        if matches!(event_type, MouseInputType::Wheel) {
+            builder = builder.delta_x(delta_x).delta_y(delta_y);
         }
 
         let cmd = builder.build().map_err(|e| Error::Cdp(e.to_string()))?;
@@ -1395,5 +1392,169 @@ mod tests {
             return;
         }
         assert_screencast_frames_arrive(true).await;
+    }
+
+    /// Helper: create a session with ephemeral profile, navigate, return
+    /// (manager, session_id). Ephemeral profiles avoid SingletonLock
+    /// conflicts when multiple tests run in parallel.
+    async fn setup_session(url: &str) -> (BrowserManager, String) {
+        let config = BrowserConfig {
+            persist_profile: false,
+            ..BrowserConfig::default()
+        };
+        let manager = BrowserManager::new(config);
+        let resp = manager
+            .handle_request(BrowserRequest {
+                session_id: None,
+                action: BrowserAction::Navigate {
+                    url: url.to_string(),
+                },
+                timeout_ms: 30000,
+                sandbox: Some(false),
+                browser: None,
+            })
+            .await;
+        assert!(resp.success, "navigate failed: {:?}", resp.error);
+        (manager, resp.session_id)
+    }
+
+    /// Verify mouse click events are dispatched without errors.
+    ///
+    ///   cargo test -p moltis-browser click_dispatches -- --ignored --nocapture
+    #[tokio::test]
+    #[ignore = "requires a real browser installed"]
+    async fn click_dispatches() {
+        let (manager, sid) = setup_session("https://example.com").await;
+
+        // Dispatch mousePressed + mouseReleased (a click) at viewport center
+        for event_type in [
+            BrowserAction::MouseInput {
+                x: 400.0,
+                y: 300.0,
+                event_type: MouseInputType::Pressed,
+                button: MouseInputButton::Left,
+                click_count: 1,
+                delta_x: 0.0,
+                delta_y: 0.0,
+            },
+            BrowserAction::MouseInput {
+                x: 400.0,
+                y: 300.0,
+                event_type: MouseInputType::Released,
+                button: MouseInputButton::Left,
+                click_count: 1,
+                delta_x: 0.0,
+                delta_y: 0.0,
+            },
+        ] {
+            let resp = manager
+                .handle_request(BrowserRequest {
+                    session_id: Some(sid.clone()),
+                    action: event_type,
+                    timeout_ms: 5000,
+                    sandbox: Some(false),
+                    browser: None,
+                })
+                .await;
+            assert!(resp.success, "mouse event failed: {:?}", resp.error);
+        }
+
+        manager.close_session(&sid).await;
+    }
+
+    /// Verify mouseWheel scroll events are dispatched without errors.
+    ///
+    ///   cargo test -p moltis-browser scroll_dispatches -- --ignored --nocapture
+    #[tokio::test]
+    #[ignore = "requires a real browser installed"]
+    async fn scroll_dispatches() {
+        let (manager, sid) = setup_session("https://example.com").await;
+
+        let resp = manager
+            .handle_request(BrowserRequest {
+                session_id: Some(sid.clone()),
+                action: BrowserAction::MouseInput {
+                    x: 400.0,
+                    y: 300.0,
+                    event_type: MouseInputType::Wheel,
+                    button: MouseInputButton::Left,
+                    click_count: 0,
+                    delta_x: 0.0,
+                    delta_y: 300.0,
+                },
+                timeout_ms: 5000,
+                sandbox: Some(false),
+                browser: None,
+            })
+            .await;
+        assert!(resp.success, "scroll failed: {:?}", resp.error);
+
+        manager.close_session(&sid).await;
+    }
+
+    /// Verify screencast frame metadata contains valid viewport dimensions
+    /// that can be used for coordinate mapping.
+    ///
+    ///   cargo test -p moltis-browser screencast_metadata_valid -- --ignored --nocapture
+    #[tokio::test]
+    #[ignore = "requires a real browser installed"]
+    async fn screencast_metadata_valid() {
+        use tokio::time::{Duration, timeout};
+
+        let (manager, sid) = setup_session("https://example.com").await;
+
+        let resp = manager
+            .handle_request(BrowserRequest {
+                session_id: Some(sid.clone()),
+                action: BrowserAction::StartScreencast {
+                    quality: 60,
+                    max_width: 1280,
+                    max_height: 800,
+                },
+                timeout_ms: 10000,
+                sandbox: Some(false),
+                browser: None,
+            })
+            .await;
+        assert!(resp.success, "start_screencast failed: {:?}", resp.error);
+
+        let mut rx = manager
+            .screencasts()
+            .subscribe(&sid)
+            .await
+            .unwrap_or_else(|| panic!("subscribe failed"));
+
+        let frame = timeout(Duration::from_secs(10), rx.recv())
+            .await
+            .unwrap_or_else(|_| panic!("timeout"))
+            .unwrap_or_else(|e| panic!("recv error: {e}"));
+
+        // Verify metadata has positive viewport dimensions
+        assert!(
+            frame.metadata.device_width > 0.0,
+            "device_width should be positive, got {}",
+            frame.metadata.device_width
+        );
+        assert!(
+            frame.metadata.device_height > 0.0,
+            "device_height should be positive, got {}",
+            frame.metadata.device_height
+        );
+        // offset_top should be non-negative
+        assert!(
+            frame.metadata.offset_top >= 0.0,
+            "offset_top should be >= 0, got {}",
+            frame.metadata.offset_top
+        );
+
+        eprintln!(
+            "Frame metadata: device={}x{}, offset_top={}, page_scale={}",
+            frame.metadata.device_width,
+            frame.metadata.device_height,
+            frame.metadata.offset_top,
+            frame.metadata.page_scale_factor
+        );
+
+        manager.close_session(&sid).await;
     }
 }
