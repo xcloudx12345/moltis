@@ -20,6 +20,8 @@ var frameMeta = signal(null);
 var frameSeq = signal(0);
 var creating = signal(false);
 var fetching = signal(false);
+// Screenshot cache: session_id → { data, scale }
+var screenshotCache = {};
 var containerEl = null;
 
 // ── URL helpers ─────────────────────────────────────────────
@@ -64,11 +66,31 @@ async function fetchSessions() {
 		if (res.ok) {
 			var data = await res.json();
 			sessions.value = data.sessions || [];
+			prefetchScreenshots(data.sessions || []);
 		}
 	} catch (e) {
 		console.error("Failed to fetch browser sessions:", e);
 	} finally {
 		loading.value = false;
+	}
+}
+
+/** Prefetch screenshots for sessions we don't have cached yet. */
+function prefetchScreenshots(sessionList) {
+	for (var sess of sessionList) {
+		if (screenshotCache[sess.session_id]) continue;
+		if (!sess.url || sess.url === "about:blank") continue;
+		// Fire and forget — populate cache in background
+		browserAction({ session_id: sess.session_id, action: "screenshot" })
+			.then((snap) => {
+				if (snap.screenshot) {
+					screenshotCache[sess.session_id] = {
+						data: snap.screenshot,
+						scale: snap.screenshot_scale || 1,
+					};
+				}
+			})
+			.catch(() => {});
 	}
 }
 
@@ -210,6 +232,11 @@ async function createSession() {
 	if (creating.value) return;
 	creating.value = true;
 	try {
+		// Stop current screencast before creating a new session
+		if (screencasting.value && activeSession.value) {
+			stopScreencast(activeSession.value);
+		}
+
 		var res = await browserAction({
 			action: "navigate",
 			url: "about:blank",
@@ -220,9 +247,10 @@ async function createSession() {
 			return;
 		}
 		await fetchSessions();
-		// Select the session so the navigate bar appears, but don't start
-		// screencast yet — about:blank won't generate any frames.
-		// Screencast starts automatically after the user navigates somewhere.
+		// Clear previous session state and select the new one
+		frameData.value = null;
+		frameMeta.value = null;
+		screencasting.value = false;
 		activeSession.value = newId;
 		showToast("Session created \u2014 enter a URL to get started");
 	} catch (e) {
@@ -353,27 +381,40 @@ function SessionList() {
 		}
 		activeSession.value = sessionId;
 		frameData.value = null;
-		fetching.value = true;
 
-		// Fetch an immediate screenshot so the canvas shows something
-		// while the screencast stream connects.
-		try {
-			var snap = await browserAction({
-				session_id: sessionId,
-				action: "screenshot",
-			});
-			if (snap.screenshot) {
-				frameData.value = snap.screenshot;
-				frameMime.value = "image/png";
-				frameMeta.value = {
-					device_width: snap.screenshot_scale ? 1280 * snap.screenshot_scale : 1280,
-					device_height: snap.screenshot_scale ? 800 * snap.screenshot_scale : 800,
-				};
+		// Use prefetch cache for instant display, otherwise fetch live
+		var cached = screenshotCache[sessionId];
+		if (cached) {
+			frameData.value = cached.data;
+			frameMime.value = "image/png";
+			frameMeta.value = {
+				device_width: 1280 * cached.scale,
+				device_height: 800 * cached.scale,
+			};
+		} else {
+			fetching.value = true;
+			try {
+				var snap = await browserAction({
+					session_id: sessionId,
+					action: "screenshot",
+				});
+				if (snap.screenshot) {
+					frameData.value = snap.screenshot;
+					frameMime.value = "image/png";
+					frameMeta.value = {
+						device_width: snap.screenshot_scale ? 1280 * snap.screenshot_scale : 1280,
+						device_height: snap.screenshot_scale ? 800 * snap.screenshot_scale : 800,
+					};
+					screenshotCache[sessionId] = {
+						data: snap.screenshot,
+						scale: snap.screenshot_scale || 1,
+					};
+				}
+			} catch {
+				// Best effort
+			} finally {
+				fetching.value = false;
 			}
-		} catch {
-			// Best effort — screencast will fill in shortly
-		} finally {
-			fetching.value = false;
 		}
 
 		screencasting.value = true;
@@ -412,15 +453,9 @@ function SessionList() {
 						<span class="text-[var(--muted)]">Age: ${formatDuration(sess.age_secs)}</span>
 						<span class="text-[var(--muted)]">Idle: ${formatDuration(sess.idle_secs)}</span>
 					</div>
-					<div class="flex items-center gap-1.5 flex-wrap" onClick=${(e) => e.stopPropagation()}>
+					<div class="flex items-center justify-end" onClick=${(e) => e.stopPropagation()}>
 						<button
-							class="provider-btn provider-btn-secondary provider-btn-sm"
-							onClick=${() => exportCookies(sess.session_id)}
-						>
-							Export Cookies
-						</button>
-						<button
-							class="provider-btn provider-btn-danger provider-btn-sm"
+							class="text-[10px] text-[var(--muted)] hover:text-[var(--error)] transition-colors"
 							onClick=${() => closeSession(sess.session_id)}
 						>
 							Close
@@ -441,6 +476,17 @@ function formatDuration(secs) {
 function NavigateBar() {
 	var [url, setUrl] = useState("");
 	var [navigating, setNavigating] = useState(false);
+	var lastSessionRef = useRef(null);
+
+	// Reset URL bar when switching sessions
+	var currentSession = activeSession.value;
+	if (currentSession !== lastSessionRef.current) {
+		lastSessionRef.current = currentSession;
+		// Find the session's current URL to display
+		var sess = sessions.value.find((s) => s.session_id === currentSession);
+		var sessionUrl = sess?.url && sess.url !== "about:blank" ? sess.url : "";
+		setUrl(sessionUrl);
+	}
 	var [suggestions, setSuggestions] = useState([]);
 	var [selectedIdx, setSelectedIdx] = useState(-1);
 	var [showDropdown, setShowDropdown] = useState(false);
