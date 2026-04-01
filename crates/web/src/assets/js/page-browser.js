@@ -288,21 +288,21 @@ function SessionList() {
 					<div class="flex items-center gap-1.5 flex-wrap">
 						${
 							activeSession.value === sess.session_id && screencasting.value
-								? html`<button class="provider-btn-danger text-xs px-2 py-1" onClick=${() => stopScreencast(sess.session_id)}>
+								? html`<button class="provider-btn provider-btn-danger provider-btn-sm" onClick=${() => stopScreencast(sess.session_id)}>
 										Stop Viewing
 									</button>`
-								: html`<button class="provider-btn text-xs px-2 py-1" onClick=${() => startScreencast(sess.session_id)}>
+								: html`<button class="provider-btn provider-btn-sm" onClick=${() => startScreencast(sess.session_id)}>
 										View
 									</button>`
 						}
 						<button
-							class="provider-btn-secondary text-xs px-2 py-1"
+							class="provider-btn provider-btn-secondary provider-btn-sm"
 							onClick=${() => exportCookies(sess.session_id)}
 						>
 							Export Cookies
 						</button>
 						<button
-							class="provider-btn-danger text-xs px-2 py-1"
+							class="provider-btn provider-btn-danger provider-btn-sm"
 							onClick=${() => closeSession(sess.session_id)}
 						>
 							Close

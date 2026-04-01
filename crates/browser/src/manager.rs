@@ -1138,9 +1138,10 @@ fn validate_url(url: &str) -> Result<(), Error> {
     let parsed = url::Url::parse(url)
         .map_err(|e| Error::InvalidAction(format!("invalid URL '{}': {}", truncate_url(url), e)))?;
 
-    // Check scheme
+    // Check scheme — allow about:blank for new empty sessions
     match parsed.scheme() {
         "http" | "https" => {},
+        "about" if url == "about:blank" => return Ok(()),
         scheme => {
             return Err(Error::InvalidAction(format!(
                 "unsupported URL scheme '{}', only http/https allowed",
