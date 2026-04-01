@@ -27,6 +27,7 @@ var screenshotCache = {};
 // Track placeholder IDs so fetchSessions doesn't remove them
 var placeholderIds = new Set();
 var urlPollTimer = null;
+var urlPollSuppressUntil = 0; // suppress URL poll after navigation
 // Scroll state for scrollbar overlay
 var scrollInfo = signal(null); // { scrollTop, scrollHeight, viewportHeight }
 var sessionHistory = signal([]);
@@ -179,6 +180,7 @@ function startUrlPolling() {
 	urlPollTimer = setInterval(async () => {
 		var sid = activeSession.value;
 		if (!(sid && screencasting.value)) return;
+		if (Date.now() < urlPollSuppressUntil) return;
 		try {
 			var [urlRes, scrollRes] = await Promise.all([
 				browserAction({ session_id: sid, action: "get_url" }),
@@ -245,6 +247,10 @@ async function closeSession(sessionId) {
 
 async function navigateSession(sessionId, rawUrl) {
 	var url = normalizeUrl(rawUrl);
+	// Show the target URL immediately and suppress poll for 5 seconds
+	// so it doesn't get overwritten with the old URL before page loads.
+	currentUrl.value = url;
+	urlPollSuppressUntil = Date.now() + 5000;
 	try {
 		var res = await browserAction({ session_id: sessionId, action: "navigate", url: url });
 		currentUrl.value = res.url || url;
@@ -554,7 +560,7 @@ function SessionList() {
 			return html`
 				<div
 					key=${sess.session_id}
-					class="rounded-lg border p-3 flex flex-col gap-2 transition-colors ${sess.creating ? "border-[var(--border)] bg-[var(--surface)] opacity-75" : isActive ? "border-[var(--accent)] bg-[var(--accent)]/5" : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent)]/50 cursor-pointer"}"
+					class="rounded-lg border p-3 flex flex-col gap-2 transition-colors ${sess.creating ? "border-[var(--accent)] bg-[var(--accent)]/5 opacity-75" : isActive ? "border-[var(--accent)] bg-[var(--accent)]/5" : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent)]/50 cursor-pointer"}"
 					onClick=${() => {
 						if (!sess.creating) selectSession(sess.session_id);
 					}}

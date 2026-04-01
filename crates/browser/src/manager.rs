@@ -306,13 +306,15 @@ impl BrowserManager {
             },
         };
 
-        // Detect stale connections for all non-Navigate actions.
-        // Only close the session if a connection error occurs — a single
-        // transient failure (e.g. Chrome temporarily busy) shouldn't kill
-        // the entire session. The pool's has_session guard also prevents
-        // cleanup spam from queued events hitting an already-dead session.
+        // Detect stale connections — but don't kill sessions for transient
+        // input event failures. Mouse/keyboard events are fire-and-forget;
+        // a single timeout shouldn't destroy the entire session.
+        let is_input_event = matches!(
+            action_name.as_str(),
+            "mouse_input" | "keyboard_input" | "get_url" | "get_title" | "evaluate"
+        );
         match result {
-            Err(ref e) if e.is_connection_error() => {
+            Err(ref e) if e.is_connection_error() && !is_input_event => {
                 let sid = session_id.unwrap_or("unknown");
                 Err(self.cleanup_stale_session(sid, &action_name).await)
             },
