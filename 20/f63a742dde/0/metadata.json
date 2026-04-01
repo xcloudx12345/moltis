@@ -1,0 +1,92 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "20f63a742dde",
+  "session_id": "8ab6b798-adbb-41f6-b5c5-9dbe221f2487",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-01T20:17:58.852425Z",
+  "branch": "succinct-pyroraptor",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/src/assets/js/page-providers.js",
+    "crates/web/src/assets/js/onboarding-view.js"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "782bc62dbb08",
+  "token_usage": {
+    "input_tokens": 401,
+    "cache_creation_tokens": 279999,
+    "cache_read_tokens": 67779376,
+    "output_tokens": 85569,
+    "api_call_count": 356
+  },
+  "summary": {
+    "intent": "Improve the LLM provider/model listing UI to be less overwhelming by collapsing long model lists, sorting by recency/popularity, and surfacing probe errors more clearly.",
+    "outcome": "Implemented collapsible model lists (top 3 visible, expand toggle), version-aware sorting for models without dates, a `recommended` field on `ModelInfo`, legacy model hiding (\u003e1yr) from chat selector, and inline probe error display with the actual server error message instead of a generic localized one.",
+    "learnings": {
+      "repo": [
+        "The project uses three separate JS files for model card rendering: `page-providers.js` (settings), `onboarding-view.js` (onboarding), and `providers.js` (preferred models modal) — changes must be applied to all three independently.",
+        "All WS/RPC error responses are localized in `ws-connect.js` via `localizeRpcError` before reaching resolve callbacks, which was overwriting specific server error messages with generic locale strings.",
+        "The project has two biome versions: a system `biome` 2.4.6 (via mise) used by `local-validate.sh`, and `npx biome` 0.3.3 — formatting rules differ, `biome check --write` with the wrong version doesn't fix CI failures.",
+        "Static model catalogs use `catalog_to_discovered(CATALOG, N)` where N controls how many entries get `recommended: true` — first N entries in the array are flagged as recommended.",
+        "The `ServiceError::Message` variant always serializes with `code: UNAVAILABLE` regardless of the actual error content (see service-traits/src/lib.rs), which is why permission errors looked like service unavailability.",
+        "Config validation schema entries must be kept in sync in `validate.rs` when adding new fields to config structs — there's a schema map that must be manually updated."
+      ],
+      "code": [
+        {
+          "path": "crates/web/src/assets/js/ws-connect.js",
+          "line": 96,
+          "end_line": 96,
+          "finding": "Every WS frame's error is localized here via `localizeRpcError` before reaching the pending promise resolve, overwriting specific server error messages with generic locale strings."
+        },
+        {
+          "path": "crates/service-traits/src/lib.rs",
+          "line": 51,
+          "end_line": 51,
+          "finding": "All non-Forbidden `ServiceError` variants serialize with `code: UNAVAILABLE`, meaning specific error messages get masked by locale lookups downstream."
+        },
+        {
+          "path": "crates/web/src/assets/js/helpers.js",
+          "line": 196,
+          "end_line": 201,
+          "finding": "localizedRpcErrorMessage previously ignored error.message entirely when a code translation existed — fixed to preserve serverMessage before localization."
+        },
+        {
+          "path": "crates/providers/src/openai.rs",
+          "finding": "OpenAI API-discovered models get `recommended: true` via pattern matching on known flagship IDs (gpt-5.4, o4-mini, o3 without date suffixes) in parse_model_entry."
+        },
+        {
+          "path": "crates/chat/src/lib.rs",
+          "finding": "models.list() filters out models older than 1 year unless preferred or lacking a timestamp. models.list_all() (used by settings page) skips this filter. The preferred field was missing from list_all responses and had to be added."
+        }
+      ],
+      "workflow": [
+        "Always run `biome` from the mise-managed system binary (2.4.6), not `npx biome` — the versions have different formatting rules that cause CI failures.",
+        "When a Rust struct gains a new non-optional field, test code constructions will break with missing-field errors — a bulk sed on `created_at:` patterns works to add `recommended: false` to test blocks, but must not touch struct definitions.",
+        "The probe error flow: backend log error → ServiceError::Message → UNAVAILABLE code → ws-connect localizeRpcError → overwrites message. Preserving the original as `serverMessage` on the error object is the cleanest fix without breaking other error display."
+      ]
+    },
+    "friction": [
+      "Three separate model card rendering code paths (settings, onboarding, preferred modal) meant every UI fix had to be applied three times — discovered incrementally as the user tested each view.",
+      "The bulk sed to add `recommended: false` to ModelInfo struct initializations accidentally modified a `PendingInvoke` struct in server.rs that also had a `created_at` field pattern.",
+      "Biome version mismatch between `npx biome` (0.3.3) and system mise biome (2.4.6) caused CI lint failures that local `biome check --write` didn't catch or fix.",
+      "The WS error localization layer was completely invisible — it took multiple rounds of HTML/log comparison to discover that `ws-connect.js` was silently overwriting the actual error message before it reached any business logic.",
+      "ModelInfo had 9 construction sites in providers/src/lib.rs alone, requiring many targeted edits; some were in destructuring patterns that also needed updating."
+    ],
+    "open_items": [
+      "The `recommended` field for static catalogs beyond Anthropic, OpenAI Codex, and a few others may need tuning — GitHub Copilot and OpenAI-compatible providers use a generic top-N approach rather than curated flagship selection.",
+      "The `providers.show_legacy_models` config option was added but not yet surfaced in the settings UI — users can only enable it via moltis.toml.",
+      "Popularity-based sorting (pre-selection, before user has any usage data) was scoped to static `recommended` flags; a community/crowdsourced popularity signal was discussed but not implemented.",
+      "The `humanizeProbeError` function in provider-validation.js still has some heuristic patterns that may be too generic or mismatch edge cases across providers.",
+      "The Moonshot/MiniMax/Z.AI providers use a generic `catalog_to_discovered(CATALOG, 2)` for recommended models — these may benefit from provider-specific flagship curation."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-01T20:17:05.470341Z",
+    "agent_lines": 12,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 12,
+    "agent_percentage": 100
+  }
+}
