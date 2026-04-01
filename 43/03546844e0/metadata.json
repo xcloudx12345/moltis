@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "4303546844e0",
+  "strategy": "manual-commit",
+  "branch": "mango-collision",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/config/src/validate.rs",
+    "crates/tools/src/firecrawl.rs",
+    "crates/tools/src/web_fetch.rs",
+    "crates/tools/src/web_search.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/43/03546844e0/0/metadata.json",
+      "transcript": "/43/03546844e0/0/full.jsonl",
+      "context": "/43/03546844e0/0/context.md",
+      "content_hash": "/43/03546844e0/0/content_hash.txt",
+      "prompt": "/43/03546844e0/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 28,
+    "cache_creation_tokens": 12541,
+    "cache_read_tokens": 3762821,
+    "output_tokens": 6262,
+    "api_call_count": 26
+  }
+}
