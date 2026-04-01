@@ -181,14 +181,6 @@ async function sendStartScreencast(sessionId) {
 	}
 }
 
-async function sendStopScreencast(sessionId) {
-	try {
-		await browserAction({ session_id: sessionId, action: "stop_screencast" });
-	} catch {
-		// best effort
-	}
-}
-
 async function closeSession(sessionId) {
 	try {
 		await browserAction({ session_id: sessionId, action: "close" });
@@ -225,10 +217,8 @@ async function createSession() {
 	if (creating.value) return;
 	creating.value = true;
 
-	// Stop current screencast silently
-	if (screencasting.value && activeSession.value) {
-		sendStopScreencast(activeSession.value);
-		screencasting.value = false;
+	// Don't stop previous screencast — let it run in background
+	screencasting.value = false;
 	}
 
 	var placeholderId = `creating-${Date.now()}`;
@@ -270,11 +260,11 @@ async function createSession() {
 async function selectSession(sessionId) {
 	if (activeSession.value === sessionId) return;
 
-	// Stop previous screencast silently (don't reset activeSession)
-	if (screencasting.value && activeSession.value) {
-		sendStopScreencast(activeSession.value);
-		screencasting.value = false;
-	}
+	// Don't stop the previous session's screencast — it keeps running
+	// in the background. The frame listener filters by session_id so
+	// old frames are ignored. Stopping/starting screencasts rapidly
+	// overwhelms CDP and can crash the browser container.
+	screencasting.value = false;
 
 	activeSession.value = sessionId;
 	frameData.value = null;
