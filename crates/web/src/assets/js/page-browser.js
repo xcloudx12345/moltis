@@ -27,6 +27,9 @@ var screenshotCache = {};
 // Track placeholder IDs so fetchSessions doesn't remove them
 var placeholderIds = new Set();
 var urlPollTimer = null;
+var sessionHistory = signal([]);
+var selectedHistorySession = signal(null);
+var actionLog = signal([]);
 var containerEl = null;
 
 // ── URL helpers ─────────────────────────────────────────────
@@ -72,6 +75,7 @@ async function fetchSessions() {
 			var placeholders = sessions.value.filter((s) => placeholderIds.has(s.session_id));
 			sessions.value = [...placeholders, ...realSessions];
 			prefetchScreenshots(realSessions);
+			fetchHistory();
 		}
 	} catch (e) {
 		console.error("Failed to fetch browser sessions:", e);
@@ -91,6 +95,32 @@ function prefetchScreenshots(sessionList) {
 				}
 			})
 			.catch(() => {});
+	}
+}
+
+// ── Session history ─────────────────────────────────────────
+
+async function fetchHistory() {
+	try {
+		var res = await fetch("/api/browser/history");
+		if (res.ok) {
+			var data = await res.json();
+			sessionHistory.value = data.sessions || [];
+		}
+	} catch {
+		// best effort
+	}
+}
+
+async function fetchActionLog(sessionId) {
+	try {
+		var res = await fetch(`/api/browser/actions/${sessionId}`);
+		if (res.ok) {
+			var data = await res.json();
+			actionLog.value = data.actions || [];
+		}
+	} catch {
+		actionLog.value = [];
 	}
 }
 
@@ -266,6 +296,7 @@ async function selectSession(sessionId) {
 	screencasting.value = false;
 
 	activeSession.value = sessionId;
+	selectedHistorySession.value = null; // exit history view
 	frameData.value = null;
 	fetching.value = true;
 
@@ -802,6 +833,88 @@ function BrowserCanvas() {
 	</div>`;
 }
 
+function SessionHistory() {
+	useEffect(() => {
+		fetchHistory();
+	}, []);
+
+	var closed = sessionHistory.value.filter((s) => s.closed_at);
+	if (closed.length === 0) return null;
+
+	return html`<div class="mt-4">
+		<div class="text-xs font-medium text-[var(--muted)] mb-2">History</div>
+		<div class="flex flex-col gap-1">
+			${closed.map((sess) => {
+				var isSelected = selectedHistorySession.value === sess.session_id;
+				return html`
+					<div
+						key=${sess.session_id}
+						class="rounded border p-2 text-xs cursor-pointer transition-colors ${isSelected ? 'border-[var(--accent)] bg-[var(--accent)]/5' : 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent)]/50'}"
+						onClick=${() => {
+							// Deselect live session, show history
+							activeSession.value = null;
+							screencasting.value = false;
+							frameData.value = null;
+							selectedHistorySession.value = sess.session_id;
+							fetchActionLog(sess.session_id);
+						}}
+					>
+						<div class="flex items-center justify-between gap-2">
+							<div class="flex-1 min-w-0">
+								<div class="font-mono text-[var(--text-strong)] truncate">${sess.session_id}</div>
+								<div class="text-[var(--muted)] truncate mt-0.5">${sess.url || "(no page loaded)"}</div>
+							</div>
+							<span class="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface2)] text-[var(--muted)] shrink-0">closed</span>
+						</div>
+						<div class="text-[var(--muted)] mt-1">${sess.created_at}</div>
+					</div>
+				`;
+			})}
+		</div>
+	</div>`;
+}
+
+function ActionLogPanel() {
+	var sid = selectedHistorySession.value;
+	if (!sid) return null;
+
+	var sess = sessionHistory.value.find((s) => s.session_id === sid);
+
+	return html`<div class="flex-1 flex flex-col min-h-0 overflow-y-auto">
+		<div class="flex items-center justify-between mb-2">
+			<div>
+				<div class="text-sm font-medium text-[var(--text-strong)]">Session Log</div>
+				<div class="text-xs text-[var(--muted)] font-mono">${sid}</div>
+				${sess ? html`<div class="text-xs text-[var(--muted)]">${sess.created_at} \u2014 ${sess.closed_at || "active"}</div>` : null}
+			</div>
+			<button
+				class="provider-btn provider-btn-secondary provider-btn-sm"
+				onClick=${() => { selectedHistorySession.value = null; }}
+			>
+				Back
+			</button>
+		</div>
+		${actionLog.value.length === 0
+			? html`<div class="text-xs text-[var(--muted)] p-3">No actions recorded for this session.</div>`
+			: html`<div class="flex flex-col gap-1">
+				${actionLog.value.map((entry) => html`
+					<div key=${entry.id} class="rounded border border-[var(--border)] p-2 text-xs bg-[var(--surface)]">
+						<div class="flex items-center justify-between gap-2">
+							<span class="font-mono font-medium ${entry.success ? 'text-[var(--text-strong)]' : 'text-[var(--error)]'}">
+								${entry.action}
+							</span>
+							<span class="text-[var(--muted)]">${entry.duration_ms}ms</span>
+						</div>
+						${entry.url ? html`<div class="text-[var(--muted)] truncate mt-0.5">${entry.url}</div>` : null}
+						${entry.error ? html`<div class="text-[var(--error)] mt-0.5">${entry.error}</div>` : null}
+						<div class="text-[var(--muted)] mt-0.5">${entry.created_at}</div>
+					</div>
+				`)}
+			</div>`
+		}
+	</div>`;
+}
+
 function BrowserPage() {
 	return html`<div class="flex-1 flex flex-col min-w-0 p-4 gap-3 overflow-y-auto">
 		<div class="flex items-center justify-between">
@@ -822,12 +935,18 @@ function BrowserPage() {
 		</div>
 
 		<div class="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
-			<div class="lg:w-80 shrink-0">
+			<div class="lg:w-80 shrink-0 overflow-y-auto">
 				<${SessionList} />
+				<${SessionHistory} />
 			</div>
 			<div class="flex-1 flex flex-col min-w-0">
-				<${NavigateBar} />
-				<${BrowserCanvas} />
+				${selectedHistorySession.value
+					? html`<${ActionLogPanel} />`
+					: html`<fragment>
+						<${NavigateBar} />
+						<${BrowserCanvas} />
+					</fragment>`
+				}
 			</div>
 		</div>
 	</div>`;
