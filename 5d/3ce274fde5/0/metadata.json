@@ -1,0 +1,116 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "5d3ce274fde5",
+  "session_id": "f121323c-d69f-4896-b4bd-8826347073cf",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-01T19:16:26.789094Z",
+  "branch": "claude/plan-browser-viewing-HOHno",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/src/assets/js/page-browser.js"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "6e027490b943",
+  "token_usage": {
+    "input_tokens": 4259,
+    "cache_creation_tokens": 1432317,
+    "cache_read_tokens": 260512932,
+    "output_tokens": 248339,
+    "api_call_count": 806
+  },
+  "summary": {
+    "intent": "Build a browser-in-browser viewing feature for Moltis, allowing users to create, view, and interact with browser sessions directly in the settings UI, with full mouse/keyboard interaction, URL autocomplete, session history, and per-agent cookie profiles.",
+    "outcome": "Fully functional browser viewer was implemented and merged via PR #531, including: live CDP screencast, mouse/keyboard/scroll interaction, URL bar with Google autocomplete, session persistence with SQLite action logs, per-agent browser profiles for cookie isolation, shared BrowserManager between tool and UI service, and e2e+integration tests.",
+    "learnings": {
+      "repo": [
+        "serde's #[serde(default)] only handles missing keys, not explicit null — LLMs (MiniMax) send null for all optional fields, requiring a null-strip pass before deserialization",
+        "BrowserTool and RealBrowserService were two separate BrowserManager instances — agent sessions were invisible to the UI service until sharing via Arc\u003cOnceCell\u003e",
+        "The WebSocket broadcast in broadcast.rs:100-102 has a subscription filter — clients must explicitly subscribe to event types like 'browser.screencast.frame' or frames are silently dropped",
+        "CDP Page.startScreencast relay exits when tx.send() has no receivers (lazyrat race) — relay must drop frames silently when no subscribers rather than exiting",
+        "CDP mouseWheel requires both deltaX and deltaY fields always, even when zero — conditional omission causes 'deltaX and deltaY are expected' error",
+        "Screencast metadata offset_top must be added to y-coordinate for click accuracy — missing this causes clicks to register higher than intended",
+        "Chrome's SingletonLock file must be removed before launching a new container with a shared profile dir to prevent lock conflicts",
+        "axum 0.8 uses {param} syntax for path segments instead of :param",
+        "The db_pool is created after the browser service in server.rs — OnceCell pattern needed to set the store later via set_session_store()",
+        "Rapid stop/start of CDP screencasts kills the Chrome connection — screencasts should stay running in background when switching sessions, not be stopped"
+      ],
+      "code": [
+        {
+          "path": "crates/tools/src/browser.rs",
+          "line": 1,
+          "end_line": 50,
+          "finding": "Null-stripping via obj.retain(|_, v| !v.is_null()) must happen before serde deserialization for LLM tool calls"
+        },
+        {
+          "path": "crates/browser/src/screencast.rs",
+          "line": 237,
+          "end_line": 239,
+          "finding": "Original relay exited on SendError (no receivers) — should continue looping and drop frames instead"
+        },
+        {
+          "path": "crates/browser/src/manager.rs",
+          "line": 1,
+          "end_line": 50,
+          "finding": "CDP keyboard input requires windowsVirtualKeyCode for special keys (Backspace=8, Enter=13, arrows=37-40) — without it Chrome ignores them"
+        },
+        {
+          "path": "crates/browser/src/pool.rs",
+          "line": 396,
+          "end_line": 420,
+          "finding": "sandbox_profile_dir() must accept profile_id parameter and be threaded through launch_browser -\u003e launch_sandboxed_browser chain"
+        },
+        {
+          "path": "crates/web/src/assets/js/page-browser.js",
+          "line": 1,
+          "end_line": 50,
+          "finding": "Canvas event listeners attached via useEffect([]) miss the canvas when it's conditionally rendered — use ref callback instead"
+        },
+        {
+          "path": "crates/gateway/src/broadcast.rs",
+          "line": 100,
+          "end_line": 102,
+          "finding": "Subscription filter silently drops events for unsubscribed types — browser.screencast.frame must be added to websocket.js subscription list"
+        },
+        {
+          "path": "crates/web/src/lib.rs",
+          "line": 123,
+          "end_line": 123,
+          "finding": "axum router panics at startup with :param syntax — must use {param} for path capture groups"
+        }
+      ],
+      "workflow": [
+        "local-validate.sh runs biome without --write flag so biome --write in terminal doesn't fix CI failures — must manually apply lint fixes",
+        "YubiKey tap required for git push — background push tasks fail and need manual retry",
+        "CDP viewport 2560x1440@2x causes websites to render for 5K displays making captchas/modals appear in wrong positions — use SetDeviceMetricsOverride when starting screencast to resize to viewer dimensions",
+        "Integration tests for browser/screencast need --test-threads=1 due to profile directory conflicts when running parallel",
+        "Prefetching screenshots for all sessions and updating cache from live screencast frames eliminates blank canvas on session switch"
+      ]
+    },
+    "friction": [
+      "YubiKey tap required for every git push — caused repeated failed background tasks and manual retry loops",
+      "biome --write in terminal doesn't fix CI failures because local-validate.sh runs biome in check mode — required manual edits for each lint issue",
+      "db_pool created after browser service in server.rs required OnceCell indirection to wire the session store later",
+      "The 2560x1440 viewport was hardcoded in user's moltis.toml config, overriding code defaults — viewport change required both code default update and config file edit",
+      "Stale screencast relay race condition was subtle — relay exited before subscriber attached, losing all CDP frames",
+      "biome noRedeclare doesn't recognize var scoping the same way — required renaming loop variable in getKnownProfiles()"
+    ],
+    "open_items": [
+      "WebRTC upgrade (neko/GStreamer approach) for sub-100ms latency and 6-18x better bandwidth efficiency vs CDP JPEG screencast",
+      "Binary WebSocket frames for screencast (eliminate base64 overhead — ~33% bandwidth reduction)",
+      "Multiple concurrent sandbox sessions may have cookie conflicts with shared profile dir — only safe for single active session at a time",
+      "Session history UI shows action logs but no screenshot/video replay — only text action log available",
+      "Browser session recording as video (JPEG sequence) for post-session replay was scoped but not fully implemented",
+      "Per-agent profile management UI is minimal — no way to rename profiles or see which agents use which profile",
+      "The moltis.toml config still has explicit 2560x1440 viewport override that may confuse future users"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-01T19:15:38.275244Z",
+    "agent_lines": 6,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 6,
+    "agent_percentage": 100
+  }
+}
