@@ -1,0 +1,112 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "e25c38e683e6",
+  "session_id": "f121323c-d69f-4896-b4bd-8826347073cf",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-01T14:48:50.820936Z",
+  "branch": "claude/plan-browser-viewing-HOHno",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/gateway/src/server.rs",
+    "crates/gateway/src/services.rs",
+    "crates/web/src/api.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "f691aa1c9cbd",
+  "token_usage": {
+    "input_tokens": 4006,
+    "cache_creation_tokens": 867967,
+    "cache_read_tokens": 154745806,
+    "output_tokens": 199109,
+    "api_call_count": 592
+  },
+  "summary": {
+    "intent": "Build a fully interactive browser-in-browser feature for the moltis AI assistant, including a UI to view/control browser sessions, sharing sessions between the AI agent and the settings UI, and session history/recording for post-hoc review.",
+    "outcome": "Core browser viewing and interaction works end-to-end: agent-created sessions appear in the UI, screencasts stream live, clicks/scroll relay to CDP, URL bar syncs with the remote browser, and session persistence with action logging was added. Several critical bugs were found and fixed along the way.",
+    "learnings": {
+      "repo": [
+        "serde's #[serde(default)] only handles *missing* keys, not explicit `null` — LLMs (MiniMax) send null for every optional field, requiring a null-strip pass before deserialization",
+        "The WebSocket broadcast layer has an explicit subscription filter (broadcast.rs ~L100) — events not in the client's subscription list are silently dropped with no error",
+        "BrowserTool and RealBrowserService originally had separate BrowserManager instances — sharing via Arc\u003cOnceCell\u003e is the correct pattern for shared lazy initialization",
+        "CDP Page.startScreencast relay task exits immediately when tx.send() finds zero receivers — the relay must drop frames silently when no subscribers rather than exit",
+        "CDP Input.dispatchMouseEvent with 'mouseWheel' type requires BOTH deltaX and deltaY to be present, even when one is 0 — omitting either returns a CDP error",
+        "The canvas useEffect([], ...) pattern misses late DOM renders — a ref callback (canvasRefCallback) fires on every DOM attach/detach and is the correct approach for conditionally-rendered canvases",
+        "Rapid screencast stop/start cycles (on session switch) overwhelm CDP and kill the Chrome connection — screencasts should remain running in the background, with frame listeners filtering by session_id",
+        "db_pool is created significantly after the browser service in server.rs — use Arc\u003cOnceCell\u003e for deferred store injection rather than restructuring startup order",
+        "The BrowserService trait is in service-traits crate which does not have sqlx as a dependency — concrete store types must be injected via concrete methods, not trait methods",
+        "Screencast metadata offset_top must be added to the y-coordinate for click accuracy — without it clicks appear higher than intended"
+      ],
+      "code": [
+        {
+          "path": "crates/tools/src/browser.rs",
+          "finding": "Null-stripping via obj.retain(|_, v| !v.is_null()) must happen before BrowserRequest deserialization to handle LLM null injection"
+        },
+        {
+          "path": "crates/browser/src/screencast.rs",
+          "finding": "Relay task originally exited on zero receivers — changed to drop frames silently so late subscribers (UI connecting after screencast started) can still receive frames"
+        },
+        {
+          "path": "crates/web/src/assets/js/websocket.js",
+          "finding": "browser.screencast.frame was missing from the WebSocket subscription list, causing all screencast frames to be silently dropped by the broadcast filter"
+        },
+        {
+          "path": "crates/gateway/src/broadcast.rs",
+          "line": 100,
+          "end_line": 102,
+          "finding": "Subscription filter: events are only forwarded to clients that explicitly subscribed — missing subscription = silent drop, no error surfaced anywhere"
+        },
+        {
+          "path": "crates/browser/src/manager.rs",
+          "finding": "CDP mouseWheel dispatch requires both deltaX and deltaY; original code omitted whichever was 0, causing CDP to reject all scroll events"
+        },
+        {
+          "path": "crates/browser/src/types.rs",
+          "finding": "Default viewport was 2560x1440@2x (agent-optimized) — websites rendered for that resolution appeared tiny/misaligned in the viewer; changed to 1440x900@1x"
+        },
+        {
+          "path": "crates/browser/src/pool.rs",
+          "finding": "has_session() guard prevents cleanup spam — when Chrome dies and 50 queued events try to cleanup the session, only the first succeeds; subsequent calls return early"
+        },
+        {
+          "path": "crates/browser/src/manager.rs",
+          "finding": "validate_url() blocked about:blank, causing silent failure when creating new sessions from the UI — added explicit allowlist for about:blank"
+        }
+      ],
+      "workflow": [
+        "When CDP returns success:false with HTTP 200, callers get no error — must check res.success explicitly; centralizing this in the fetch wrapper prevents silent failures",
+        "Integration tests with real CDP (marked #[ignore]) are essential for browser interaction — unit tests can't catch CDP protocol constraints like the deltaX/deltaY requirement",
+        "Playwright e2e tests should validate the full stack including WebSocket subscription setup, not just DOM rendering",
+        "When a feature needs two async-initialized components to share state, Arc\u003cOnceCell\u003cT\u003e\u003e with a deferred set() call after initialization is the idiomatic Rust pattern",
+        "Browser sessions should keep screencasts running in background when switching views — the frame listener can filter by session_id, avoiding the CDP stress from rapid stop/start"
+      ]
+    },
+    "friction": [
+      "YubiKey tap required for every git push — caused multiple push failures and retry loops throughout the session",
+      "serde #[serde(default)] vs explicit null ambiguity caused an obscure deserialization panic that required reading through serde internals to understand",
+      "The root cause of 'Waiting for first frame' required three separate debugging rounds: relay race condition, then navigate URL validation, then missing WebSocket subscription — each fix revealed the next layer",
+      "db_pool created after browser service in server.rs — required adding OnceCell-based deferred injection to avoid restructuring the entire server startup sequence",
+      "A replace_all edit accidentally modified an unrelated session_store field in GatewayServices, causing a compile error that was confusing to diagnose",
+      "sqlx types unavailable in service-traits crate prevented adding trait methods that take SqlitePool — required keeping a concrete Arc\u003cRealBrowserService\u003e reference alongside the trait object",
+      "Rapid session switching during debugging killed Chrome connections due to stop/start cycle — root cause was architectural but manifested as flaky behavior"
+    ],
+    "open_items": [
+      "WebRTC upgrade (neko-style) for sub-100ms latency and 6-18x bandwidth reduction vs JPEG screencast",
+      "Binary WebSocket frames for screencast — eliminates ~33% base64 overhead",
+      "Per-agent browser profiles for session isolation (currently single global profile)",
+      "Session history UI — backend persistence (SQLite store, migration, API endpoints) was implemented but the UI to show closed sessions with logs/screenshots was not built",
+      "Browser connection robustness — Chrome can still die under memory pressure; retry logic added but underlying container stability needs more work",
+      "Session recording as video — the feature was requested but only action logging was implemented; JPEG timeline or video export not yet done",
+      "Favicon support in URL autocomplete dropdown",
+      "Bookmark integration in URL autocomplete"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-01T14:47:45.938718Z",
+    "agent_lines": 0,
+    "human_added": 347,
+    "human_modified": 9,
+    "human_removed": 0,
+    "total_committed": 347,
+    "agent_percentage": 0
+  }
+}
