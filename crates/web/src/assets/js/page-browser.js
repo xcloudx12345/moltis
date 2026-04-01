@@ -158,8 +158,8 @@ function ensureFrameListener() {
 		frameMime.value = "image/jpeg";
 		frameMeta.value = payload.metadata;
 		frameSeq.value = payload.sequence;
-		// Invalidate cached screenshot — live frame supersedes it
-		delete screenshotCache[payload.session_id];
+		// Update cache with latest frame so switching back is instant
+		screenshotCache[payload.session_id] = { data: payload.data, mime: "image/jpeg", meta: payload.metadata };
 	});
 }
 
@@ -306,17 +306,21 @@ async function selectSession(sessionId) {
 	var sess = sessions.value.find((s) => s.session_id === sessionId);
 	currentUrl.value = sess?.url && sess.url !== "about:blank" ? sess.url : "";
 
-	// Show cached screenshot instantly, or fetch one
+	// Show cached frame/screenshot instantly, or fetch a fresh screenshot
 	var cached = screenshotCache[sessionId];
 	if (cached) {
-		applyScreenshot(cached.data);
+		frameData.value = cached.data;
+		frameMime.value = cached.mime || "image/png";
+		if (cached.meta) {
+			frameMeta.value = cached.meta;
+		}
 		fetching.value = false;
 	} else {
 		try {
 			var snap = await browserAction({ session_id: sessionId, action: "screenshot" });
 			if (snap.screenshot && activeSession.value === sessionId) {
 				applyScreenshot(snap.screenshot);
-				screenshotCache[sessionId] = { data: snap.screenshot };
+				screenshotCache[sessionId] = { data: snap.screenshot, mime: "image/png" };
 			}
 		} catch {
 			// Session might have died — refresh list
