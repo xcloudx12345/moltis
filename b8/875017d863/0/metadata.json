@@ -1,0 +1,96 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "b8875017d863",
+  "session_id": "f121323c-d69f-4896-b4bd-8826347073cf",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-01T10:35:45.038149Z",
+  "branch": "claude/plan-browser-viewing-HOHno",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/src/assets/js/page-browser.js"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "4d636bf2a7f3",
+  "token_usage": {
+    "input_tokens": 3695,
+    "cache_creation_tokens": 347425,
+    "cache_read_tokens": 52989138,
+    "output_tokens": 111740,
+    "api_call_count": 319
+  },
+  "summary": {
+    "intent": "Build and fix a browser viewing feature in the moltis project (Rex AI assistant), enabling users to see, create, and interact with browser sessions directly in the UI settings panel.",
+    "outcome": "Fully functional browser session UI with: null-stripping fix for LLM tool calls, shared BrowserManager between tool and service, New Session button with loading states, URL autocomplete with Google suggestions, working screencast via WebSocket subscription fix, mouse/keyboard/scroll interaction relay, and screenshot-on-select for instant session previews.",
+    "learnings": {
+      "repo": [
+        "BrowserTool and RealBrowserService previously had separate BrowserManager instances — sessions created by the AI tool were invisible to the UI API service",
+        "The v4 WebSocket protocol requires clients to explicitly subscribe to event types; browser.screencast.frame was missing from websocket.js subscription list causing all frames to be silently dropped",
+        "serde's #[serde(default)] handles missing fields but NOT explicit null values — LLMs (MiniMax) send null for every optional parameter, causing u64 deserialization failures",
+        "The screencast relay task exited when tx.send() found 0 receivers on first frame; CDP sends frames almost instantly before subscribers attach",
+        "RealBrowserService::request() defaults sandbox to false (unwrap_or(false)) while BrowserTool injects sandbox from the session router — UI-created sessions ran on host instead of sandbox",
+        "Screencast validate_url() only allowed http/https schemes, rejecting about:blank and causing silent failures for new sessions",
+        "The broadcast.rs filter at line 100-102 silently drops events for clients not subscribed to that event type"
+      ],
+      "code": [
+        {
+          "path": "crates/tools/src/browser.rs",
+          "finding": "Added obj.retain(|_, v| !v.is_null()) null-stripping before deserialization to handle LLM sending explicit nulls"
+        },
+        {
+          "path": "crates/browser/src/screencast.rs",
+          "finding": "Changed relay exit-on-no-receivers to drop-and-continue so CDP frames aren't lost before subscribers attach"
+        },
+        {
+          "path": "crates/gateway/src/broadcast.rs",
+          "line": 100,
+          "end_line": 102,
+          "finding": "Subscription filter silently drops events for unsubscribed clients — all new event types must be added to websocket.js subscription list"
+        },
+        {
+          "path": "crates/web/src/assets/js/websocket.js",
+          "finding": "browser.screencast.frame was missing from the subscribeEvents list, causing all screencast frames to be dropped at broadcast layer"
+        },
+        {
+          "path": "crates/gateway/src/services.rs",
+          "finding": "Added default_sandbox flag to RealBrowserService to inject sandbox:true into requests when sandbox mode is enabled"
+        },
+        {
+          "path": "crates/browser/src/manager.rs",
+          "finding": "Added parameterized integration tests for screencast chain across host/sandbox modes; sandbox tests auto-skip when runtime unavailable"
+        }
+      ],
+      "workflow": [
+        "Diagnostic logging at each relay stage (CDP → ScreencastRegistry → broadcast → WS client) was essential for pinpointing the exact break point",
+        "Writing an integration test that passed (host mode frames DO arrive) proved the break was downstream in the gateway layer, not CDP",
+        "YubiKey signing required interactive tap for git push — push commands need to be retried after tap",
+        "biome for JS linting and cargo fmt/clippy for Rust should be run before each commit",
+        "Tailwind CSS rarely needs rebuilding when using existing CSS variables and utility classes"
+      ]
+    },
+    "friction": [
+      "Multiple push failures requiring YubiKey tap — no way to pre-authorize or batch sign",
+      "Silent failures throughout: validate_url rejecting about:blank with success:false (200 OK), broadcast dropping unsubscribed events, screencast relay exiting silently — none surfaced errors to the user",
+      "Race condition between CDP sending first frame and subscriber attaching required multiple debug iterations to identify",
+      "The broken screencast required 5+ debug rounds across different layers (null deserialization → relay exit → navigate URL validation → WS subscription → broadcast filter) before working end-to-end",
+      "pre-existing clippy errors in moltis-voice and CUDA crates caused noise during linting of unrelated crates"
+    ],
+    "open_items": [
+      "Per-agent browser profiles — currently a single global profile dir; no isolation between agent sessions",
+      "Google suggestion autocomplete uses suggestqueries.google.com which may have CORS limitations in sandbox",
+      "Paused session indicator and re-activation flow (started but not fully polished per last transcript message)",
+      "Fetching/loading state during screenshot REST call (last message in transcript — started but not committed)",
+      "Playwright e2e tests were written but not validated against a running server; screencast frame delivery test may be flaky",
+      "The sandbox mode default in RealBrowserService reads config.tools.exec.sandbox.mode as a string comparison — fragile if SandboxMode enum changes",
+      "No rate limiting or debouncing on mouse/scroll events relayed to CDP — could cause performance issues with high-frequency scroll"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-01T10:34:54.932746Z",
+    "agent_lines": 22,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 22,
+    "agent_percentage": 100
+  }
+}
