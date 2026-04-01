@@ -1,0 +1,106 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "603c4e91eae2",
+  "session_id": "f121323c-d69f-4896-b4bd-8826347073cf",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-01T14:12:01.749112Z",
+  "branch": "claude/plan-browser-viewing-HOHno",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/browser/src/manager.rs",
+    "crates/browser/src/types.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "7d9b3b6683d3",
+  "token_usage": {
+    "input_tokens": 3898,
+    "cache_creation_tokens": 821778,
+    "cache_read_tokens": 112577800,
+    "output_tokens": 175171,
+    "api_call_count": 494
+  },
+  "summary": {
+    "intent": "Implement and iterate on a browser-in-browser feature for the Moltis agent platform, enabling users to view and interact with browser sessions from the UI while agents can also control the same sessions.",
+    "outcome": "Delivered a fully functional interactive browser viewer with session management, URL bar with autocomplete, screenshot prefetching, scroll/click relay, proper coordinate mapping, and fixed multiple critical bugs including WebSocket subscription gap, screencast relay race condition, and session isolation issues.",
+    "learnings": {
+      "repo": [
+        "BrowserTool and RealBrowserService previously had separate BrowserManager instances — sessions created by the tool were invisible to the UI API until shared via Arc\u003cOnceCell\u003e",
+        "The gateway uses a WebSocket v4 protocol with explicit event subscriptions — events not in the subscribeEvents list in websocket.js are silently dropped by broadcast.rs line ~100",
+        "serde #[serde(default)] only handles missing keys, not explicit null values — LLMs (especially MiniMax) send null for all optional fields, requiring a retain(|_, v| !v.is_null()) strip before deserialization",
+        "CDP Page.startScreencast relay exits if tx.send() finds zero receivers (lagged error path) — race condition when subscriber connects after first frame",
+        "CDP mouseWheel events require both deltaX and deltaY to always be present, even when zero — omitting either causes a CDP protocol error",
+        "about:blank generates no screencast frames from CDP — sessionss starting blank need to navigate before screencast produces output",
+        "The workspace clippy config denies .expect() calls even in test modules",
+        "Browser containers use browserless/chrome image via apple-container backend with a configurable idle timeout (was 5min, raised to 30min) and TTL (was 30min, raised to 2h)",
+        "Screencast metadata includes offset_top (browser chrome height) which must be added to y-coordinates for accurate click mapping",
+        "Default viewport was 2560x1440@2x — too large for interactive use; changed to 1440x900@1x"
+      ],
+      "code": [
+        {
+          "path": "crates/tools/src/browser.rs",
+          "finding": "Null-stripping fix: obj.retain(|_, v| !v.is_null()) applied before serde deserialization in execute()"
+        },
+        {
+          "path": "crates/browser/src/screencast.rs",
+          "finding": "Race condition: relay task exited on SendError::Closed (zero receivers). Fixed by dropping frames silently instead of exiting when no subscribers."
+        },
+        {
+          "path": "crates/gateway/src/broadcast.rs",
+          "line": 100,
+          "end_line": 102,
+          "finding": "Per-client subscription filter — events not in client.subscriptions are silently dropped"
+        },
+        {
+          "path": "crates/web/src/assets/js/websocket.js",
+          "finding": "browser.screencast.frame was missing from subscribeEvents list, causing all screencast frames to be dropped at the broadcast filter"
+        },
+        {
+          "path": "crates/browser/src/manager.rs",
+          "finding": "mouseWheel CDP dispatch requires deltaX and deltaY always present; conditional on non-zero was breaking scroll"
+        },
+        {
+          "path": "crates/browser/src/pool.rs",
+          "finding": "Single CDP failure immediately marked session as stale and closed it — fixed with retry logic and has_session guard to prevent flood cleanup"
+        },
+        {
+          "path": "crates/browser/src/types.rs",
+          "finding": "Default viewport changed from 2560x1440 device_scale_factor=2.0 to 1440x900 device_scale_factor=1.0 for interactive viewing"
+        }
+      ],
+      "workflow": [
+        "Canvas event listeners attached in useEffect([]) never re-run when canvas is conditionally rendered — use ref callbacks (node =\u003e { if(node) attachListeners(node) }) instead",
+        "Use offsetX/offsetY with clientWidth/clientHeight (not getBoundingClientRect) for canvas coordinate mapping to avoid border offset errors",
+        "Use img.naturalWidth/naturalHeight for screencast coordinate scaling rather than hardcoded dimensions or metadata — more reliable across viewport changes",
+        "rAF-gated canvas rendering drops excess frames naturally instead of wasting CPU on every frame signal",
+        "YubiKey tap required for every git push in this repo — must retry push manually after each tap",
+        "Wheel events throttled at 50ms with accumulated deltas; mousemove throttled to avoid HTTP request flooding from rapid DOM events",
+        "When debugging CDP frame delivery issues, add tracing at each hop: CDP → ScreencastRegistry → service subscribe → API relay → WebSocket"
+      ]
+    },
+    "friction": [
+      "YubiKey tap required on every push — caused multiple failed push attempts requiring manual retries",
+      "Three separate root causes for 'Waiting for first frame': (1) screencast relay race, (2) navigate silently failed due to missing https://, (3) WebSocket subscription filter — each required a separate debugging cycle",
+      "Parallel integration tests fought over browser profile lock files — required --test-threads=1",
+      "CSS aspect-ratio hardcoded as 16/10 didn't match actual 16:9 viewport, contributing to click offset issues alongside the missing offset_top correction",
+      "Apple Container Chrome processes crashed under memory pressure, triggering aggressive stale session cleanup that flooded logs and killed sessions prematurely"
+    ],
+    "open_items": [
+      "WebRTC upgrade path identified (neko architecture, webrtc-rs) for sub-100ms latency and 6-18x bandwidth reduction vs CDP JPEG screencasting — deferred as longer-term work",
+      "Binary WebSocket frames for screencast (eliminate ~33% base64 overhead) — identified but not implemented",
+      "Per-agent browser profiles for isolation — not built, currently single global profile",
+      "Browser connection resilience: Apple Container Chrome crashes under memory pressure — retry/reconnect logic not fully implemented, only retry on single CDP failure added",
+      "Export cookies button was removed from UI — functionality may need to be re-exposed elsewhere",
+      "Playwright e2e tests for browser interaction (clicks, scroll) were added but rely on a live backend — CI integration strategy not finalized",
+      "URL polling (2s interval via get_url CDP action) is a workaround for in-page navigation detection — CDP Page.frameNavigated events would be cleaner but require event subscription infrastructure changes"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-01T14:11:13.141146Z",
+    "agent_lines": 0,
+    "human_added": 76,
+    "human_modified": 7,
+    "human_removed": 0,
+    "total_committed": 76,
+    "agent_percentage": 0
+  }
+}
