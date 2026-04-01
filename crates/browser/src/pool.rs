@@ -443,12 +443,16 @@ impl BrowserPool {
                     ),
                     Ok(()) => {
                         set_container_dir_permissions(dir);
-                        // Remove stale SingletonLock from a previous session so
-                        // Chrome doesn't refuse to start. This is safe because
-                        // the old Chrome process is gone (container was stopped).
-                        let lock = dir.join("SingletonLock");
-                        if lock.exists() {
-                            let _ = std::fs::remove_file(&lock);
+                        // Remove stale Chrome singleton files from a previous
+                        // session. These are symlinks that dangle after the
+                        // container dies. Use symlink_metadata (not exists())
+                        // because exists() follows symlinks and returns false
+                        // for dangling ones.
+                        for name in ["SingletonLock", "SingletonCookie", "SingletonSocket"] {
+                            let path = dir.join(name);
+                            if std::fs::symlink_metadata(&path).is_ok() {
+                                let _ = std::fs::remove_file(&path);
+                            }
                         }
                     },
                 }
