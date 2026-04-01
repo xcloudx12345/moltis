@@ -1,0 +1,105 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "e2cff8d6c65e",
+  "session_id": "f121323c-d69f-4896-b4bd-8826347073cf",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-01T20:45:19.591068Z",
+  "branch": "claude/plan-browser-viewing-HOHno",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/src/assets/js/page-browser.js"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "64e9def26876",
+  "token_usage": {
+    "input_tokens": 4297,
+    "cache_creation_tokens": 1990018,
+    "cache_read_tokens": 276848743,
+    "output_tokens": 253273,
+    "api_call_count": 836
+  },
+  "summary": {
+    "intent": "Implement a browser-in-browser feature for the moltis agent platform, allowing users to view and interact with live browser sessions from the settings UI, with session history, cookie persistence, and per-agent browser profiles.",
+    "outcome": "Fully functional browser viewer with live CDP screencast, mouse/keyboard/scroll interaction, URL autocomplete, per-agent cookie isolation, session history with action logs in SQLite, and a scrollbar overlay. 40+ commits landed on PR #531.",
+    "learnings": {
+      "repo": [
+        "serde `#[serde(default)]` only handles *missing* JSON keys — explicit `null` still fails deserialization for non-Option types like u64. Null-stripping before deserialization is required when LLMs send null for every optional field.",
+        "BrowserTool and RealBrowserService each created independent BrowserManager instances; sessions created by one were invisible to the other. Fixed via shared Arc\u003cOnceCell\u003cBrowserManager\u003e\u003e.",
+        "The WebSocket broadcast layer (broadcast.rs) has a subscription filter — clients must explicitly subscribe to event types or events are silently dropped. `browser.screencast.frame` was missing from websocket.js subscription list.",
+        "CDP Page.startScreencast relay task exited when tx.send() found 0 receivers instead of dropping frames — causing a race where the first frame arrived before any subscriber, permanently killing the relay.",
+        "axum 0.8 changed path parameter syntax from `:param` to `{param}` — panics at startup otherwise.",
+        "Browser viewport was 2560x1440@2x in user's moltis.toml config, overriding code defaults. CDP SetDeviceMetricsOverride on screencast start is the right fix to resize for the viewer.",
+        "CDP mouseWheel event requires both deltaX and deltaY always — omitting either when zero causes a CDP error.",
+        "Screencast metadata offset_top must be added to y-coordinates for click accuracy; image naturalWidth/naturalHeight are more reliable than hardcoded dimensions for scale factors.",
+        "Canvas event listeners attached via useEffect([]) never fire when canvas is conditionally rendered — must use a ref callback instead.",
+        "System biome (2.4.6) and npx biome (0.3.3) produce different formatting output; local-validate.sh uses system biome."
+      ],
+      "code": [
+        {
+          "path": "crates/tools/src/browser.rs",
+          "finding": "Null-stripping via obj.retain(|_, v| !v.is_null()) placed after sandbox injection, before deserialization."
+        },
+        {
+          "path": "crates/browser/src/screencast.rs",
+          "finding": "Relay loop must use LazyFrame drop (continue) not exit when no subscribers. First-frame race condition root cause."
+        },
+        {
+          "path": "crates/web/src/assets/js/websocket.js",
+          "finding": "subscribeEvents list missing 'browser.screencast.frame' — every frame was silently filtered. This was the primary 'Waiting for first frame' bug."
+        },
+        {
+          "path": "crates/browser/src/manager.rs",
+          "finding": "Added windowsVirtualKeyCode mapping for special keys (Backspace=8, Enter=13, arrows=37-40, etc.) — Chrome ignores key events without VK codes."
+        },
+        {
+          "path": "crates/browser/src/pool.rs",
+          "finding": "All sandbox sessions share ~/.moltis/browser/profile/sandbox/{profile_id}/ — SingletonLock must be removed before each launch. Profile routing: UI→'default', agents→'session_{key}'."
+        },
+        {
+          "path": "crates/gateway/src/services.rs",
+          "finding": "RealBrowserService uses OnceCell for session store to allow wiring after db_pool is created (which is initialized later in server startup)."
+        },
+        {
+          "path": "crates/web/src/lib.rs",
+          "line": 123,
+          "end_line": 123,
+          "finding": "axum route used :session_id syntax, must be {session_id} in axum 0.8."
+        }
+      ],
+      "workflow": [
+        "Run local-validate.sh with PR number to validate before pushing; biome format must be applied with the system biome binary not npx biome.",
+        "YubiKey-gated git push requires user interaction; background tasks should retry after user confirmation rather than looping.",
+        "Integration tests for CDP interactions require --test-threads=1 to avoid profile lock conflicts.",
+        "CDP Input.insertText is the correct way to paste clipboard text into a focused element in a remote browser.",
+        "When adding new events to the gateway broadcast system, always add them to the WebSocket subscription list in websocket.js or they will be silently dropped."
+      ]
+    },
+    "friction": [
+      "YubiKey tap required for every git push — interrupted flow repeatedly throughout the session.",
+      "Biome version mismatch (npx 0.3.3 vs system 2.4.6) caused multiple rounds of CI failures even after running --write locally.",
+      "User's moltis.toml had explicit viewport overrides that masked the code default change — required inspecting config file to diagnose.",
+      "serde null vs missing behavior was a non-obvious surprise requiring understanding of serde internals.",
+      "The screencast 'Waiting for first frame' issue required multiple debugging rounds across 3 separate root causes (null deserialization, relay exit, missing WS subscription).",
+      "axum 0.8 breaking path syntax change caused a startup panic not caught by compile-time checks.",
+      "CDP mouseWheel silently failed when deltaX was omitted — no error logged, scroll just didn't work."
+    ],
+    "open_items": [
+      "WebRTC upgrade (neko architecture) for sub-100ms latency and 6-18x bandwidth reduction vs CDP JPEG screencast.",
+      "Binary WebSocket frames for screencast to eliminate ~33% base64 encoding overhead.",
+      "Session recording as video — action log exists but no video capture yet.",
+      "Playwright e2e tests for browser interaction (click accuracy, scroll) are written but require a real browser runtime to execute.",
+      "Multiple concurrent sandbox sessions may have cookie conflicts since they share one profile directory — needs investigation for agent use cases.",
+      "History page shows action logs but no screenshots for closed sessions.",
+      "Password manager integration for the browser viewer is explicitly deferred as too complex."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-01T20:44:16.69725Z",
+    "agent_lines": 32,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 32,
+    "agent_percentage": 100
+  }
+}
