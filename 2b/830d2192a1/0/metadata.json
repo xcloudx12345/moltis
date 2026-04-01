@@ -1,0 +1,122 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "2b830d2192a1",
+  "session_id": "f121323c-d69f-4896-b4bd-8826347073cf",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-01T20:48:45.235103Z",
+  "branch": "claude/plan-browser-viewing-HOHno",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/gateway/src/services.rs",
+    "crates/browser/src/manager.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "64e9def26876",
+  "token_usage": {
+    "input_tokens": 4313,
+    "cache_creation_tokens": 1996155,
+    "cache_read_tokens": 286014058,
+    "output_tokens": 256607,
+    "api_call_count": 852
+  },
+  "summary": {
+    "intent": "Build a browser-in-browser feature for the moltis agent platform, allowing users to view and interact with browser sessions created by agents, and create their own sessions from the UI.",
+    "outcome": "Delivered a full browser viewing/interaction feature: live CDP screencast with mouse/keyboard/scroll/paste support, URL autocomplete bar, session history with action logs in SQLite, per-agent browser profiles with cookie persistence, and a 'New Session' UI button with profile selection.",
+    "learnings": {
+      "repo": [
+        "BrowserTool and RealBrowserService had separate BrowserManager instances — sharing required Arc\u003cOnceCell\u003e pattern matching how other singletons are wired",
+        "The gateway uses a two-phase init: services are created early (line ~1321 in server.rs), but db_pool comes later (line ~1497), requiring deferred store wiring via set_session_store()",
+        "WebSocket event subscription is explicit — clients must declare event types in websocket.js subscribeEvents array or broadcast.rs filter drops them silently",
+        "Browser CDP screencast relay task exits on tx.send() with zero receivers — must drop frames instead of exiting to avoid race with late subscribers",
+        "axum 0.8 uses {param} syntax for path captures, not :param",
+        "The workspace denies .expect() in tests via clippy deny — use assert!() or unwrap_or_else pattern instead",
+        "Two biome versions coexist: npx biome (v0.3.3, old) vs system biome (v2.4.6) — local-validate.sh uses system biome, causing format drift if wrong version is used"
+      ],
+      "code": [
+        {
+          "path": "crates/browser/src/types.rs",
+          "line": 1,
+          "end_line": 50,
+          "finding": "BrowserRequest serde uses #[serde(default)] which handles missing fields but NOT explicit null — LLMs send null for all optional fields, requiring obj.retain(|_,v| !v.is_null()) strip before deserialization"
+        },
+        {
+          "path": "crates/browser/src/screencast.rs",
+          "line": 237,
+          "end_line": 239,
+          "finding": "Original relay task exited when tx.send() found zero receivers (LaggingReceivers/NoReceivers error) — must use SendError check only, drop frames on no-receiver condition"
+        },
+        {
+          "path": "crates/browser/src/manager.rs",
+          "line": 1,
+          "end_line": 50,
+          "finding": "CDP Input.dispatchMouseEvent mouseWheel requires both deltaX AND deltaY to always be present — omitting either (even when zero) causes 'deltaX and deltaY are expected' error"
+        },
+        {
+          "path": "crates/browser/src/pool.rs",
+          "line": 396,
+          "end_line": 420,
+          "finding": "sandbox_profile_dir() was per-session; shared profile requires SingletonLock deletion before container launch to prevent Chrome startup failure"
+        },
+        {
+          "path": "crates/web/src/assets/js/page-browser.js",
+          "line": 1,
+          "end_line": 50,
+          "finding": "Canvas event listeners attached via useEffect([]) miss the canvas when it renders conditionally — use ref callback (canvasRefCallback) pattern to attach on DOM insertion"
+        },
+        {
+          "path": "crates/web/src/assets/js/websocket.js",
+          "line": 1338,
+          "end_line": 1358,
+          "finding": "browser.screencast.frame was missing from the subscribeEvents list — broadcast.rs filter silently drops all frames for unsubscribed event types"
+        },
+        {
+          "path": "crates/browser/src/manager.rs",
+          "line": 1,
+          "end_line": 50,
+          "finding": "CDP keyboard events require windowsVirtualKeyCode for special keys (Backspace=8, Enter=13, arrows=37-40, Delete=46, Escape=27) — without it Chrome silently ignores them"
+        },
+        {
+          "path": "crates/browser/src/manager.rs",
+          "line": 1,
+          "end_line": 50,
+          "finding": "Viewport resize via SetDeviceMetricsOverride on every start_screencast call destabilizes Chrome containers — should only resize once per session using ScreencastRegistry.is_active() guard"
+        }
+      ],
+      "workflow": [
+        "YubiKey tap required for every git push — sign-once-per-session not available",
+        "local-validate.sh 531 is the validation harness for PRs; runs biome, fmt, i18n parity, install name checks, and zizmor in parallel",
+        "Background task notifications require reading output files via path in task-notification tag",
+        "CDP screencast frame chain: Chrome -\u003e CDP event -\u003e ScreencastRegistry broadcast -\u003e service subscribe -\u003e WS relay -\u003e JS event listener -\u003e canvas rAF draw — each link can silently drop frames",
+        "Integration tests for browser features need --test-threads=1 to avoid profile lock conflicts between parallel tests"
+      ]
+    },
+    "friction": [
+      "YubiKey tap required for every git push, causing repeated push failures mid-session",
+      "biome format --write via npx used wrong version (0.3.3 vs 2.4.6), causing repeated CI failures after apparently successful local lint",
+      "Multiple silent failure modes in the CDP → WS chain made debugging 'waiting for first frame' extremely difficult — required adding diagnostic logging at each step",
+      "Two separate BrowserManager instances (tool vs service) was an architectural issue that wasn't obvious from the codebase — no tests caught it",
+      "Gateway db_pool initialization order prevented clean wiring of BrowserSessionStore — required an awkward deferred set_session_store() pattern",
+      "Chrome containers crash when viewport resize (SetDeviceMetricsOverride) is called repeatedly on screencast start/stop cycles during session switching"
+    ],
+    "open_items": [
+      "WebRTC upgrade (neko-style) for lower latency and better bandwidth efficiency vs CDP JPEG screencast — noted as right long-term direction",
+      "Binary WebSocket frames for screencast (eliminates 33% base64 overhead) — identified but not implemented",
+      "Session history UI only shows action logs; no video/screenshot replay of what was done in a session",
+      "Agent-created browser sessions may not appear in session history if they bypass the service layer (BrowserTool goes directly to manager, not through RealBrowserService logging)",
+      "Multiple concurrent sandbox sessions sharing a single profile directory may have cookie write conflicts",
+      "Per-agent profile names use session_key directly — no config mapping for human-readable profile names",
+      "Scrollbar click-to-scroll uses CDPevaluate with scrollTo — not tested for reliability across all page types",
+      "Google autocomplete suggestions use suggestqueries.google.com — may have CORS issues in some network configurations",
+      "Playwright e2e tests for browser interaction (click accuracy, scroll) are written but not run in CI — marked as manual/integration tests"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-01T20:47:54.837957Z",
+    "agent_lines": 0,
+    "human_added": 0,
+    "human_modified": 16,
+    "human_removed": 3,
+    "total_committed": 0,
+    "agent_percentage": 0
+  }
+}
