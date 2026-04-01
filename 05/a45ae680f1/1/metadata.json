@@ -1,0 +1,92 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "05a45ae680f1",
+  "session_id": "8ab6b798-adbb-41f6-b5c5-9dbe221f2487",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-01T20:48:39.261571Z",
+  "branch": "succinct-pyroraptor",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/chat/src/lib.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "2b8fde34e02b",
+  "token_usage": {
+    "input_tokens": 411,
+    "cache_creation_tokens": 282188,
+    "cache_read_tokens": 69438776,
+    "output_tokens": 85929,
+    "api_call_count": 362
+  },
+  "summary": {
+    "intent": "Improve the LLM provider/model selection UX by reducing overwhelming model lists, showing most relevant models first, and surfacing probe errors more clearly.",
+    "outcome": "Implemented collapsible model lists (top 3 visible, expand toggle), recommended model flagging in Rust backend, version-number-based sorting for undated models, inline probe error display with correct error message propagation, and legacy model hiding (\u003e1 year old) in the chat selector.",
+    "learnings": {
+      "repo": [
+        "The project uses three distinct JS files for model card rendering: page-providers.js (settings), onboarding-view.js (onboarding), and providers.js (preferred models modal) — all three need parallel changes for UI consistency",
+        "ws-connect.js line 96 calls localizeRpcError() on every WS response before resolving, overwriting server error messages with locale strings based on error.code — this silently discards specific backend error details",
+        "ServiceError::Message variants serialize with code UNAVAILABLE, causing all non-Forbidden errors to get the generic 'Service temporarily unavailable' locale string",
+        "The project uses mise-managed biome 2.4.6 for CI validation, but npx biome resolves to 0.3.3 — they have different ternary formatting rules, causing CI failures when using npx",
+        "models.list() applies legacy filtering and preferred sorting; models.list_all() is used by the settings page and shows everything — the preferred field was missing from list_all responses",
+        "The local-validate.sh script must be used for pre-push validation; biome must be run as system biome (2.4.6 via mise), not npx",
+        "catalog_to_discovered() helper marks the first N static catalog entries as recommended — provider order in the catalog array determines which models get the recommended badge",
+        "Config validation requires updating both schema.rs struct fields AND the validate.rs schema map when adding new config keys"
+      ],
+      "code": [
+        {
+          "path": "crates/web/src/assets/js/ws-connect.js",
+          "line": 96,
+          "end_line": 96,
+          "finding": "localizeRpcError() overwrites frame.error.message with locale string before pending callbacks are called — original server message must be preserved as serverMessage property"
+        },
+        {
+          "path": "crates/service-traits/src/lib.rs",
+          "line": 51,
+          "end_line": 51,
+          "finding": "All ServiceError::Message variants convert to ErrorShape with code UNAVAILABLE regardless of the actual error content"
+        },
+        {
+          "path": "crates/web/src/assets/js/helpers.js",
+          "line": 196,
+          "end_line": 201,
+          "finding": "localizedRpcErrorMessage() ignores error.message when a code-based locale string exists — needed to preserve original message as serverMessage"
+        },
+        {
+          "path": "crates/chat/src/lib.rs",
+          "finding": "list_all() was missing the preferred field that list() had — settings page couldn't sort preferred models to top without backend change"
+        },
+        {
+          "path": "crates/providers/src/openai.rs",
+          "finding": "parse_model_entry() creates DiscoveredModel from OpenAI API — flagship model IDs (gpt-5.4, o4-mini, o3 without date suffixes) can be pattern-matched here to set recommended:true"
+        }
+      ],
+      "workflow": [
+        "Always run system biome (biome, not npx biome) for formatting — use `which biome` to verify version matches CI (2.4.6)",
+        "When adding a field to a Rust struct used in many places, compile early and fix all missing field errors systematically rather than trying to find them all upfront",
+        "sed-based bulk edits for adding struct fields to test code are faster than manual edits but can accidentally match non-target structs — verify with a compile check immediately after"
+      ]
+    },
+    "friction": [
+      "The probe error display required fixing three separate code paths (page-providers.js, onboarding-view.js, providers.js) because each had its own model card rendering",
+      "The actual error message was being silently replaced by locale strings in ws-connect.js — required tracing through 4 layers (backend log → ServiceError → ErrorShape → localizeRpcError → testModel) to find root cause",
+      "biome version mismatch (npx 0.3.3 vs system 2.4.6) caused CI failures on ternary formatting that passed local lint checks",
+      "Adding recommended field to ModelInfo required fixing ~20+ struct initializations across providers, tests, swift-bridge, and gateway crates — bulk sed script accidentally modified non-ModelInfo structs (PendingInvoke in server.rs)"
+    ],
+    "open_items": [
+      "recommended field for GitHub Copilot and OpenAI-compatible providers uses static top-N approach — no intelligence about which models are actually flagships for those providers",
+      "The preferred models modal (providers.js) still shows all models without collapse — only onboarding and settings got the top-3 collapse treatment",
+      "show_legacy_models config option exists but there's no UI toggle in settings to enable it — users must edit moltis.toml manually",
+      "Anthropic models have no createdAt timestamps in the static catalog — version-number sort fallback applies but the catalog order already handles this correctly",
+      "popularity-based sorting (pre-selection, before user has usage history) was discussed but only partially implemented via recommended flag — no community/external data source integrated"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-01T20:47:51.950473Z",
+    "agent_lines": 0,
+    "human_added": 7,
+    "human_modified": 5,
+    "human_removed": 0,
+    "total_committed": 7,
+    "agent_percentage": 0
+  }
+}

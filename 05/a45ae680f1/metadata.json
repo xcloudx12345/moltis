@@ -3,7 +3,7 @@
   "checkpoint_id": "05a45ae680f1",
   "strategy": "manual-commit",
   "branch": "succinct-pyroraptor",
-  "checkpoints_count": 0,
+  "checkpoints_count": 1,
   "files_touched": [
     "crates/chat/src/lib.rs"
   ],
@@ -14,13 +14,20 @@
       "context": "/05/a45ae680f1/0/context.md",
       "content_hash": "/05/a45ae680f1/0/content_hash.txt",
       "prompt": "/05/a45ae680f1/0/prompt.txt"
+    },
+    {
+      "metadata": "/05/a45ae680f1/1/metadata.json",
+      "transcript": "/05/a45ae680f1/1/full.jsonl",
+      "context": "/05/a45ae680f1/1/context.md",
+      "content_hash": "/05/a45ae680f1/1/content_hash.txt",
+      "prompt": "/05/a45ae680f1/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 23,
-    "cache_creation_tokens": 11793,
-    "cache_read_tokens": 720893,
-    "output_tokens": 5015,
-    "api_call_count": 19
+    "input_tokens": 434,
+    "cache_creation_tokens": 293981,
+    "cache_read_tokens": 70159669,
+    "output_tokens": 90944,
+    "api_call_count": 381
   }
 }
