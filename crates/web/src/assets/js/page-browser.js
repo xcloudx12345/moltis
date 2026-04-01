@@ -153,6 +153,10 @@ async function navigateSession(sessionId, url) {
 		});
 		showToast(`Navigated to ${res.url || url}`);
 		await fetchSessions();
+		// Auto-start screencast after navigating to a real page
+		if (!screencasting.value && activeSession.value === sessionId) {
+			await startScreencast(sessionId);
+		}
 	} catch (e) {
 		showToast(`Navigation failed: ${e.message}`, "error");
 	}
@@ -172,7 +176,11 @@ async function createSession() {
 			return;
 		}
 		await fetchSessions();
-		await startScreencast(newId);
+		// Select the session so the navigate bar appears, but don't start
+		// screencast yet — about:blank won't generate any frames.
+		// Screencast starts automatically after the user navigates somewhere.
+		activeSession.value = newId;
+		showToast("Session created — enter a URL to get started");
 	} catch (e) {
 		showToast(`Failed to create session: ${e.message}`, "error");
 	} finally {
@@ -406,9 +414,15 @@ function BrowserCanvas() {
 		};
 	}, []);
 
-	if (!(screencasting.value && activeSession.value)) {
+	if (!activeSession.value) {
 		return html`<div class="flex-1 flex items-center justify-center text-xs text-[var(--muted)] border border-dashed border-[var(--border)] rounded-lg min-h-[300px]">
 			Select a session and click "View" to see the browser
+		</div>`;
+	}
+
+	if (!screencasting.value) {
+		return html`<div class="flex-1 flex items-center justify-center text-xs text-[var(--muted)] border border-dashed border-[var(--border)] rounded-lg min-h-[300px]">
+			Enter a URL above to start browsing
 		</div>`;
 	}
 
