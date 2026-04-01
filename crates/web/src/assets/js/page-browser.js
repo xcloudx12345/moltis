@@ -479,6 +479,10 @@ function relayWheelEvent(e, canvas) {
 
 function relayKeyEvent(e) {
 	if (!(activeSession.value && screencasting.value)) return;
+
+	// Let Cmd+V / Ctrl+V through to trigger the paste event
+	if ((e.metaKey || e.ctrlKey) && e.key === "v") return;
+
 	e.preventDefault();
 
 	var modifiers = 0;
@@ -495,6 +499,32 @@ function relayKeyEvent(e) {
 		code: e.code,
 		text: e.key.length === 1 ? e.key : undefined,
 		modifiers: modifiers || undefined,
+	}).catch(() => {});
+}
+
+function relayPasteEvent(e) {
+	if (!(activeSession.value && screencasting.value)) return;
+	e.preventDefault();
+	var text = e.clipboardData?.getData("text");
+	if (!text) return;
+
+	// Use CDP evaluate to insert text into the focused element —
+	// this works for input fields, textareas, and contenteditable.
+	browserAction({
+		session_id: activeSession.value,
+		action: "evaluate",
+		code: `(() => {
+			var el = document.activeElement;
+			if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
+				var start = el.selectionStart || 0;
+				var end = el.selectionEnd || 0;
+				el.value = el.value.slice(0, start) + ${JSON.stringify(text)} + el.value.slice(end);
+				el.selectionStart = el.selectionEnd = start + ${text.length};
+				el.dispatchEvent(new Event("input", { bubbles: true }));
+			} else {
+				document.execCommand("insertText", false, ${JSON.stringify(text)});
+			}
+		})()`,
 	}).catch(() => {});
 }
 
@@ -849,6 +879,7 @@ function BrowserCanvas() {
 		canvas.setAttribute("tabindex", "0");
 		canvas.addEventListener("keydown", relayKeyEvent);
 		canvas.addEventListener("keyup", relayKeyEvent);
+		canvas.addEventListener("paste", relayPasteEvent);
 		canvas.focus();
 
 		cleanupRef.current = () => {
@@ -859,6 +890,7 @@ function BrowserCanvas() {
 			canvas.removeEventListener("contextmenu", onCtx);
 			canvas.removeEventListener("keydown", relayKeyEvent);
 			canvas.removeEventListener("keyup", relayKeyEvent);
+			canvas.removeEventListener("paste", relayPasteEvent);
 		};
 	}
 
