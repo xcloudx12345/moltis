@@ -1,0 +1,111 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "659d08b70d42",
+  "session_id": "f121323c-d69f-4896-b4bd-8826347073cf",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-01T14:51:33.543827Z",
+  "branch": "claude/plan-browser-viewing-HOHno",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/web/src/assets/js/page-browser.js"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "2e2fc6b1f6f7",
+  "token_usage": {
+    "input_tokens": 4022,
+    "cache_creation_tokens": 875076,
+    "cache_read_tokens": 161087860,
+    "output_tokens": 203062,
+    "api_call_count": 606
+  },
+  "summary": {
+    "intent": "Build a fully interactive browser-in-browser feature for the moltis platform, allowing users to create, view, and interact with sandboxed browser sessions from the UI, with session history and action logging.",
+    "outcome": "Delivered a working interactive browser viewer with shared manager between tool and UI, CDP screencast relay, click/scroll/keyboard input, URL autocomplete, session persistence to SQLite, and action logging — though the session history UI was still being built at transcript end.",
+    "learnings": {
+      "repo": [
+        "BrowserTool and RealBrowserService previously had separate BrowserManager instances; sessions created by the tool were invisible to the UI's API until shared via Arc\u003cOnceCell\u003e",
+        "The v4 WebSocket protocol requires clients to explicitly subscribe to event types via subscriptions list in websocket.js — missing 'browser.screencast.frame' caused silent frame drops via broadcast.rs filter at line 100-102",
+        "CDP Page.startScreencast relay task exits immediately when tx.send() has zero receivers; serde's #[serde(default)] handles missing fields but not explicit null — LLMs send null for all optional params",
+        "CDP Input.dispatchMouseEvent with mouseWheel type requires BOTH deltaX and deltaY always present (even if 0), or it rejects the event",
+        "Screencast metadata offset_top must be added to y-coordinates for correct click mapping; canvas clientWidth/clientHeight (not getBoundingClientRect) gives inside-border dimensions",
+        "Browser sessions were launched at 2560x1440@2x viewport by default — causing layout issues, off-center captchas, and poor interactive UX; 1440x900@1x is the right default for interactive viewing",
+        "Rapidly stopping/starting screencasts on session switch causes Chrome CDP connection death; screencasts should run continuously and frame listeners filter by session_id instead",
+        "GatewayServices.session_store is a different field from the new browser session store — replace_all operations risk collisions with coincidentally named fields",
+        "Container idle timeout (5 min) and hard TTL (30 min) were too aggressive for interactive browser sessions; increased to 30 min idle and 2 hour TTL"
+      ],
+      "code": [
+        {
+          "path": "crates/browser/src/screencast.rs",
+          "line": 237,
+          "end_line": 239,
+          "finding": "Relay task exits on tx.send() with zero receivers — should continue dropping frames until subscribers arrive"
+        },
+        {
+          "path": "crates/tools/src/browser.rs",
+          "finding": "obj.retain(|_, v| !v.is_null()) strips null values before serde deserialization to handle LLM behavior of sending null for all optional fields"
+        },
+        {
+          "path": "crates/browser/src/manager.rs",
+          "finding": "pool.get_or_create with existing session_id returns immediately without checking sandbox mode — no new session spawned on navigate"
+        },
+        {
+          "path": "crates/browser/src/types.rs",
+          "finding": "validate_url() only allowed http/https schemes, rejecting about:blank which is needed for new session creation"
+        },
+        {
+          "path": "crates/web/src/assets/js/websocket.js",
+          "line": 1338,
+          "end_line": 1358,
+          "finding": "Event subscription list (used by broadcast.rs filter) was missing 'browser.screencast.frame' — all screencast frames silently dropped"
+        },
+        {
+          "path": "crates/web/src/assets/js/page-browser.js",
+          "finding": "useEffect with empty deps runs before canvas is conditionally rendered — ref callback pattern required to attach event listeners when canvas DOM element appears"
+        },
+        {
+          "path": "crates/gateway/src/broadcast.rs",
+          "line": 100,
+          "end_line": 102,
+          "finding": "Broadcast has a subscription filter — events not in client's subscription list are silently dropped"
+        },
+        {
+          "path": "crates/gateway/src/services.rs",
+          "finding": "RealBrowserService.request() calls session_id and sandbox injection but didn't strip nulls; default sandbox mode needed for UI-initiated requests"
+        }
+      ],
+      "workflow": [
+        "Adding diagnostic logging at every stage of an async relay chain (CDP → registry → service → WS) is the right approach when frames disappear silently",
+        "Integration tests with #[ignore] for host browser tests require --test-threads=1 to avoid profile lock conflicts between parallel test instances",
+        "Playwright e2e tests for browser-in-browser features can verify canvas visibility and URL normalization without requiring actual CDP frame delivery",
+        "YubiKey git signing requires interactive tap — background push tasks will fail and need retry; don't amend, just retry push",
+        "When replace_all editing shared field names across a large file, verify no coincidental name collisions with unrelated fields first"
+      ]
+    },
+    "friction": [
+      "YubiKey signing required multiple manual taps mid-session, blocking push workflows repeatedly",
+      "CDP mouseWheel event silently fails without both deltaX and deltaY — not obvious from the CDP docs, discovered via test failure",
+      "GatewayServices.session_store field name collision caused a silent bug when using replace_all for the new browser session store field",
+      "db_pool is created after browser service in server.rs initialization order, requiring OnceCell deferred initialization pattern to wire the session store",
+      "sqlx::SqlitePool cannot be referenced in service-traits crate (no sqlx dep), requiring the set_session_store method to be on the concrete type rather than the trait",
+      "Rapid stop/start of screencasts on session switch caused Chrome CDP connection death — debugging required multiple rounds of log analysis"
+    ],
+    "open_items": [
+      "Session history UI (closed sessions list, action log viewer, screenshot timeline) was being built at transcript end — not yet committed",
+      "Binary WebSocket frames for screencast (eliminates ~33% base64 overhead) was identified but not implemented",
+      "WebRTC upgrade path (neko architecture, VP8/VP9 encoding, sub-100ms latency) identified as long-term direction but deferred",
+      "Per-agent browser profiles for isolation — currently single global profile dir for all sessions",
+      "Browser session action log should capture screenshots on navigation events for video-like replay — JSONL + periodic screenshots planned but not implemented",
+      "Chrome process crash recovery — a single CDP failure can still kill sessions; retry logic added but root cause of container memory pressure not addressed",
+      "PR not created — branch plan-browser-viewing-HOHno has all changes but was not merged at session end"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-01T14:50:46.204928Z",
+    "agent_lines": 0,
+    "human_added": 119,
+    "human_modified": 3,
+    "human_removed": 0,
+    "total_committed": 119,
+    "agent_percentage": 0
+  }
+}
