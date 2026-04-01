@@ -1,0 +1,91 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "3a865ff3d03c",
+  "session_id": "4be02087-7e0d-4eec-a4b0-0889b427ce30",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-01T20:41:40.020336Z",
+  "branch": "mango-collision",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/cli/Cargo.toml",
+    "crates/config/src/schema.rs",
+    "crates/config/src/template.rs",
+    "crates/config/src/validate.rs",
+    "crates/gateway/Cargo.toml",
+    "crates/gateway/src/server.rs",
+    "crates/tools/Cargo.toml",
+    "crates/tools/src/firecrawl.rs",
+    "crates/tools/src/lib.rs",
+    "crates/tools/src/web_fetch.rs",
+    "crates/tools/src/web_search.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "635cf95cd17f",
+  "token_usage": {
+    "input_tokens": 76,
+    "cache_creation_tokens": 138314,
+    "cache_read_tokens": 7265869,
+    "output_tokens": 31125,
+    "api_call_count": 70
+  },
+  "summary": {
+    "intent": "Add Firecrawl web scraping/search integration to the moltis project, modeled after how openclaw implements it, with a feature gate to allow disabling it.",
+    "outcome": "Full Firecrawl integration was implemented and merged: a standalone scrape tool, a search provider variant, a web_fetch fallback, config schema/validation/template updates, feature flags (default-on), and gateway wiring. All 640 tests pass, clippy clean, PR created.",
+    "learnings": {
+      "repo": [
+        "moltis uses a worktree at /Users/penso/.superset/worktrees/moltis/mango-collision/",
+        "openclaw's firecrawl plugin lives at /Users/penso/code/openclaw/extensions/firecrawl/ and served as the reference implementation",
+        "moltis feature flags follow a default-on pattern in crates/cli/Cargo.toml and propagate down through gateway → tools crates",
+        "Config additions require changes in 3 files: schema.rs (struct/enum), validate.rs (schema map + semantic warnings), and template.rs (commented-out example)",
+        "Tool registration happens in crates/gateway/src/server.rs",
+        "macOS builds exclude CUDA features; llama-cpp crate has unrelated build issues on macOS that affect cargo clippy on the full workspace",
+        "Clippy lint `clippy::collapsible-if` was triggered by nested if-let blocks in web_search.rs and web_fetch.rs"
+      ],
+      "code": [
+        {
+          "path": "crates/tools/src/web_fetch.rs",
+          "finding": "Extraction chain: Readability (local) → Firecrawl fallback (if configured and readability yields \u003c10% of HTML body) → basic HTML cleanup"
+        },
+        {
+          "path": "crates/tools/src/firecrawl.rs",
+          "finding": "New module: FirecrawlScrapeTool + shared helpers firecrawl_scrape(), firecrawl_search(), resolve_api_key(). 21 tests using mockito."
+        },
+        {
+          "path": "crates/config/src/validate.rs",
+          "finding": "Semantic warning pattern: warn when search provider = firecrawl but no API key is configured"
+        },
+        {
+          "path": "crates/tools/src/web_search.rs",
+          "finding": "SearchProvider enum extended with Firecrawl variant; with_firecrawl_config() builder pattern matches existing with_brave_config() style"
+        }
+      ],
+      "workflow": [
+        "The initial agent search ran against the wrong path and had to be manually corrected with a direct Grep",
+        "Incremental build verification after each major step (compile check, then tests, then clippy, then fmt) caught the missing Debug derive on ScrapeResult early",
+        "Running clippy per-crate (--package) avoids unrelated workspace failures from CUDA/llama-cpp crates on macOS",
+        "cargo fmt uses pinned nightly toolchain in this repo"
+      ]
+    },
+    "friction": [
+      "Initial agent search searched the wrong repository path, requiring manual correction",
+      "Missing `#[derive(Debug)]` on ScrapeResult caused test compilation failure, caught only when running tests",
+      "Clippy on the full workspace fails on macOS due to unrelated llama-cpp/CUDA crate issues, requiring per-crate clippy invocation",
+      "Two collapsible-if clippy warnings had to be fixed in web_search.rs and web_fetch.rs after initial implementation"
+    ],
+    "open_items": [
+      "Firecrawl feature is default-on; there may be value in revisiting whether it should be opt-in given it adds an external API dependency",
+      "The \u003c10% threshold for triggering the Firecrawl fallback in web_fetch is a heuristic that may need tuning based on real-world usage",
+      "No integration/E2E tests for the actual Firecrawl API calls (only mockito unit tests); real API smoke tests could be added",
+      "The firecrawl_search() function in web_search.rs was added but no search provider UI/docs were updated"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-01T20:41:15.392512Z",
+    "agent_lines": 1126,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1126,
+    "agent_percentage": 100
+  }
+}

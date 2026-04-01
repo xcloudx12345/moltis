@@ -1,0 +1,36 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "3a865ff3d03c",
+  "strategy": "manual-commit",
+  "branch": "mango-collision",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/cli/Cargo.toml",
+    "crates/config/src/schema.rs",
+    "crates/config/src/template.rs",
+    "crates/config/src/validate.rs",
+    "crates/gateway/Cargo.toml",
+    "crates/gateway/src/server.rs",
+    "crates/tools/Cargo.toml",
+    "crates/tools/src/firecrawl.rs",
+    "crates/tools/src/lib.rs",
+    "crates/tools/src/web_fetch.rs",
+    "crates/tools/src/web_search.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/3a/865ff3d03c/0/metadata.json",
+      "transcript": "/3a/865ff3d03c/0/full.jsonl",
+      "context": "/3a/865ff3d03c/0/context.md",
+      "content_hash": "/3a/865ff3d03c/0/content_hash.txt",
+      "prompt": "/3a/865ff3d03c/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 76,
+    "cache_creation_tokens": 138314,
+    "cache_read_tokens": 7265869,
+    "output_tokens": 31125,
+    "api_call_count": 70
+  }
+}
