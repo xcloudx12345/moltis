@@ -170,12 +170,17 @@ impl BrowserManager {
 
     /// Clean up a session whose CDP connection has died and return an
     /// actionable error the agent can act on.
+    ///
+    /// Only logs and closes the session if it still exists in the pool
+    /// (avoids spam when multiple queued events all hit a dead session).
     async fn cleanup_stale_session(&self, session_id: &str, action: &str) -> Error {
-        warn!(
-            session_id,
-            action, "browser connection dead, closing stale session"
-        );
-        let _ = self.pool.close_session(session_id).await;
+        if self.pool.has_session(session_id).await {
+            warn!(
+                session_id,
+                action, "browser connection dead, closing stale session"
+            );
+            let _ = self.pool.close_session(session_id).await;
+        }
         Error::ConnectionClosed(format!(
             "Browser session {session_id} lost its connection during {action}. \
              Please navigate to the page again to get a fresh session."
@@ -279,7 +284,11 @@ impl BrowserManager {
             },
         };
 
-        // Detect stale connections for all non-Navigate actions
+        // Detect stale connections for all non-Navigate actions.
+        // Only close the session if a connection error occurs — a single
+        // transient failure (e.g. Chrome temporarily busy) shouldn't kill
+        // the entire session. The pool's has_session guard also prevents
+        // cleanup spam from queued events hitting an already-dead session.
         match result {
             Err(ref e) if e.is_connection_error() => {
                 let sid = session_id.unwrap_or("unknown");

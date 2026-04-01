@@ -24,7 +24,7 @@ use crate::{
     types::{BrowserConfig, BrowserPreference},
 };
 
-pub(crate) const MAX_BROWSER_INSTANCE_LIFETIME: Duration = Duration::from_secs(30 * 60);
+pub(crate) const MAX_BROWSER_INSTANCE_LIFETIME: Duration = Duration::from_secs(2 * 60 * 60);
 
 /// Information about an active browser session.
 #[derive(Debug, Clone, serde::Serialize)]
@@ -237,6 +237,11 @@ impl BrowserPool {
 
         inst.pages.insert("main".to_string(), page.clone());
         Ok(page)
+    }
+
+    /// Check if a session exists in the pool.
+    pub async fn has_session(&self, session_id: &str) -> bool {
+        self.instances.read().await.contains_key(session_id)
     }
 
     /// Close a specific browser session.
