@@ -1,0 +1,85 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "6719842d0d2c",
+  "session_id": "f121323c-d69f-4896-b4bd-8826347073cf",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-01T08:10:18.51824Z",
+  "branch": "claude/plan-browser-viewing-HOHno",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "crates/browser/src/types.rs",
+    "crates/gateway/src/server.rs",
+    "crates/gateway/src/services.rs",
+    "crates/tools/src/browser.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "e4936a17b664",
+  "token_usage": {
+    "input_tokens": 3405,
+    "cache_creation_tokens": 169870,
+    "cache_read_tokens": 4429952,
+    "output_tokens": 22904,
+    "api_call_count": 67
+  },
+  "summary": {
+    "intent": "Fix a browser tool crash caused by LLMs sending explicit null for optional parameters, then ensure agent-created browser sessions are visible in the UI's Settings \u003e Browsers panel, and add a 'New Session' button to the UI.",
+    "outcome": "All three goals achieved: null-stripping fix landed, BrowserTool and RealBrowserService now share a single BrowserManager instance, and a 'New Session' button was added to page-browser.js. All 705 tests pass and changes were committed.",
+    "learnings": {
+      "repo": [
+        "serde's #[serde(default)] only handles missing keys, not explicit null values — LLMs (MiniMax in particular) send null for every optional parameter, requiring a null-strip pass before deserialization",
+        "BrowserTool and RealBrowserService previously each instantiated their own independent BrowserManager, so tool-created sessions were invisible to the UI API",
+        "The workspace has a clippy deny on .expect() in tests — use unwrap() or proper error handling instead",
+        "Live browser viewing via CDP screencast with multi-subscriber broadcast is already implemented; cookie export/import and profile persistence (~/.moltis/browser/profile/) are also already in place",
+        "Navigating with session_id: None in BrowserManager.pool.get_or_create() creates a new session — the backend already supported 'New Session' creation before the UI exposed it"
+      ],
+      "code": [
+        {
+          "path": "crates/tools/src/browser.rs",
+          "finding": "Added obj.retain(|_, v| !v.is_null()) null-stripping before deserialization in execute(), and refactored BrowserTool to hold Arc\u003cOnceCell\u003c...\u003e\u003e so the manager can be shared with RealBrowserService"
+        },
+        {
+          "path": "crates/gateway/src/services.rs",
+          "finding": "RealBrowserService updated to accept a shared manager cell from BrowserTool instead of creating its own"
+        },
+        {
+          "path": "crates/gateway/src/server.rs",
+          "finding": "BrowserTool now created early in server setup so its manager cell can be passed to RealBrowserService; tool registration later reuses the pre-created instance"
+        },
+        {
+          "path": "crates/browser/src/types.rs",
+          "finding": "Added test for null-stripping deserialization of BrowserRequest; fixed .expect() usage to satisfy workspace clippy deny"
+        },
+        {
+          "path": "crates/web/src/assets/js/page-browser.js",
+          "finding": "Added createNewSession() function (POSTs navigate with no session_id to /api/browser/action), 'New Session' button in header, and updated empty-state copy to mention the button"
+        }
+      ],
+      "workflow": [
+        "Biome is used for JS linting/formatting; no issues were raised by the null-stripping and UI changes",
+        "Tailwind CSS rebuild was checked but no new classes were needed — existing utility classes covered the new button",
+        "Clippy is run per-crate to isolate pre-existing errors (e.g. moltis-voice) from newly introduced ones",
+        "The worktree pattern (plan-browser-viewing-HOHno) is used for feature branches"
+      ]
+    },
+    "friction": [
+      "Initial browser tool call failed twice with 'invalid type: null, expected u64' before the root cause was diagnosed — the LLM was generating null for timeout_ms even though it's a u64",
+      "Clippy workspace deny on .expect() in tests required a fix pass after the main implementation was done",
+      "Pre-existing clippy errors in moltis-voice and a CUDA-related error created noise when running workspace-wide checks, requiring per-crate scoping to verify clean results",
+      "Shared manager wiring required reading server.rs in multiple passes to understand ownership and creation order"
+    ],
+    "open_items": [
+      "Per-agent browser profiles are not yet implemented — currently a single global profile (~/.moltis/browser/profile/) is shared across all sessions",
+      "No mutual exclusion when multiple parties (agent + UI user) control the same browser session simultaneously — currently both can send input without coordination",
+      "The broader profile-per-agent architecture was explicitly deferred in favor of shipping the immediate fixes"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-01T08:09:51.054623Z",
+    "agent_lines": 74,
+    "human_added": 31,
+    "human_modified": 3,
+    "human_removed": 0,
+    "total_committed": 108,
+    "agent_percentage": 68.51851851851852
+  }
+}
