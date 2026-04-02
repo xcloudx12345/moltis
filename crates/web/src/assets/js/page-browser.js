@@ -367,7 +367,16 @@ async function selectSession(sessionId) {
 
 	// Guard: session might have changed during await
 	if (activeSession.value !== sessionId) return;
-	await sendStartScreencast(sessionId);
+	// Only start screencast if not already running for this session —
+	// each start_screencast spawns a new relay task, and duplicates
+	// flood the WebSocket causing the UI to freeze.
+	var sessInfo = sessions.value.find((s) => s.session_id === sessionId);
+	if (sessInfo && sessInfo.screencasting) {
+		screencasting.value = true;
+		ensureFrameListener();
+	} else {
+		await sendStartScreencast(sessionId);
+	}
 	startUrlPolling();
 }
 
