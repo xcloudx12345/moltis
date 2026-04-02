@@ -626,6 +626,11 @@ impl BrowserPool {
             builder = builder.arg(arg);
         }
 
+        // Restore session cookies across browser restarts so logins persist.
+        // Without this, cookies marked as "session" (no expiry) are lost
+        // when Chrome exits, even with a persistent profile directory.
+        builder = builder.arg("--restore-session-cookies");
+
         // Set persistent profile directory if configured
         if let Some(ref profile_path) = self.config.resolved_profile_dir() {
             if let Err(e) = std::fs::create_dir_all(profile_path) {
