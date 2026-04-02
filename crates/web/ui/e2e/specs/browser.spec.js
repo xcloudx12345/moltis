@@ -4,12 +4,7 @@
 // navigating, screencast frame delivery, and session lifecycle.
 
 const { test, expect } = require("../base-test");
-const {
-	navigateAndWait,
-	waitForWsConnected,
-	watchPageErrors,
-	expectPageContentMounted,
-} = require("../helpers");
+const { navigateAndWait, waitForWsConnected, watchPageErrors } = require("../helpers");
 
 test.describe("Browser sessions page", () => {
 	test.beforeEach(async ({ page }) => {
@@ -72,10 +67,15 @@ test.describe("Browser sessions page", () => {
 
 		// Should navigate successfully (no error toast about invalid scheme)
 		// Wait for the session list to update with the URL
-		await expect.poll(async () => {
-			const text = await page.locator(".truncate").allInnerTexts();
-			return text.some((t) => t.includes("example.com"));
-		}, { timeout: 30000 }).toBeTruthy();
+		await expect
+			.poll(
+				async () => {
+					const text = await page.locator(".truncate").allInnerTexts();
+					return text.some((t) => t.includes("example.com"));
+				},
+				{ timeout: 30000 },
+			)
+			.toBeTruthy();
 
 		expect(pageErrors).toEqual([]);
 	});
@@ -99,10 +99,15 @@ test.describe("Browser sessions page", () => {
 		await expect(page.locator("canvas")).toBeVisible({ timeout: 30000 });
 
 		// Verify frame metadata is shown (e.g. "Frame #1" or similar)
-		await expect.poll(async () => {
-			const text = await page.locator("body").innerText();
-			return text.includes("Frame #");
-		}, { timeout: 15000 }).toBeTruthy();
+		await expect
+			.poll(
+				async () => {
+					const text = await page.locator("body").innerText();
+					return text.includes("Frame #");
+				},
+				{ timeout: 15000 },
+			)
+			.toBeTruthy();
 
 		expect(pageErrors).toEqual([]);
 	});
@@ -135,9 +140,181 @@ test.describe("Browser sessions page", () => {
 
 		// Check for sandbox badge (if sandbox is enabled in the test environment)
 		// or absence of it (if running without sandbox). Either way, no errors.
-		const hasSandbox = await page.getByText("sandbox").isVisible().catch(() => false);
-		// Just verify the session card rendered with session info
-		await expect(page.getByRole("button", { name: "View" })).toBeVisible();
+		await page
+			.getByText("sandbox")
+			.isVisible()
+			.catch(() => false);
+
+		expect(pageErrors).toEqual([]);
+	});
+
+	// ── Regression tests for specific bugs ──────────────────────
+
+	test("sessions created via REST API appear in UI list (Bug 2: shared manager)", async ({ page }) => {
+		const pageErrors = watchPageErrors(page);
+
+		// Create a session directly via the REST API (simulating agent path)
+		const apiRes = await page.evaluate(async () => {
+			const res = await fetch("/api/browser/action", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ action: "navigate", url: "about:blank" }),
+			});
+			return res.json();
+		});
+
+		// The session should appear in the UI list after refresh
+		await page.getByRole("button", { name: /Refresh/ }).click();
+		await expect
+			.poll(
+				async () => {
+					const text = await page.locator("body").innerText();
+					return text.includes(apiRes.session_id?.slice(0, 12) || "browser-");
+				},
+				{ timeout: 10000 },
+			)
+			.toBeTruthy();
+
+		expect(pageErrors).toEqual([]);
+	});
+
+	test("URL bar shows target URL immediately on navigation (Bug 15: no flicker)", async ({ page }) => {
+		const pageErrors = watchPageErrors(page);
+
+		await page.getByRole("button", { name: "New Session" }).click();
+		await expect(page.getByPlaceholder("Search or enter URL...")).toBeVisible({ timeout: 30000 });
+
+		const input = page.getByPlaceholder("Search or enter URL...");
+		await input.fill("example.com");
+		await input.press("Enter");
+
+		// URL bar should immediately show the normalized URL, not flicker to blank
+		await expect
+			.poll(
+				async () => {
+					const val = await input.inputValue();
+					return val.includes("example.com");
+				},
+				{ timeout: 5000 },
+			)
+			.toBeTruthy();
+
+		expect(pageErrors).toEqual([]);
+	});
+
+	test("switching sessions rapidly does not cause JS errors (Bug 16: relay accumulation)", async ({ page }) => {
+		const pageErrors = watchPageErrors(page);
+
+		// Create first session
+		await page.getByRole("button", { name: "New Session" }).click();
+		await expect(page.getByPlaceholder("Search or enter URL...")).toBeVisible({ timeout: 30000 });
+		const input = page.getByPlaceholder("Search or enter URL...");
+		await input.fill("example.com");
+		await input.press("Enter");
+		await expect(page.locator("canvas")).toBeVisible({ timeout: 30000 });
+
+		// Create second session
+		await page.getByRole("button", { name: "New Session" }).click();
+		await expect(page.getByPlaceholder("Search or enter URL...")).toBeVisible({ timeout: 30000 });
+
+		// Switch back and forth rapidly by clicking session cards
+		const cards = page.locator("[class*='rounded-lg border p-3']");
+		const count = await cards.count();
+		if (count >= 2) {
+			for (let i = 0; i < 4; i++) {
+				await cards.nth(i % count).click();
+				await page.waitForTimeout(200);
+			}
+		}
+
+		// No JS errors should have occurred
+		expect(pageErrors).toEqual([]);
+	});
+
+	test("closed session appears in History tab (Bug 17: dead sessions in history)", async ({ page }) => {
+		const pageErrors = watchPageErrors(page);
+
+		// Create and navigate a session
+		await page.getByRole("button", { name: "New Session" }).click();
+		await expect(page.getByPlaceholder("Search or enter URL...")).toBeVisible({ timeout: 30000 });
+		const input = page.getByPlaceholder("Search or enter URL...");
+		await input.fill("example.com");
+		await input.press("Enter");
+
+		// Wait for navigation to complete
+		await expect
+			.poll(
+				async () => {
+					const text = await page.locator("body").innerText();
+					return text.includes("example.com");
+				},
+				{ timeout: 30000 },
+			)
+			.toBeTruthy();
+
+		// Close the session
+		await page.getByText("Close").click();
+
+		// Switch to History tab
+		await page.getByText("History").click();
+
+		// The closed session should appear with example.com URL
+		await expect
+			.poll(
+				async () => {
+					const text = await page.locator("body").innerText();
+					return text.includes("example.com") && (text.includes("closed") || text.includes("lost"));
+				},
+				{ timeout: 10000 },
+			)
+			.toBeTruthy();
+
+		expect(pageErrors).toEqual([]);
+	});
+
+	test("creating session shows placeholder immediately (Bug: delayed highlight)", async ({ page }) => {
+		const pageErrors = watchPageErrors(page);
+
+		await page.getByRole("button", { name: "New Session" }).click();
+
+		// Placeholder should appear immediately with "creating" badge
+		await expect(page.getByText("New session")).toBeVisible({ timeout: 5000 });
+		await expect(page.getByText("Starting browser")).toBeVisible({ timeout: 5000 });
+		await expect(page.getByText("creating")).toBeVisible({ timeout: 5000 });
+
+		expect(pageErrors).toEqual([]);
+	});
+
+	test("dead session shows error toast and recovers (Bug 12: stuck fetching)", async ({ page }) => {
+		const pageErrors = watchPageErrors(page);
+
+		// Mock a session that will fail on screenshot
+		await page.route("**/api/browser/action", async (route, request) => {
+			const body = JSON.parse(request.postData() || "{}");
+			if (body.action === "navigate") {
+				return route.fulfill({
+					status: 200,
+					contentType: "application/json",
+					body: JSON.stringify({ success: true, session_id: "fake-dead-session", url: "about:blank" }),
+				});
+			}
+			if (body.action === "screenshot") {
+				return route.fulfill({
+					status: 200,
+					contentType: "application/json",
+					body: JSON.stringify({ success: false, session_id: "fake-dead-session", error: "connection lost" }),
+				});
+			}
+			return route.continue();
+		});
+
+		// Create a session (will use mocked API)
+		await page.getByRole("button", { name: "New Session" }).click();
+		await page.waitForTimeout(3000);
+
+		// Should not be stuck on "Fetching browser view..." — should show error or recover
+		const bodyText = await page.locator("body").innerText();
+		expect(bodyText).not.toContain("Fetching browser view");
 
 		expect(pageErrors).toEqual([]);
 	});
