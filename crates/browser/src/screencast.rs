@@ -11,8 +11,8 @@ use {
     chromiumoxide::{
         Page,
         cdp::browser_protocol::page::{
-            EventScreencastFrame, ScreencastFrameAckParams, StartScreencastFormat,
-            StartScreencastParams, StopScreencastParams,
+            EventFrameNavigated, EventScreencastFrame, ScreencastFrameAckParams,
+            StartScreencastFormat, StartScreencastParams, StopScreencastParams,
         },
     },
     futures::StreamExt,
@@ -32,6 +32,9 @@ pub struct ScreencastFrame {
     pub metadata: FrameMetadata,
     /// Monotonically increasing frame sequence number.
     pub sequence: u64,
+    /// Current page URL (included when it changes, None otherwise).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
 }
 
 /// Metadata for a screencast frame.
@@ -198,7 +201,7 @@ async fn relay_screencast_frames(
     tx: broadcast::Sender<ScreencastFrame>,
     session_id: String,
 ) {
-    let mut listener = match page.event_listener::<EventScreencastFrame>().await {
+    let mut frame_listener = match page.event_listener::<EventScreencastFrame>().await {
         Ok(l) => l,
         Err(e) => {
             warn!(session_id = %session_id, error = %e, "failed to subscribe to screencast frames");
@@ -206,14 +209,44 @@ async fn relay_screencast_frames(
         },
     };
 
+    // Listen for navigation events to track URL changes without polling
+    let mut nav_listener = page
+        .event_listener::<EventFrameNavigated>()
+        .await
+        .ok();
+
     let mut sequence: u64 = 0;
+    let mut current_url: Option<String> = None;
     debug!(session_id = %session_id, "screencast frame listener ready, waiting for CDP frames");
 
-    while let Some(event) = listener.next().await {
-        sequence += 1;
+    loop {
+        // Process navigation events first (non-blocking drain)
+        if let Some(ref mut nav) = nav_listener {
+            while let Ok(Some(event)) = tokio::time::timeout(
+                std::time::Duration::from_millis(0),
+                nav.next(),
+            )
+            .await
+            {
+                if event.frame.parent_id.is_none() {
+                    // Top-level frame navigation
+                    current_url = Some(event.frame.url.clone());
+                }
+            }
+        }
 
+        // Wait for the next screencast frame
+        let Some(event) = frame_listener.next().await else {
+            break;
+        };
+
+        sequence += 1;
         if sequence == 1 {
             info!(session_id = %session_id, "first screencast frame received from CDP");
+            // Get initial URL
+            if current_url.is_none() {
+                current_url = page.url().await.ok().flatten();
+            }
         }
 
         // Acknowledge the frame so CDP sends the next one.
@@ -236,12 +269,9 @@ async fn relay_screencast_frames(
                 timestamp: meta.timestamp.as_ref().map(|t| *t.inner()).unwrap_or(0.0),
             },
             sequence,
+            url: current_url.take(),
         };
 
-        // Send to all subscribers. If no one is listening yet (e.g. the
-        // UI relay subscribes slightly after the screencast starts), just
-        // drop the frame — the relay task is aborted via its abort_handle
-        // when the screencast is stopped, so we won't spin forever.
         let _ = tx.send(frame);
     }
 
@@ -267,6 +297,7 @@ mod tests {
                 timestamp: 123.456,
             },
             sequence: 1,
+            url: None,
         };
         let json = serde_json::to_string(&frame);
         assert!(json.is_ok());

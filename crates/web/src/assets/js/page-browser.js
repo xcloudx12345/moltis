@@ -27,7 +27,6 @@ var screenshotCache = {};
 // Track placeholder IDs so fetchSessions doesn't remove them
 var placeholderIds = new Set();
 var urlPollTimer = null;
-var urlPollSuppressUntil = 0; // suppress URL poll after navigation
 // Scroll state for scrollbar overlay
 var scrollInfo = signal(null); // { scrollTop, scrollHeight, viewportHeight }
 var sessionHistory = signal([]);
@@ -161,6 +160,8 @@ function ensureFrameListener() {
 		frameMime.value = "image/jpeg";
 		frameMeta.value = payload.metadata;
 		frameSeq.value = payload.sequence;
+		// URL from CDP frameNavigated event — no polling needed
+		if (payload.url) currentUrl.value = payload.url;
 		// Update cache with latest frame so switching back is instant
 		screenshotCache[payload.session_id] = { data: payload.data, mime: "image/jpeg", meta: payload.metadata };
 	});
@@ -173,34 +174,29 @@ function stopFrameListener() {
 	}
 }
 
-// ── URL polling — detect in-page navigations (link clicks, etc.) ────
+// ── Scroll info polling (URL updates come via screencast frames now) ────
 
 function startUrlPolling() {
 	stopUrlPolling();
 	urlPollTimer = setInterval(async () => {
 		var sid = activeSession.value;
-		if (!(sid && screencasting.value)) return;
-		if (Date.now() < urlPollSuppressUntil) return;
+		if (!sid) return;
 		try {
-			var [urlRes, scrollRes] = await Promise.all([
-				browserAction({ session_id: sid, action: "get_url" }),
-				browserAction({
-					session_id: sid,
-					action: "evaluate",
-					code: "JSON.stringify({scrollTop:window.scrollY,scrollHeight:document.documentElement.scrollHeight,viewportHeight:window.innerHeight})",
-				}),
-			]);
+			var res = await browserAction({
+				session_id: sid,
+				action: "evaluate",
+				code: "JSON.stringify({scrollTop:window.scrollY,scrollHeight:document.documentElement.scrollHeight,viewportHeight:window.innerHeight})",
+			});
 			if (activeSession.value !== sid) return;
-			if (urlRes.url) currentUrl.value = urlRes.url;
-			if (scrollRes.result) {
+			if (res.result) {
 				try {
-					scrollInfo.value = JSON.parse(scrollRes.result);
+					scrollInfo.value = JSON.parse(res.result);
 				} catch {}
 			}
 		} catch {
 			// best effort
 		}
-	}, 2000);
+	}, 5000);
 }
 
 function stopUrlPolling() {
@@ -250,7 +246,6 @@ async function navigateSession(sessionId, rawUrl) {
 	// Show the target URL immediately and suppress poll for 5 seconds
 	// so it doesn't get overwritten with the old URL before page loads.
 	currentUrl.value = url;
-	urlPollSuppressUntil = Date.now() + 5000;
 	try {
 		var res = await browserAction({ session_id: sessionId, action: "navigate", url: url });
 		currentUrl.value = res.url || url;
