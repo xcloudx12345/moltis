@@ -672,10 +672,13 @@ function SessionList() {
 					${
 						sess.creating
 							? null
-							: html`<div class="flex items-center justify-end" onClick=${(e) => e.stopPropagation()}>
+							: html`<div class="flex items-center justify-end">
 						<button
 							class="text-[10px] text-[var(--muted)] hover:text-[var(--error)] transition-colors"
-							onClick=${() => closeSession(sess.session_id)}
+							onClick=${(e) => {
+								e.stopPropagation();
+								closeSession(sess.session_id);
+							}}
 						>
 							Close
 						</button>
