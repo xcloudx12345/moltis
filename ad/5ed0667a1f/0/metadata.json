@@ -1,0 +1,128 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "ad5ed0667a1f",
+  "session_id": "f121323c-d69f-4896-b4bd-8826347073cf",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-02T09:08:26.217015Z",
+  "branch": "claude/plan-browser-viewing-HOHno",
+  "checkpoints_count": 4,
+  "files_touched": [
+    "crates/browser/src/lib.rs",
+    "crates/browser/src/manager.rs",
+    "crates/gateway/src/server.rs",
+    "crates/gateway/src/services.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "6261eed8ab97",
+  "token_usage": {
+    "input_tokens": 4416,
+    "cache_creation_tokens": 3224266,
+    "cache_read_tokens": 334578985,
+    "output_tokens": 272149,
+    "api_call_count": 936
+  },
+  "summary": {
+    "intent": "Build a browser-in-browser viewing and interaction feature for the moltis settings UI, allowing users to create, view, and interact with browser sessions (both manually and via agents), with session history, cookie persistence, and per-agent browser profiles.",
+    "outcome": "PR #531 was created with ~45 commits implementing live CDP screencast viewing, full mouse/keyboard/scroll interaction, URL autocomplete with Google suggestions, session history persisted to SQLite, per-agent browser profiles with cookie isolation, and numerous bug fixes. The feature is functional but has some remaining edge cases around session stability and UI state.",
+    "learnings": {
+      "repo": [
+        "BrowserTool and RealBrowserService each created independent BrowserManager instances — sessions created by the agent tool were invisible to the UI service. Fixed by sharing Arc\u003cOnceCell\u003cBrowserManager\u003e\u003e.",
+        "The WebSocket broadcast system uses an explicit subscription filter (broadcast.rs line 100-102) — clients must subscribe to specific event types like 'browser.screencast.frame' or frames are silently dropped.",
+        "CDP Page.startScreencast relay task exits immediately if tx.send() has zero receivers — the race condition between screencast start and subscriber connection caused 'Waiting for first frame' failures.",
+        "CDP Input.dispatchMouseEvent with mouseWheel requires BOTH deltaX and deltaY fields — omitting either causes a CDP error with no visual feedback.",
+        "Chrome SingletonLock is a symlink to the container hostname; fs::exists() follows symlinks and returns false for dangling ones, so cleanup code never removed stale locks after container crashes.",
+        "Serde #[serde(default)] handles missing keys but NOT explicit null values — LLMs sending null for optional u64 fields causes deserialization failure. Fix: strip null values before deserialization.",
+        "Screencast frame CDP metadata offset_top must be added to y-coordinates for accurate click mapping — websites with browser chrome offset cause clicks to land higher than intended.",
+        "Viewport is 2560x1440@2x by default in config but websites render for that massive resolution, causing layout issues. CDP SetDeviceMetricsOverride should be called on screencast start to resize to viewer dimensions.",
+        "Repeated CDP SetDeviceMetricsOverride calls on every session switch destabilized Chrome in containers — should only resize once per session lifecycle.",
+        "Chrome profile SingletonLock is a symlink (not a regular file) to a container hostname string — use symlink_metadata() not exists() for cleanup detection.",
+        "Agent browser sessions bypass RealBrowserService::request() entirely (going through BrowserTool::execute() → manager.handle_request()), so any logging/hooks in the service layer miss all agent-created sessions.",
+        "axum 0.8 changed path parameter syntax from :param to {param}",
+        "The project uses biome v2.4.6 as the system binary but npx biome resolves to v0.3.3 — these produce different formatting output, causing CI failures when formatted with the wrong version."
+      ],
+      "code": [
+        {
+          "path": "crates/browser/src/screencast.rs",
+          "line": 237,
+          "end_line": 239,
+          "finding": "Original relay task exited on SendError (zero receivers). Should drop frames silently when no subscribers, not exit — the subscriber connects slightly after the relay starts."
+        },
+        {
+          "path": "crates/browser/src/pool.rs",
+          "line": 396,
+          "end_line": 410,
+          "finding": "sandbox_profile_dir() was per-session (session_id suffix) causing cookie loss on restart. Changed to shared profile with SingletonLock cleanup. Cleanup uses symlink_metadata() not exists() to handle dangling symlinks."
+        },
+        {
+          "path": "crates/browser/src/manager.rs",
+          "line": 827,
+          "end_line": 850,
+          "finding": "start_screencast calls SetDeviceMetricsOverride to resize viewport to match screencast area (1280x800). Guarded with is_active() check to only resize on first screencast per session."
+        },
+        {
+          "path": "crates/gateway/src/services.rs",
+          "line": 1,
+          "end_line": 50,
+          "finding": "RealBrowserService uses Arc\u003cOnceCell\u003e for both the shared BrowserManager and the BrowserSessionStore — store is set lazily after db_pool is available in server.rs startup sequence."
+        },
+        {
+          "path": "crates/web/src/assets/js/page-browser.js",
+          "line": 1,
+          "end_line": 50,
+          "finding": "Canvas event listeners must use ref callback (canvasRefCallback) not useEffect([]) — canvas is conditionally rendered, so useEffect with empty deps fires before canvas exists and never reattaches."
+        },
+        {
+          "path": "crates/web/src/assets/js/websocket.js",
+          "line": 1338,
+          "end_line": 1358,
+          "finding": "browser.screencast.frame was missing from the WebSocket subscription list. The broadcast filter silently drops all frames for unsubscribed event types."
+        },
+        {
+          "path": "crates/browser/src/types.rs",
+          "line": 1,
+          "end_line": 30,
+          "finding": "Default viewport was 2560x1440 with device_scale_factor=2.0. Changed to 1440x900@1x for interactive browser viewing. The CDP screencast max dimensions (1280x800) were compressing a 5K viewport into a small canvas."
+        }
+      ],
+      "workflow": [
+        "YubiKey GPG commit signing is a recurring blocker for background tasks — background git commit operations time out waiting for the pinentry dialog. Foreground commits with explicit user prompt work better.",
+        "local-validate.sh runs biome from system PATH, not from node_modules. Always use the system biome binary (v2.4.6) for formatting, not npx biome.",
+        "biome --write flag applies fixes but the validation script runs --check only — always commit after --write to avoid the check catching unfixed issues.",
+        "The moltis project uses OnceCell extensively for lazy initialization of services — the pattern allows services to be created before their dependencies (like db_pool) are available.",
+        "CDP screencast frames arrive as base64 JPEG — the relay broadcasts them over WebSocket as JSON with a data field, then the client decodes and draws to canvas using requestAnimationFrame gating.",
+        "Integration tests for browser features must use ephemeral profiles (unique temp dirs per test) to avoid SingletonLock conflicts when tests run in parallel."
+      ]
+    },
+    "friction": [
+      "YubiKey GPG signing repeatedly blocked commits — background tasks timed out, requiring multiple 'tap now' prompts across the entire session.",
+      "biome version mismatch (npx v0.3.3 vs system v2.4.6) caused CI failures after multiple 'fixed' attempts — the --write flag appeared to work but used the wrong version.",
+      "Silent failures throughout: CDP errors returned 200 OK with success:false, URL validation rejected 'about:blank' without surfacing errors, WebSocket frame drops had no logging.",
+      "The shared BrowserManager approach required threading profile_id through 6+ method signatures in manager.rs and pool.rs — significant refactor for what should have been a simple feature.",
+      "Chrome container startup takes 2-5 seconds; combined with profile lock issues from previous crashes, session creation appeared broken until stale SingletonLock symlinks were manually removed.",
+      "Screencast sessions kept dying due to: (1) rapid stop/start cycles on session switch, (2) mouse_input errors triggering session cleanup, (3) viewport resize on every switch destabilizing Chrome.",
+      "The action hook for logging agent browser sessions to SQLite was not committable at session end due to GPG signing timeout — left as staged changes.",
+      "Google Suggestions API CORS behavior and the suggest endpoint required trial-and-error to get working in the URL autocomplete."
+    ],
+    "open_items": [
+      "Action hook to log agent-created browser sessions to SQLite history (changes staged but not committed at session end due to YubiKey timeout).",
+      "WebRTC upgrade for lower latency (\u003c100ms vs current 100-300ms CDP screencast) — neko/webrtc-rs identified as the reference architecture.",
+      "Binary WebSocket frames for screencast (eliminate ~33% base64 overhead) — identified as quick win but not implemented.",
+      "E2E Playwright tests for browser interaction (click accuracy, scroll, session switching) — test file created but the underlying bugs it would catch kept recurring.",
+      "Session still occasionally highlighted incorrectly on creation — the placeholder accent border CSS was fixed but may still have edge cases.",
+      "URL polling overwrites user-typed URL during navigation — partial fix with navigating flag, but the poll interval (2s) may still cause UX issues on slow navigations.",
+      "Per-agent profile naming uses session key directly (session_main, etc.) — no UI to see or manage existing profiles beyond what appears in the dropdown.",
+      "Session history API endpoints (/api/browser/sessions/history, /api/browser/sessions/{id}/actions) exist but no comprehensive UI testing was done.",
+      "The BrowserSessionStore only logs sessions going through RealBrowserService — agent sessions via BrowserTool are not captured until the action hook commit lands.",
+      "Consider adding max_age to screenshot prefetch cache — currently invalidated on each screencast frame which may cause unnecessary re-fetches."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-02T09:07:12.602939Z",
+    "agent_lines": 80,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 80,
+    "agent_percentage": 100
+  }
+}
