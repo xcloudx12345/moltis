@@ -1,0 +1,72 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "b696fa3b9617",
+  "session_id": "f121323c-d69f-4896-b4bd-8826347073cf",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-02T09:19:48.295609Z",
+  "branch": "claude/plan-browser-viewing-HOHno",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/browser/src/manager.rs",
+    "crates/gateway/src/services.rs",
+    "crates/gateway/src/server.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "8b4e99c0c812",
+  "checkpoint_transcript_start": 5245,
+  "transcript_lines_at_start": 5245,
+  "token_usage": {
+    "input_tokens": 19,
+    "cache_creation_tokens": 8609,
+    "cache_read_tokens": 10436886,
+    "output_tokens": 5504,
+    "api_call_count": 17
+  },
+  "summary": {
+    "intent": "Fix a crash when clicking in a browser session after returning to the app, and surface session history in the UI.",
+    "outcome": "Fixed two bugs: (1) stale browser session crash caused by action_name string matching using Display format instead of prefix match, (2) history not showing because the action hook was registered before the manager OnceCell was initialized. Refactored hook registration into the manager init path inside RealBrowserService.",
+    "learnings": {
+      "repo": [
+        "BrowserAction's Display format includes parameters, e.g. 'mouse_input(x=129.7, y=231.5)' and 'evaluate(code=...)', so exact string matching with matches! fails — prefix/starts_with checks are needed.",
+        "RealBrowserService uses a OnceCell for lazy manager initialization; any setup (like action hooks) that depends on the session store must be deferred until manager() is first called, not at server startup.",
+        "manager_if_ready() was a workaround for the lazy init pattern and was removed once hook registration moved inside the manager() init closure.",
+        "Session screencasting state is authoritative on the server (sess.screencasting), not the client-side screencasting.value signal."
+      ],
+      "code": [
+        {
+          "path": "crates/browser/src/manager.rs",
+          "finding": "Two places used exact matches! comparison against action_name from Display; both needed to switch to starts_with to handle parameterized action names like 'mouse_input(...)' and 'evaluate(code=...)'."
+        },
+        {
+          "path": "crates/gateway/src/services.rs",
+          "finding": "RealBrowserService gained an action_hook field set during set_session_store() and applied inside manager() after OnceCell initialization, replacing the prior startup-time registration in server.rs."
+        },
+        {
+          "path": "crates/gateway/src/server.rs",
+          "finding": "Manual hook registration and manager_if_ready() call removed after hook registration moved into services.rs."
+        }
+      ],
+      "workflow": [
+        "When a guard/filter never triggers, check whether the string being matched includes runtime parameters that change the format versus what was assumed at write time."
+      ]
+    },
+    "friction": [
+      "Crash was non-obvious: the stale session detection guard silently never fired because of the Display-format mismatch, so the session appeared to crash rather than gracefully close.",
+      "History not appearing had a separate root cause (hook never registered) unrelated to the UI component, requiring server-side investigation after the frontend looked correct.",
+      "OnceCell lazy init pattern made it easy to register hooks too early (before initialization) with no compile-time or immediate runtime error."
+    ],
+    "open_items": [
+      "Session history UI was asked for but its visibility/correctness was not confirmed resolved in the transcript — only the hook registration fix was completed.",
+      "Browser session disappearing from the left listing after a crash may need a reconnect or recovery flow rather than just silent removal."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-02T09:19:22.326054Z",
+    "agent_lines": 59,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 59,
+    "agent_percentage": 100
+  }
+}
