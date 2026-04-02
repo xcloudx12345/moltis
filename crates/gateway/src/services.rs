@@ -1422,10 +1422,6 @@ impl BrowserService for RealBrowserService {
             .and_then(|v| v.as_str())
             .unwrap_or("unknown")
             .to_string();
-        let req_session_id = params
-            .get("session_id")
-            .and_then(|v| v.as_str())
-            .map(String::from);
         let req_sandbox = params
             .get("sandbox")
             .and_then(|v| v.as_bool())
