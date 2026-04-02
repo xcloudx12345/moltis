@@ -26,9 +26,9 @@ var currentUrl = signal("");
 var screenshotCache = {};
 // Track placeholder IDs so fetchSessions doesn't remove them
 var placeholderIds = new Set();
-var urlPollTimer = null;
 // Scroll state for scrollbar overlay
 var scrollInfo = signal(null); // { scrollTop, scrollHeight, viewportHeight }
+var pageHeight = signal(0); // total page scrollHeight, queried on navigation
 var sessionHistory = signal([]);
 var selectedHistorySession = signal(null);
 var actionLog = signal([]);
@@ -161,7 +161,31 @@ function ensureFrameListener() {
 		frameMeta.value = payload.metadata;
 		frameSeq.value = payload.sequence;
 		// URL from CDP frameNavigated event — no polling needed
-		if (payload.url) currentUrl.value = payload.url;
+		if (payload.url) {
+			currentUrl.value = payload.url;
+			// Query page height once on navigation for scrollbar
+			browserAction({
+				session_id: payload.session_id,
+				action: "evaluate",
+				code: "document.documentElement.scrollHeight",
+			})
+				.then((r) => {
+					if (r.result && activeSession.value === payload.session_id) {
+						var h = Number.parseFloat(r.result);
+						if (h > 0) pageHeight.value = h;
+					}
+				})
+				.catch(() => {});
+		}
+		// Update scroll position from frame metadata (no polling needed)
+		if (payload.metadata) {
+			var meta = payload.metadata;
+			scrollInfo.value = {
+				scrollTop: meta.scroll_offset_y || 0,
+				scrollHeight: pageHeight.value || meta.device_height || 800,
+				viewportHeight: meta.device_height || 800,
+			};
+		}
 		// Update cache with latest frame so switching back is instant
 		screenshotCache[payload.session_id] = { data: payload.data, mime: "image/jpeg", meta: payload.metadata };
 	});
@@ -174,37 +198,10 @@ function stopFrameListener() {
 	}
 }
 
-// ── Scroll info polling (URL updates come via screencast frames now) ────
-
-function startUrlPolling() {
-	stopUrlPolling();
-	urlPollTimer = setInterval(async () => {
-		var sid = activeSession.value;
-		if (!sid) return;
-		try {
-			var res = await browserAction({
-				session_id: sid,
-				action: "evaluate",
-				code: "JSON.stringify({scrollTop:window.scrollY,scrollHeight:document.documentElement.scrollHeight,viewportHeight:window.innerHeight})",
-			});
-			if (activeSession.value !== sid) return;
-			if (res.result) {
-				try {
-					scrollInfo.value = JSON.parse(res.result);
-				} catch {}
-			}
-		} catch {
-			// best effort
-		}
-	}, 5000);
-}
-
-function stopUrlPolling() {
-	if (urlPollTimer) {
-		clearInterval(urlPollTimer);
-		urlPollTimer = null;
-	}
-}
+// URL and scroll info now come via screencast frames — no polling needed.
+// These are kept as no-ops for call sites that reference them.
+function startUrlPolling() {}
+function stopUrlPolling() {}
 
 // ── Session actions ─────────────────────────────────────────
 
