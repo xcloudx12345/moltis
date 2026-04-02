@@ -1,0 +1,140 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "f3232341748e",
+  "session_id": "f121323c-d69f-4896-b4bd-8826347073cf",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-02T17:04:33.989755Z",
+  "branch": "claude/plan-browser-viewing-HOHno",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/gateway/src/server.rs",
+    "crates/tools/src/browser.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "13075c75ba79",
+  "token_usage": {
+    "input_tokens": 4710,
+    "cache_creation_tokens": 4130676,
+    "cache_read_tokens": 503841156,
+    "output_tokens": 329959,
+    "api_call_count": 1178
+  },
+  "summary": {
+    "intent": "Build a full browser-in-browser feature for the Moltis web UI, allowing users to view live CDP screencasts of browser sessions, interact via mouse/keyboard/scroll, manage session history, and share browser cookies between the UI and agent sessions.",
+    "outcome": "Successfully shipped PR #531 with 60+ commits: live CDP screencasting, full mouse/keyboard/scroll interaction, URL autocomplete with Google suggestions, SQLite session history with action logs, per-agent browser profiles with shared-cookie tab reuse, 13 Rust unit tests and 6 Playwright e2e regression tests. Several critical bugs were fixed iteratively through live user testing.",
+    "learnings": {
+      "repo": [
+        "axum 0.8 uses `{param}` path syntax, not `:param` — panics at startup if wrong",
+        "biome version mismatch: `npx biome` = 0.3.3 (old), system `biome` = 2.4.6; local-validate.sh uses system version, causing repeated CI failures when using npx to auto-fix",
+        "WebSocket broadcast has a subscription filter — clients must explicitly subscribe to event types in websocket.js `subscribeEvents` list or frames are silently dropped",
+        "BrowserTool and RealBrowserService had completely separate BrowserManager instances, so agent-created sessions were invisible to the UI API",
+        "The service-traits crate cannot import sqlx types; use concrete types in gateway crate with trait default methods for optional capabilities",
+        "GPG-signed commits require YubiKey tap — background bash tasks reliably time out waiting for it; must use foreground commits",
+        "Chrome's `SingletonLock` is a symlink to the container hostname; `exists()` follows symlinks and returns false for dangling ones — use `symlink_metadata()` instead",
+        "Apple Container browser profiles must use `--restore-session-cookies` Chrome flag plus `--single-process-mojo-reservation` to persist session cookies across container restarts",
+        "Same profile_id → new tab in existing browser (shared cookies); different profile_id → new container (isolated cookies)",
+        "CDP `Page.startScreencast` relay task exits immediately if `tx.send()` finds zero receivers; must drop frames silently instead of exiting to handle the subscribe-after-start race",
+        "CDP `mouseWheel` event requires BOTH `deltaX` and `deltaY` fields always present or Chrome rejects the event entirely",
+        "Action name Display format includes parameters: `mouse_input(x=129, y=231)` not `mouse_input` — exact string matching always fails for parameterized actions",
+        "canvas ref callback (`canvasRefCallback`) needed instead of `useEffect([])` for conditionally-rendered canvas elements — effect runs once on mount before canvas exists",
+        "BrowserTool sandbox mode comes from SandboxRouter, not from `[tools.browser] sandbox` config — config only applied to UI path; tool path needs explicit override wiring in server.rs",
+        "Rapid stop/start_screencast cycles overwhelm CDP in containers; screencasts should never be stopped on session switch, only on explicit close"
+      ],
+      "code": [
+        {
+          "path": "crates/browser/src/screencast.rs",
+          "line": 237,
+          "end_line": 239,
+          "finding": "Relay task exited when tx.send() found zero subscribers — race condition where first CDP frame arrived before UI subscribed"
+        },
+        {
+          "path": "crates/tools/src/browser.rs",
+          "line": 1,
+          "end_line": 50,
+          "finding": "LLMs send explicit null for all optional fields; serde #[serde(default)] only handles missing keys, not null values — must strip nulls from JSON object before deserialization"
+        },
+        {
+          "path": "crates/gateway/src/services.rs",
+          "line": 1425,
+          "end_line": 1425,
+          "finding": "req_session_id variable became unused after moving session logging to action hook — compiler warning"
+        },
+        {
+          "path": "crates/web/src/assets/js/websocket.js",
+          "line": 1338,
+          "end_line": 1358,
+          "finding": "browser.screencast.frame was missing from subscribeEvents list — all screencast frames silently dropped by broadcast filter"
+        },
+        {
+          "path": "crates/browser/src/pool.rs",
+          "line": 396,
+          "end_line": 396,
+          "finding": "profile_id was parameter of get_or_create but used inside launch_sandboxed_browser sub-function — needed threading through launch_browser intermediate function"
+        },
+        {
+          "path": "crates/browser/src/manager.rs",
+          "line": 1,
+          "end_line": 1,
+          "finding": "OnceCell action hook was being set at startup via manager_if_ready() which returned None since manager is lazy-initialized; hook must be set inside the manager() init closure"
+        },
+        {
+          "path": "crates/web/src/assets/js/page-browser.js",
+          "line": 1,
+          "end_line": 1,
+          "finding": "screencasting.value signal captured in stale closure in mouse/wheel handlers; wheel events were silently dropped when screencasting.value was false after session switch without sendStartScreencast"
+        },
+        {
+          "path": "crates/browser/src/container.rs",
+          "line": 1,
+          "end_line": 1,
+          "finding": "CHROME_FLAGS env var passes additional Chrome flags to browserless/chrome container; used to add stealth and cookie-persistence flags"
+        },
+        {
+          "path": "crates/gateway/src/server.rs",
+          "line": 1321,
+          "end_line": 1497,
+          "finding": "browser_tool created before db_pool — needed Arc\u003cRealBrowserService\u003e reference kept separate from Arc\u003cdyn BrowserService\u003e to call concrete set_session_store() after db_pool is available"
+        }
+      ],
+      "workflow": [
+        "For GPG-signed commits in long sessions, always use foreground Bash tool — background tasks timeout before YubiKey tap can happen",
+        "CDP screencast frame metadata contains scroll_offset_x/y and device dimensions — use these instead of polling get_url and evaluate for scroll position",
+        "CDP Page.frameNavigated event eliminates need for URL polling entirely — include URL in screencast frame payload on navigation",
+        "biome format --write must be run with the system binary (not npx) to match what local-validate.sh checks",
+        "Chrome in containers needs: --disable-blink-features=AutomationControlled, realistic user agent without HeadlessChrome, stealth JS to patch navigator.webdriver",
+        "Multiple concurrent Chrome tabs on LinkedIn exhaust container memory; sandbox=false (host mode) is more reliable for JS-heavy sites"
+      ]
+    },
+    "friction": [
+      "YubiKey GPG signing blocked ~10+ commits — background tasks consistently timed out; had to retry repeatedly after user tap",
+      "biome version mismatch (npx 0.3.3 vs system 2.4.6) caused 4+ failed CI runs despite local --write passing",
+      "ERR_NETWORK_CHANGED in Apple Container on first navigate is a persistent flakiness issue — affects agent reliability",
+      "LinkedIn anti-bot detection serves sign-in page even when cookies are present in containerized Chrome",
+      "Chrome containers became completely unresponsive with multiple LinkedIn tabs — all actions timed out with no error logs",
+      "axum 0.8 path syntax change (:param → {param}) caused a runtime panic instead of compile error",
+      "Action hook registration timing issue (OnceCell lazy init) meant session history was empty for several test cycles before root cause found",
+      "Dangling SingletonLock symlink caused Chrome startup hang for 45+ seconds with no clear error — required manual cleanup",
+      "BrowserTool sandbox override not wired until very end of session — [tools.browser] sandbox=false config was ignored for all agent browser calls"
+    ],
+    "open_items": [
+      "Container memory/disk usage and up/down status display in Settings \u003e Sandboxes UI (deferred as separate issue)",
+      "WebRTC upgrade path using neko/GStreamer for sub-100ms latency and 6-18x bandwidth improvement (documented in PR, deferred)",
+      "Binary WebSocket frames for screencast (eliminating base64 overhead) — identified but not implemented",
+      "Cookie persistence e2e tests — planned but only partial unit tests added; full integration test with login→restart→verify not done",
+      "Per-session browser profile config in moltis.toml to allow named profiles for specific agent workflows",
+      "Chrome stealth measures (--disable-blink-features, navigator.webdriver patch) added at end of session — needs validation that LinkedIn detection is actually bypassed",
+      "Scrollbar on canvas shows page scroll position but has no drag interaction — can only click track, not drag thumb",
+      "Session action log in History tab shows raw action names but no screenshots/thumbnails for visual review",
+      "Container resource limits (--memory flag) not implemented — containers can exhaust host RAM with heavy pages"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-02T17:03:08.478269Z",
+    "agent_lines": 0,
+    "human_added": 35,
+    "human_modified": 7,
+    "human_removed": 0,
+    "total_committed": 35,
+    "agent_percentage": 0
+  }
+}
