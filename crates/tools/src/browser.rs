@@ -278,11 +278,12 @@ impl AgentTool for BrowserTool {
             // Inject sandbox mode from session context
             obj.insert("sandbox".to_string(), serde_json::json!(sandbox_mode));
 
-            // Inject profile_id from chat session key for cookie isolation.
-            // Each chat session gets its own browser profile so different
-            // agents have isolated cookies/login state.
+            // Use the "default" profile so agents share cookies with the
+            // UI's browser sessions. Users log in via the UI, then agents
+            // can act on those authenticated sessions. Agents that need
+            // isolated cookies can explicitly set profile_id in their tool call.
             obj.entry("profile_id".to_string())
-                .or_insert_with(|| serde_json::json!(session_key));
+                .or_insert_with(|| serde_json::json!("default"));
 
             // Strip explicit nulls — LLMs often send them for optional/defaulted fields
             // and serde(default) only handles *missing* keys, not null values.
