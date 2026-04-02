@@ -1,0 +1,83 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "71776737468e",
+  "session_id": "f121323c-d69f-4896-b4bd-8826347073cf",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-02T15:50:47.074317Z",
+  "branch": "claude/plan-browser-viewing-HOHno",
+  "checkpoints_count": 7,
+  "files_touched": [
+    "crates/browser/src/manager.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "bb1379984088",
+  "checkpoint_transcript_start": 5961,
+  "transcript_lines_at_start": 5961,
+  "token_usage": {
+    "input_tokens": 38,
+    "cache_creation_tokens": 22541,
+    "cache_read_tokens": 17537993,
+    "output_tokens": 4511,
+    "api_call_count": 24
+  },
+  "summary": {
+    "intent": "Enable agents to share the user's browser login state by using the same 'default' profile, and improve container/session stability so browser sessions survive errors gracefully.",
+    "outcome": "Agents now use 'default' profile to share cookies with the UI browser. Container TTL and idle timeout were raised to 24 hours. Browser action failures (refresh, screenshot, etc.) were made non-fatal where possible. The profile-sharing fix was confirmed working in logs but a Chrome memory/stability issue under multiple LinkedIn tabs caused cascading timeouts in that specific test run.",
+    "learnings": {
+      "repo": [
+        "Browser sessions are keyed by profile_id; same profile_id → new tab in existing browser (shared cookies/container), different profile_id → new isolated container",
+        "Chrome enforces one process per --user-data-dir via SingletonLock; multiple profiles in one Chrome process is not supported",
+        "Container overhead is ~20MB vs Chrome renderer ~200-500MB — consolidating profiles into one container would save minimal memory",
+        "Browser tool in crates/tools/src/browser.rs previously injected session_key as profile_id; changed to hardcoded 'default' so agents share the UI's cookies",
+        "Container TTL and idle timeout live in crates/browser/src/pool.rs and crates/browser/src/types.rs respectively; both raised to 24 hours",
+        "The 'refresh' action was killing sessions fatally when Chrome was unresponsive; manager.rs was updated to make most actions non-fatal (only 'close' and navigate-retry should be fatal)"
+      ],
+      "code": [
+        {
+          "path": "crates/tools/src/browser.rs",
+          "finding": "profile_id was set to session_key; changed to hardcoded 'default' so agent browser sessions share UI cookies"
+        },
+        {
+          "path": "crates/browser/src/pool.rs",
+          "finding": "Container hard TTL raised to 24 hours"
+        },
+        {
+          "path": "crates/browser/src/types.rs",
+          "finding": "Idle timeout raised to 24 hours to match TTL"
+        },
+        {
+          "path": "crates/browser/src/manager.rs",
+          "finding": "Browser action error handling inverted: most failures now non-fatal; only 'close' and navigate-retry remain fatal"
+        }
+      ],
+      "workflow": [
+        "Log line 'created new tab in existing browser (shared cookies)' confirms profile sharing is working correctly",
+        "ERR_NETWORK_CHANGED on first navigate was a transient container networking hiccup, not a code bug — retry succeeded",
+        "Multiple LinkedIn tabs in one container can exhaust Chrome memory causing cascading screenshot/snapshot timeouts then full session freeze",
+        "When Chrome is stuck, 'refresh' previously caused fatal session loss; making it non-fatal allows recovery via re-navigate"
+      ]
+    },
+    "friction": [
+      "First agent navigate hit ERR_NETWORK_CHANGED (container networking hiccup) before profile-sharing could take effect, obscuring whether the fix worked initially",
+      "Multiple LinkedIn tabs in a single container exhausted Chrome memory, causing screenshot → snapshot → refresh → full session death cascade",
+      "The agent (MiniMax-M2.7) kept retrying screenshot on a frozen session instead of recognizing the session was dead and re-navigating",
+      "MiniMax API returned an error at the end of the session (error sending request), cutting off the agent mid-recovery",
+      "screencast subscription failed silently for browser-9ccc9c28d4892139 during the chaos ('session not in active screencasts')"
+    ],
+    "open_items": [
+      "Container memory stats (CPU/memory/disk per container) on the Settings/Sandboxes page — deferred as separate issue, not part of this PR",
+      "Chrome memory pressure under multiple tabs of heavy sites (LinkedIn) — no fix applied, noted as resource issue not code bug",
+      "Agents that need isolated cookies should set profile_id explicitly in their tool call — this is documented behavior but not enforced or guided in the tool schema",
+      "This PR has 50+ commits and was noted as already large — review/merge backlog"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-02T15:50:13.216843Z",
+    "agent_lines": 0,
+    "human_added": 0,
+    "human_modified": 15,
+    "human_removed": 4,
+    "total_committed": 1,
+    "agent_percentage": 0
+  }
+}
