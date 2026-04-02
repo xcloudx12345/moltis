@@ -925,6 +925,51 @@ mod tests {
         drop(pool);
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn singleton_lock_dangling_symlink_detected() {
+        let tmp = tempfile::tempdir().unwrap_or_else(|e| panic!("tempdir failed: {e}"));
+        let link = tmp.path().join("dangling-link");
+        // Create a symlink to a non-existent target
+        std::os::unix::fs::symlink("/nonexistent/target", &link)
+            .unwrap_or_else(|e| panic!("symlink failed: {e}"));
+
+        // symlink_metadata succeeds (the symlink inode exists)
+        assert!(
+            link.symlink_metadata().is_ok(),
+            "symlink_metadata should succeed for dangling symlink"
+        );
+        // exists() returns false because the target doesn't exist
+        assert!(
+            !link.exists(),
+            "exists() should return false for dangling symlink"
+        );
+        // remove_file works on dangling symlinks
+        assert!(
+            std::fs::remove_file(&link).is_ok(),
+            "remove_file should succeed on dangling symlink"
+        );
+    }
+
+    #[test]
+    fn sandbox_profile_same_id_same_path() {
+        let root = PathBuf::from("/tmp/profiles");
+        let a = sandbox_profile_dir(Some(root.clone()), "default");
+        let b = sandbox_profile_dir(Some(root), "default");
+        assert_eq!(a, b, "same profile_id should produce the same path");
+    }
+
+    #[test]
+    fn sandbox_profile_different_ids_different_paths() {
+        let root = PathBuf::from("/tmp/profiles");
+        let a = sandbox_profile_dir(Some(root.clone()), "alice");
+        let b = sandbox_profile_dir(Some(root), "bob");
+        assert_ne!(
+            a, b,
+            "different profile_ids should produce different paths"
+        );
+    }
+
     #[test]
     fn low_memory_args_injected_below_threshold() {
         let args = low_memory_chrome_args(1024, 2048);

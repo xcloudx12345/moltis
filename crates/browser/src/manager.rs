@@ -1434,6 +1434,36 @@ mod tests {
         );
     }
 
+    #[test]
+    fn key_to_vk_backspace() {
+        assert_eq!(key_to_windows_virtual_keycode("Backspace"), Some(8));
+    }
+
+    #[test]
+    fn key_to_vk_enter() {
+        assert_eq!(key_to_windows_virtual_keycode("Enter"), Some(13));
+    }
+
+    #[test]
+    fn key_to_vk_arrows() {
+        assert_eq!(key_to_windows_virtual_keycode("ArrowLeft"), Some(37));
+        assert_eq!(key_to_windows_virtual_keycode("ArrowUp"), Some(38));
+        assert_eq!(key_to_windows_virtual_keycode("ArrowRight"), Some(39));
+        assert_eq!(key_to_windows_virtual_keycode("ArrowDown"), Some(40));
+    }
+
+    #[test]
+    fn key_to_vk_printable_returns_none() {
+        assert_eq!(key_to_windows_virtual_keycode("a"), None);
+    }
+
+    #[test]
+    fn key_to_vk_delete_escape_tab() {
+        assert_eq!(key_to_windows_virtual_keycode("Delete"), Some(46));
+        assert_eq!(key_to_windows_virtual_keycode("Escape"), Some(27));
+        assert_eq!(key_to_windows_virtual_keycode("Tab"), Some(9));
+    }
+
     /// Shared screencast integration test logic.
     ///
     /// Navigates to a page, starts screencast, subscribes, and verifies at

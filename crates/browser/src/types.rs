@@ -838,6 +838,104 @@ mod tests {
     }
 
     #[test]
+    fn browser_request_null_timeout_fails_without_stripping() {
+        // LLMs send `"timeout_ms": null` — serde rejects null for a non-Option u64
+        let raw = serde_json::json!({
+            "action": "navigate",
+            "url": "https://example.com",
+            "timeout_ms": null,
+        });
+        let result = serde_json::from_value::<BrowserRequest>(raw);
+        assert!(
+            result.is_err(),
+            "deserializing null timeout_ms without stripping should fail"
+        );
+    }
+
+    #[test]
+    fn browser_request_all_optional_null_after_stripping() {
+        // Every optional/defaulted field set to null, then stripped.
+        let raw = serde_json::json!({
+            "action": "navigate",
+            "url": "https://example.com",
+            "session_id": null,
+            "browser": null,
+            "timeout_ms": null,
+            "sandbox": null,
+            "profile_id": null,
+        });
+        let mut obj = raw
+            .as_object()
+            .unwrap_or(&serde_json::Map::new())
+            .clone();
+        obj.retain(|_, v| !v.is_null());
+        let cleaned = serde_json::Value::Object(obj);
+
+        let req: BrowserRequest = serde_json::from_value(cleaned).unwrap_or_else(|e| {
+            panic!("should deserialize after null-stripping: {e}");
+        });
+        assert!(req.session_id.is_none());
+        assert_eq!(req.timeout_ms, 60000); // default
+        assert!(req.browser.is_none());
+        assert!(req.sandbox.is_none());
+        assert!(req.profile_id.is_none());
+    }
+
+    #[test]
+    fn mouse_wheel_defaults_deltas_to_zero() {
+        let raw = serde_json::json!({
+            "action": "mouse_input",
+            "x": 100.0,
+            "y": 200.0,
+            "event_type": "mouseWheel",
+        });
+        let action: BrowserAction = serde_json::from_value(raw).unwrap_or_else(|e| {
+            panic!("should deserialize mouseWheel without deltas: {e}");
+        });
+        if let BrowserAction::MouseInput {
+            delta_x, delta_y, ..
+        } = action
+        {
+            assert!(
+                (delta_x - 0.0).abs() < f64::EPSILON,
+                "delta_x should default to 0.0"
+            );
+            assert!(
+                (delta_y - 0.0).abs() < f64::EPSILON,
+                "delta_y should default to 0.0"
+            );
+        } else {
+            panic!("expected MouseInput variant");
+        }
+    }
+
+    #[test]
+    fn mouse_input_display_includes_params() {
+        let action = BrowserAction::MouseInput {
+            x: 42.5,
+            y: 99.0,
+            event_type: MouseInputType::Pressed,
+            button: MouseInputButton::Left,
+            click_count: 1,
+            delta_x: 0.0,
+            delta_y: 0.0,
+        };
+        let display = format!("{}", action);
+        assert!(
+            display.starts_with("mouse_input("),
+            "Display should start with 'mouse_input(', got: {display}"
+        );
+        assert!(
+            display.contains("42.5"),
+            "Display should contain x coordinate, got: {display}"
+        );
+        assert!(
+            display.contains("99"),
+            "Display should contain y coordinate, got: {display}"
+        );
+    }
+
+    #[test]
     fn browser_request_deserializes_after_null_stripping() {
         // LLMs often send explicit nulls for optional/defaulted fields.
         // The tool strips nulls before deserializing, so simulate that here.

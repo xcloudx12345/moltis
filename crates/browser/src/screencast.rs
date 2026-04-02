@@ -210,10 +210,7 @@ async fn relay_screencast_frames(
     };
 
     // Listen for navigation events to track URL changes without polling
-    let mut nav_listener = page
-        .event_listener::<EventFrameNavigated>()
-        .await
-        .ok();
+    let mut nav_listener = page.event_listener::<EventFrameNavigated>().await.ok();
 
     let mut sequence: u64 = 0;
     let mut current_url: Option<String> = None;
@@ -222,11 +219,8 @@ async fn relay_screencast_frames(
     loop {
         // Process navigation events first (non-blocking drain)
         if let Some(ref mut nav) = nav_listener {
-            while let Ok(Some(event)) = tokio::time::timeout(
-                std::time::Duration::from_millis(0),
-                nav.next(),
-            )
-            .await
+            while let Ok(Some(event)) =
+                tokio::time::timeout(std::time::Duration::from_millis(0), nav.next()).await
             {
                 if event.frame.parent_id.is_none() {
                     // Top-level frame navigation
@@ -306,5 +300,54 @@ mod tests {
     #[test]
     fn registry_is_default() {
         let _reg = ScreencastRegistry::new();
+    }
+
+    #[test]
+    fn screencast_frame_url_serialized_only_when_some() {
+        let with_url = ScreencastFrame {
+            session_id: "s1".into(),
+            data: "AAAA".into(),
+            metadata: FrameMetadata {
+                offset_top: 0.0,
+                page_scale_factor: 1.0,
+                device_width: 1280.0,
+                device_height: 800.0,
+                scroll_offset_x: 0.0,
+                scroll_offset_y: 0.0,
+                timestamp: 0.0,
+            },
+            sequence: 1,
+            url: Some("https://example.com".into()),
+        };
+        let json = serde_json::to_string(&with_url).unwrap_or_else(|e| {
+            panic!("serialize with url failed: {e}");
+        });
+        assert!(
+            json.contains("\"url\""),
+            "JSON should contain 'url' when Some, got: {json}"
+        );
+
+        let without_url = ScreencastFrame {
+            session_id: "s2".into(),
+            data: "BBBB".into(),
+            metadata: FrameMetadata {
+                offset_top: 0.0,
+                page_scale_factor: 1.0,
+                device_width: 1280.0,
+                device_height: 800.0,
+                scroll_offset_x: 0.0,
+                scroll_offset_y: 0.0,
+                timestamp: 0.0,
+            },
+            sequence: 2,
+            url: None,
+        };
+        let json = serde_json::to_string(&without_url).unwrap_or_else(|e| {
+            panic!("serialize without url failed: {e}");
+        });
+        assert!(
+            !json.contains("\"url\""),
+            "JSON should NOT contain 'url' when None, got: {json}"
+        );
     }
 }
