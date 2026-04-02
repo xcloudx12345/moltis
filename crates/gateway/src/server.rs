@@ -1381,7 +1381,12 @@ pub async fn prepare_gateway_core(
         .map(|t| t.with_container_prefix(browser_container_prefix));
     let browser_svc_ref: Option<Arc<crate::services::RealBrowserService>> =
         if let Some(ref tool) = browser_tool {
-            let sandbox_enabled = config.tools.exec.sandbox.mode != "none";
+            // Browser sandbox: explicit config > global sandbox mode
+            let sandbox_enabled = config
+                .tools
+                .browser
+                .sandbox
+                .unwrap_or(config.tools.exec.sandbox.mode != "none");
             let svc = Arc::new(
                 crate::services::RealBrowserService::with_shared_manager(
                     &config.tools.browser,
