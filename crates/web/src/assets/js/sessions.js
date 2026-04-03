@@ -805,6 +805,14 @@ function renderHistoryToolResult(msg) {
 			var mediaSrc = `/api/sessions/${encodeURIComponent(sessionKey)}/media/${encodeURIComponent(filename)}`;
 			renderScreenshot(card, mediaSrc);
 		}
+		// "View browser session" link for browser tool results
+		if (msg.result.session_id && msg.result.session_id.startsWith("browser-")) {
+			var viewLink = document.createElement("a");
+			viewLink.href = `#/settings/browser?session=${encodeURIComponent(msg.result.session_id)}`;
+			viewLink.className = "text-xs text-[var(--accent)] hover:underline mt-1 inline-block";
+			viewLink.textContent = "\u{1F310} View browser session";
+			card.appendChild(viewLink);
+		}
 		// Render persisted document from the media API.
 		if (msg.result.document_ref) {
 			var docStoredName = msg.result.document_ref.split("/").pop();
