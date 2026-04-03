@@ -1,0 +1,127 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "9b682dff16a6",
+  "session_id": "f121323c-d69f-4896-b4bd-8826347073cf",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-03T10:59:20.049981Z",
+  "branch": "claude/plan-browser-viewing-HOHno",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/web/src/assets/js/page-browser.js",
+    "crates/web/src/assets/js/websocket.js"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "e097517cc7d0",
+  "token_usage": {
+    "input_tokens": 4741,
+    "cache_creation_tokens": 4948415,
+    "cache_read_tokens": 524918842,
+    "output_tokens": 334964,
+    "api_call_count": 1205
+  },
+  "summary": {
+    "intent": "Build a browser-in-browser feature for the Moltis agent platform, allowing users to view and interact with browser sessions (both agent-created and user-created) through the settings UI at /settings/browser.",
+    "outcome": "Fully implemented live browser viewing with CDP screencast, mouse/keyboard/scroll interaction, URL autocomplete, session history with SQLite persistence, per-agent browser profiles for cookie isolation, cookie persistence across restarts, and stealth anti-detection flags. PR #531 created with ~60 commits.",
+    "learnings": {
+      "repo": [
+        "serde's `#[serde(default)]` only handles missing keys, not explicit `null` values — LLMs send null for all optional fields requiring a `retain(|_, v| !v.is_null())` strip before deserialization",
+        "BrowserTool and RealBrowserService each had their own BrowserManager instance; sharing via Arc\u003cOnceCell\u003e was required so agent sessions appear in the UI",
+        "CDP `Page.startScreencast` relay exits when `tx.send()` has zero receivers — frames arrive before the subscriber connects, so the relay must drop frames silently instead of exiting",
+        "WebSocket broadcast has a per-client subscription filter; `browser.screencast.frame` was missing from the subscription list in websocket.js causing silent frame drops",
+        "Chrome's SingletonLock is a symlink to the container hostname; `exists()` follows symlinks and returns false for dangling ones — must use `symlink_metadata()` instead",
+        "CDP `mouseWheel` requires both `deltaX` and `deltaY` always present; omitting one when zero causes a CDP error",
+        "CDP `Input.dispatchKeyEvent` silently ignores special keys (Backspace, Enter, arrows) without `windowsVirtualKeyCode`",
+        "Canvas event listeners attached via `useEffect([])` don't fire when canvas is conditionally rendered — must use ref callback pattern instead",
+        "Chrome needs `--restore-session-cookies` flag to persist session cookies (no-expiry) to disk on exit",
+        "Same Chrome profile can't be accessed by two containers simultaneously due to SingletonLock; solution is tab-sharing within same container via Arc\u003cBrowser\u003e",
+        "CDP `Page.frameNavigated` events replace polling for URL changes; `scroll_offset_y` from screencast frame metadata replaces polling for scroll position",
+        "BrowserTool's `sandbox_override` field is needed because the tool uses `SandboxRouter.is_sandboxed()` which ignores `[tools.browser] sandbox` config"
+      ],
+      "code": [
+        {
+          "path": "crates/tools/src/browser.rs",
+          "line": 1,
+          "end_line": 50,
+          "finding": "Null-stripping via obj.retain(|_, v| !v.is_null()) must happen before serde deserialization of BrowserRequest"
+        },
+        {
+          "path": "crates/browser/src/screencast.rs",
+          "line": 1,
+          "end_line": 50,
+          "finding": "Relay task must use lagged(128) receiver and continue on SendError instead of exiting when no subscribers"
+        },
+        {
+          "path": "crates/web/src/assets/js/websocket.js",
+          "line": 1338,
+          "end_line": 1358,
+          "finding": "browser.screencast.frame was missing from subscribeEvents list causing all frames to be dropped by broadcast filter"
+        },
+        {
+          "path": "crates/browser/src/pool.rs",
+          "line": 396,
+          "end_line": 420,
+          "finding": "sandbox_profile_dir() must use symlink_metadata() not exists() to detect dangling SingletonLock symlinks"
+        },
+        {
+          "path": "crates/browser/src/manager.rs",
+          "line": 1,
+          "end_line": 50,
+          "finding": "action_name from Display includes params (e.g. 'mouse_input(x=129, y=231)') so starts_with() not == must be used for action type checks"
+        },
+        {
+          "path": "crates/browser/src/manager.rs",
+          "line": 1,
+          "end_line": 50,
+          "finding": "ActionHook registered in manager() init closure guarantees it's set before first use; registering at startup fails because manager is lazily initialized"
+        },
+        {
+          "path": "crates/web/src/assets/js/page-browser.js",
+          "line": 1,
+          "end_line": 50,
+          "finding": "canvasRefCallback pattern required instead of useEffect([]) because canvas is conditionally rendered and useEffect fires only once on mount"
+        },
+        {
+          "path": "crates/browser/src/pool.rs",
+          "line": 1,
+          "end_line": 50,
+          "finding": "Tab sharing within same browser instance for same profile_id via Arc\u003cBrowser\u003e enables cookie sharing between sessions"
+        }
+      ],
+      "workflow": [
+        "biome format --write uses a different version than the system biome binary; always use the system biome (2.4.6) not npx biome (0.3.3) to match CI",
+        "GPG/YubiKey signing requires foreground process — background git commit tasks time out before user can tap",
+        "axum 0.8 uses {param} path syntax instead of :param",
+        "Chrome stealth flags: --disable-blink-features=AutomationControlled + --headless=new + realistic user agent reduces bot detection",
+        "CDP mouseWheel always needs both deltaX and deltaY fields, even when zero"
+      ]
+    },
+    "friction": [
+      "YubiKey GPG signing repeatedly blocked background commit tasks requiring multiple retry cycles",
+      "biome version mismatch (npx 0.3.3 vs system 2.4.6) caused repeated CI failures that appeared fixed locally",
+      "Chrome containers froze completely on LinkedIn due to resource exhaustion — ERR_NETWORK_CHANGED and CDP timeouts with no recovery path",
+      "Multiple interacting state machines in the JS (screencasting signal, activeSession, fetching, urlPollTimer) created hard-to-debug race conditions",
+      "ActionHook not firing because manager was lazily initialized — registration at startup silently did nothing",
+      "Sessions dying from any CDP error because is_connection_error() check was too broad and matched non-fatal timeouts"
+    ],
+    "open_items": [
+      "WebRTC upgrade (neko architecture) for lower latency and better bandwidth efficiency — noted as right long-term direction",
+      "Binary WebSocket frames instead of base64 JSON for ~33% bandwidth reduction",
+      "Container memory limits for Docker/Podman users (memory_limit config option)",
+      "Containers settings page showing memory/disk usage and up/down status per container",
+      "Session cookie persistence e2e tests (planned but only unit tests added; full test requires real browser login)",
+      "Multiple browser profiles in single container for memory efficiency (blocked by Chrome's one-profile-per-process limitation)",
+      "Google suggestions CORS issue in URL autocomplete (suggestqueries.google.com may not work from all origins)",
+      "Video recording of browser sessions (JPEG frames are saved per-action but no video assembly)",
+      "Playwright e2e tests for browser interaction (click accuracy, scroll, paste) are stubs that mock the server — need real CDP integration"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-03T10:58:26.362431Z",
+    "agent_lines": 0,
+    "human_added": 29,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 29,
+    "agent_percentage": 0
+  }
+}
