@@ -29,7 +29,7 @@ import {
 import { attachMessageVoiceControl } from "./message-voice.js";
 import { restoreNodeSelection } from "./nodes-selector.js";
 import { updateSessionProjectSelect } from "./project-combo.js";
-import { currentPrefix, navigate, navigate, sessionPath } from "./router.js";
+import { currentPrefix, navigate, sessionPath } from "./router.js";
 import { settingsPath } from "./routes.js";
 import { updateSandboxImageUI, updateSandboxUI } from "./sandbox.js";
 import * as S from "./state.js";
