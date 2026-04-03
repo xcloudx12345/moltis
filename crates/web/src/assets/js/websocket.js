@@ -33,7 +33,7 @@ import { fetchModels } from "./models.js";
 import { prefetchChannels } from "./page-channels.js";
 import { maybeRefreshFullContext, renderCompactCard } from "./page-chat.js";
 import { fetchProjects } from "./projects.js";
-import { currentPage, currentPrefix, mount, navigate, navigate } from "./router.js";
+import { currentPage, currentPrefix, mount, navigate } from "./router.js";
 import {
 	appendLastMessageTimestamp,
 	bumpSessionCount,
