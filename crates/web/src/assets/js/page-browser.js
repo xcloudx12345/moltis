@@ -1252,6 +1252,23 @@ function BrowserPage() {
 export function initBrowser(container) {
 	containerEl = container;
 	render(html`<${BrowserPage} />`, container);
+
+	// Auto-select session from URL parameter (e.g. ?session=browser-xxx)
+	var hash = window.location.hash || "";
+	var sessionMatch = hash.match(/[?&]session=([^&]+)/);
+	if (sessionMatch) {
+		var targetSession = decodeURIComponent(sessionMatch[1]);
+		// Wait for sessions to load, then select
+		var checkInterval = setInterval(() => {
+			var found = sessions.value.find((s) => s.session_id === targetSession);
+			if (found) {
+				clearInterval(checkInterval);
+				selectSession(targetSession);
+			}
+		}, 500);
+		// Stop checking after 10 seconds
+		setTimeout(() => clearInterval(checkInterval), 10000);
+	}
 }
 
 export function teardownBrowser() {
