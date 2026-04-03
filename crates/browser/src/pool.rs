@@ -708,6 +708,13 @@ impl BrowserPool {
                     "failed to create browser profile directory, falling back to ephemeral"
                 );
             } else {
+                // Clean up stale Chrome singleton files from previous sessions
+                for name in ["SingletonLock", "SingletonCookie", "SingletonSocket"] {
+                    let p = profile_path.join(name);
+                    if std::fs::symlink_metadata(&p).is_ok() {
+                        let _ = std::fs::remove_file(&p);
+                    }
+                }
                 info!(
                     path = %profile_path.display(),
                     "using persistent browser profile"

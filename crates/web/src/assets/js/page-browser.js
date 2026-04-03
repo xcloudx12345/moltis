@@ -1290,7 +1290,8 @@ export function initBrowser(container) {
 				if (hist?.url && hist.url !== "about:blank") {
 					sessionTab.value = "live";
 					try {
-						var res = await browserAction({ action: "navigate", url: hist.url });
+						// Pass the old session_id so the revived session keeps the same ID
+						var res = await browserAction({ action: "navigate", url: hist.url, session_id: targetSession });
 						if (res.session_id) {
 							await fetchSessions();
 							activeSession.value = res.session_id;
