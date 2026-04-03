@@ -1271,15 +1271,32 @@ export function initBrowser(container) {
 		if (sessionMatch) targetSession = decodeURIComponent(sessionMatch[1]);
 	}
 	if (targetSession) {
-		// Wait for sessions to load, then select
-		var checkInterval = setInterval(() => {
+		// Wait for sessions to load, then select or revive
+		var attempts = 0;
+		var checkInterval = setInterval(async () => {
+			attempts++;
+			// Check live sessions first
 			var found = sessions.value.find((s) => s.session_id === targetSession);
 			if (found) {
 				clearInterval(checkInterval);
 				selectSession(targetSession);
+				return;
+			}
+			// After a few checks, try history — revive the dead session
+			if (attempts >= 3) {
+				clearInterval(checkInterval);
+				await fetchHistory();
+				var hist = sessionHistory.value.find((s) => s.session_id === targetSession);
+				if (hist?.url && hist.url !== "about:blank") {
+					// Revive: create new session with the same URL
+					sessionTab.value = "live";
+					await createSession();
+					if (activeSession.value) {
+						await navigateSession(activeSession.value, hist.url);
+					}
+				}
 			}
 		}, 500);
-		// Stop checking after 10 seconds
 		setTimeout(() => clearInterval(checkInterval), 10000);
 	}
 }
