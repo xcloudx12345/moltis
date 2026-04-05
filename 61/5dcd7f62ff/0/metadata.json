@@ -1,0 +1,87 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "615dcd7f62ff",
+  "session_id": "1f6e8392-52d6-4d14-aefc-d2403de873df",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-05T15:15:09.27048Z",
+  "branch": "steep-peak",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/service-traits/src/lib.rs",
+    "crates/web/src/assets/js/provider-validation.js"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "1e3a2832365b",
+  "token_usage": {
+    "input_tokens": 89,
+    "cache_creation_tokens": 99262,
+    "cache_read_tokens": 4867050,
+    "output_tokens": 18953,
+    "api_call_count": 73
+  },
+  "summary": {
+    "intent": "Fix issue #554 where local LLM server errors were swallowed and shown as generic 'Service temporarily unavailable', then improve LLM provider onboarding with a curated recommended tier and docs comparison page.",
+    "outcome": "Three-file bug fix merged via PR #559 (error code mapping, frontend error surfacing, model discovery timeout). Onboarding UI updated with recommended provider tier (including MiniMax and Z.AI/GLM), collapsible 'All providers' section, 'Help me choose' link, and new docs comparison page at docs.moltis.org/choosing-a-provider. PR review comments resolved with a fallback fix and clarifying comment.",
+    "learnings": {
+      "repo": [
+        "UNAVAILABLE error code is used directly in gateway/state.rs and methods/node.rs for node-connectivity checks — these bypass ServiceError and are unaffected by the From\u003cServiceError\u003e impl change.",
+        "The just lint recipe excludes moltis-providers and moltis-gateway from --all-features and runs them separately with --features local-llm-metal on macOS; however --all-features on other workspace crates can still transitively pull in llama-cpp-sys-2 with CUDA, causing a pre-existing lint failure on macOS.",
+        "testModel() at provider-validation.js:104 already used res?.error?.serverMessage correctly, but validateProviderKey() at line 78 did not — an inconsistency introduced as a regression.",
+        "Provider onboarding sorts by uiOrder defined in known_providers; there is no backend 'recommended' flag — the curated tier was implemented frontend-only in onboarding-view.js.",
+        "Recommended providers selected: Anthropic, OpenAI, Google Gemini, DeepSeek, MiniMax, Z.AI (GLM), Ollama — MiniMax and GLM 4.7 explicitly included based on user feedback about user happiness with those models."
+      ],
+      "code": [
+        {
+          "path": "crates/service-traits/src/lib.rs",
+          "line": 47,
+          "end_line": 55,
+          "finding": "From\u003cServiceError\u003e for ErrorShape mapped all non-Forbidden errors to UNAVAILABLE; changed to INTERNAL. Added comment explaining that UNAVAILABLE is reserved for transient node/gateway connectivity errors only."
+        },
+        {
+          "path": "crates/web/src/assets/js/provider-validation.js",
+          "line": 78,
+          "end_line": 81,
+          "finding": "validateProviderKey() used res?.error?.message (already localized) instead of res?.error?.serverMessage; fixed to prefer serverMessage with fallback chain. Also added a TODO/fallback for the case where serverMessage is absent."
+        },
+        {
+          "path": "crates/providers/src/openai.rs",
+          "line": 361,
+          "end_line": 361,
+          "finding": "fetch_models_from_api timeout increased from 8s to 15s to accommodate slow local LLM servers (llama.cpp, vllm) during model loading."
+        },
+        {
+          "path": "crates/web/src/assets/js/onboarding-view.js",
+          "line": 1630,
+          "end_line": 1720,
+          "finding": "Provider list rendering split into two groups: RECOMMENDED_PROVIDERS set (frontend-only constant) shown first with descriptions, remaining providers collapsed behind a toggle that auto-expands if the active provider is non-recommended."
+        }
+      ],
+      "workflow": [
+        "Running cargo test -p \u003ccrate\u003e in parallel as background tasks significantly speeds up multi-crate verification.",
+        "When just lint fails with a pre-existing environment issue (CUDA on macOS), running clippy scoped to only modified crates (cargo clippy -p crate1 -p crate2) is a valid alternative to unblock the workflow.",
+        "Greptile bot posted automated review comments on the PR — these should be checked and resolved before merging.",
+        "mdbook build was run from within the docs/ directory, causing subsequent git commands to fail; absolute paths needed for git operations when cwd has changed."
+      ]
+    },
+    "friction": [
+      "just lint fails with a pre-existing CUDA build error on macOS when --all-features transitively pulls in llama-cpp-sys-2; requires scoped clippy workaround.",
+      "Git commands failed after mdbook build changed cwd to docs/ — had to use absolute repo root paths.",
+      "Searching for KnownProvider struct and the available() serialization required multiple grep/read iterations before finding the right file sections."
+    ],
+    "open_items": [
+      "Backend 'recommended' flag not added to KnownProvider struct — the curated tier is hardcoded frontend-only in onboarding-view.js; could be moved to backend metadata for consistency.",
+      "The docs comparison page (docs.moltis.org/choosing-a-provider) will need periodic updates as provider pricing, context windows, and model availability change.",
+      "Pre-existing just lint CUDA failure on macOS should be investigated and fixed separately — it masks real lint regressions.",
+      "Manual QA verification of the original #554 bug (unreachable endpoint showing real error instead of 'Service temporarily unavailable') was not performed in this session — left to human tester."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-05T15:14:38.811294Z",
+    "agent_lines": 6,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 6,
+    "agent_percentage": 100
+  }
+}
