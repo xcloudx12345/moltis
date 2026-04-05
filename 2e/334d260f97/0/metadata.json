@@ -1,0 +1,107 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "2e334d260f97",
+  "session_id": "ee0d7a1d-23ae-43bd-b4da-7d6057789e5f",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-05T15:23:07.844292Z",
+  "branch": "fir-author",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/config/src/schema.rs",
+    "crates/config/src/validate.rs",
+    "crates/config/src/template.rs",
+    "Cargo.toml",
+    "crates/providers/src/lib.rs",
+    "crates/common/Cargo.toml",
+    "crates/common/src/http_client.rs",
+    "crates/common/src/lib.rs",
+    "crates/tools/src/lib.rs",
+    "crates/gateway/src/server.rs",
+    "crates/telegram/src/bot.rs",
+    "crates/slack/src/outbound.rs",
+    "crates/msteams/src/plugin.rs",
+    "crates/tools/src/web_fetch.rs",
+    "crates/oauth/src/flow.rs",
+    "crates/oauth/Cargo.toml",
+    "crates/mcp/src/auth.rs",
+    "docs/src/upstream-proxy.md",
+    "docs/src/SUMMARY.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "73a50ba9bd63",
+  "token_usage": {
+    "input_tokens": 162,
+    "cache_creation_tokens": 135239,
+    "cache_read_tokens": 13574000,
+    "output_tokens": 36677,
+    "api_call_count": 156
+  },
+  "summary": {
+    "intent": "Implement application-level HTTP/SOCKS5 proxy support for moltis so users behind corporate firewalls can route all outbound traffic through a configured proxy.",
+    "outcome": "Added `upstream_proxy` config field to `moltis.toml` with full propagation to providers, tools, OAuth, MCP auth, Slack, MS Teams, and web_fetch. Telegram proxy support was deferred due to teloxide's reqwest 0.11 version mismatch. All 1285 tests pass and clippy is clean.",
+    "learnings": {
+      "repo": [
+        "Two shared HTTP clients exist: `moltis_tools::shared_http_client()` (had proxy init but only for sandbox) and `moltis_providers::shared_http_client()` (used `Client::new()` with no proxy at all).",
+        "~30+ places in the codebase create `reqwest::Client::new()` independently across channels, voice providers, OAuth, memory embeddings, and MCP auth.",
+        "The trusted-network sandbox proxy is a local domain-allowlist filter (feature-gated), separate from the user-facing upstream proxy — both can be active simultaneously.",
+        "Workspace uses Rust 2024 edition with `unsafe_code = 'deny'` at workspace level, which blocks `std::env::set_var` usage.",
+        "teloxide-core depends on reqwest 0.11 with `default-features = false`, making it impossible to pass a reqwest 0.12 `Proxy` type to `Bot::with_client()`.",
+        "`build_http_client` utility was moved to `moltis-common` so both `moltis-tools` and `moltis-providers` can share it without circular dependencies.",
+        "A `OnceLock\u003cString\u003e` global accessor pattern (`set_upstream_proxy` / `upstream_proxy_url`) in `moltis-common` allows channels to read the proxy URL without threading it through every plugin API.",
+        "CUDA build failures on macOS when running `--all-features` is a pre-existing issue; macOS lint/test recipes explicitly exclude CUDA-dependent crates.",
+        "taplo reformats TOML feature lists alphabetically on `fmt` — sorting `reqwest` features is expected behavior, not a bug."
+      ],
+      "code": [
+        {
+          "path": "crates/common/src/http_client.rs",
+          "line": 1,
+          "end_line": 50,
+          "finding": "New module housing `build_http_client(proxy_url: Option\u003c\u0026str\u003e)` and global `upstream_proxy_url()` / `set_upstream_proxy()` accessors via OnceLock."
+        },
+        {
+          "path": "crates/tools/src/web_fetch.rs",
+          "finding": "WebFetchTool has its own `proxy_url` field for the sandbox proxy; updated to fall back to `upstream_proxy_url()` when sandbox proxy is not set."
+        },
+        {
+          "path": "crates/telegram/src/bot.rs",
+          "finding": "Reverted all proxy changes — teloxide uses reqwest 0.11 internally; cannot pass reqwest 0.12 Proxy type; relies on env var fallback instead."
+        },
+        {
+          "path": "crates/gateway/src/server.rs",
+          "finding": "Upstream proxy is initialized before the trusted-network block; a `#[cfg(not(feature = 'trusted-network'))]` block handles tools client init when sandbox feature is off."
+        },
+        {
+          "path": "crates/config/src/validate.rs",
+          "finding": "Added `upstream_proxy` to `build_schema_map()` top-level struct and semantic URL validation in `check_semantic_warnings()`."
+        }
+      ],
+      "workflow": [
+        "Running `cargo clippy` without `--all-features` is required on macOS to avoid CUDA build failures; use feature-specific flags for providers/gateway.",
+        "When adding reqwest dependencies to new crates, also add the `socks` feature to the workspace Cargo.toml for SOCKS5 proxy support.",
+        "Check `Cargo.toml` of target crates for `moltis-common` dependency before using shared utilities — several crates already had it, some (like `moltis-oauth`, `moltis-mcp`) needed it added."
+      ]
+    },
+    "friction": [
+      "teloxide's internal reqwest 0.11 dependency made it impossible to apply proxy settings to the Telegram bot — multiple approaches were attempted (unsafe set_var, wrapping ClientBuilder, using client_from_env) before settling on a documented limitation.",
+      "Rust 2024 edition's unsafe `set_var` restriction (combined with workspace-level `unsafe_code = 'deny'`) blocked the env-var-at-startup approach for Telegram proxy.",
+      "`--all-features` clippy/test runs fail on macOS due to CUDA/llama-cpp build requirements — required manual feature exclusion for clean CI runs.",
+      "The `or_else` lifetime issue in `web_fetch.rs` when chaining `proxy_url` fallback required multiple iterations to resolve."
+    ],
+    "open_items": [
+      "Telegram proxy support is deferred until teloxide upgrades to reqwest 0.12 — currently only `HTTPS_PROXY` env var works for Telegram.",
+      "Per-channel proxy configuration (different proxy per channel) was explicitly deferred as a follow-up; current implementation is application-level only.",
+      "Voice providers were listed in the plan but not explicitly updated in the transcript — may still use `Client::new()` directly.",
+      "Memory embeddings client was listed in the plan but not explicitly updated — may still use `Client::new()` directly.",
+      "Integration test for proxy config end-to-end (actual proxied HTTP request) was mentioned in the plan but not implemented."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-05T15:22:34.39311Z",
+    "agent_lines": 334,
+    "human_added": 7,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 341,
+    "agent_percentage": 97.94721407624634
+  }
+}
