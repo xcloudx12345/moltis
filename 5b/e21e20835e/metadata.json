@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "5be21e20835e",
+  "strategy": "manual-commit",
+  "branch": "volfco/streamable-http",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/config/src/validate.rs",
+    "crates/gateway/src/mcp_service.rs",
+    "crates/mcp/src/manager.rs",
+    "crates/mcp/src/registry.rs",
+    "crates/mcp/src/types.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/5b/e21e20835e/0/metadata.json",
+      "transcript": "/5b/e21e20835e/0/full.jsonl",
+      "context": "/5b/e21e20835e/0/context.md",
+      "content_hash": "/5b/e21e20835e/0/content_hash.txt",
+      "prompt": "/5b/e21e20835e/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 29,
+    "cache_creation_tokens": 49315,
+    "cache_read_tokens": 1066998,
+    "output_tokens": 5006,
+    "api_call_count": 27
+  }
+}

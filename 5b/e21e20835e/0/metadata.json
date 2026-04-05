@@ -1,0 +1,78 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "5be21e20835e",
+  "session_id": "983a8fb0-c04b-4e6c-9706-ca74e935483d",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-05T09:30:51.171541Z",
+  "branch": "volfco/streamable-http",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/mcp/src/types.rs",
+    "crates/mcp/src/manager.rs",
+    "crates/gateway/src/mcp_service.rs",
+    "crates/mcp/src/registry.rs",
+    "crates/config/src/validate.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "ba4fe705e5b9",
+  "token_usage": {
+    "input_tokens": 29,
+    "cache_creation_tokens": 49315,
+    "cache_read_tokens": 1066998,
+    "output_tokens": 5006,
+    "api_call_count": 27
+  },
+  "summary": {
+    "intent": "Address PR #555 review comments on the moltis/streamable-http branch, including renaming error variants to be transport-agnostic, fixing stale error messages, adding transport validation, and adding StreamableHttp unit tests.",
+    "outcome": "All requested changes were implemented and verified: renamed NotSseTransport→NotRemoteTransport and MissingSseUrl→MissingRemoteUrl, fixed stale error messages, added a manual Display impl for TransportType, added StreamableHttp tests, added transport validation in check_semantic_warnings. All 172 config tests and MCP tests passed; changes were committed and pushed.",
+    "learnings": {
+      "repo": [
+        "TransportType enum lives in crates/mcp/src/types.rs and has no Display impl by default — serde rename handles deserialization but not formatting.",
+        "MCP server config schema is in crates/config/src/schema.rs; transport is a string field there.",
+        "Config semantic validation (check_semantic_warnings) lives in crates/config/src/validate.rs and is tested with 172 tests.",
+        "The workspace does not use strum, derive_more, or any enum-display macro crate — Display impls must be written manually.",
+        "Worktrees are stored under /Users/penso/.superset/worktrees/moltis/\u003cbranch\u003e."
+      ],
+      "code": [
+        {
+          "path": "crates/mcp/src/types.rs",
+          "finding": "NotSseTransport renamed to NotRemoteTransport and MissingSseUrl renamed to MissingRemoteUrl to be transport-agnostic."
+        },
+        {
+          "path": "crates/mcp/src/registry.rs",
+          "finding": "Manual Display impl added for TransportType since no derive macro is available in the workspace."
+        },
+        {
+          "path": "crates/config/src/validate.rs",
+          "finding": "Transport field validation added inside check_semantic_warnings to catch invalid transport strings at config parse time."
+        },
+        {
+          "path": "crates/gateway/src/mcp_service.rs",
+          "finding": "StreamableHttp unit tests added and stale SSE-specific error message updated to use TransportType Display."
+        }
+      ],
+      "workflow": [
+        "Cargo check before running tests caught the missing Display impl early.",
+        "Running targeted test subsets (parse_server_config, mcp, config) is faster than full workspace test for iterative validation.",
+        "Manual Display impl (8 lines) preferred over adding a new crate dependency for a single use case, consistent with repo's minimal-dependency philosophy."
+      ]
+    },
+    "friction": [
+      "TransportType had no Display impl, causing a compile error when format!(\"{}\", transport) was first used — required an extra discovery loop (grep → read registry.rs → add impl).",
+      "MissingSseUrl appeared unused in grep results, requiring extra investigation to confirm it was safe to rename."
+    ],
+    "open_items": [
+      "If more enum Display needs arise elsewhere, consider evaluating strum or derive_more for the workspace to avoid repeating manual impls.",
+      "The McpServerConfig.url comment was stale and was updated, but broader doc/comment audit for SSE-specific language in the codebase was not performed."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-05T09:30:30.380852Z",
+    "agent_lines": 88,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 88,
+    "agent_percentage": 100
+  }
+}
