@@ -1,0 +1,68 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "053f9ad52f10",
+  "session_id": "f7c6be24-3a58-407c-b179-4eec241b4caf",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-05T21:31:47.22283Z",
+  "branch": "mixed-oil",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".github/workflows/release.yml",
+    "README.md",
+    "SECURITY.md",
+    "docs/src/release-verification.md",
+    "docs/src/security.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "b0ba377d50e8",
+  "token_usage": {
+    "input_tokens": 5091,
+    "cache_creation_tokens": 78614,
+    "cache_read_tokens": 2359219,
+    "output_tokens": 14360,
+    "api_call_count": 40
+  },
+  "summary": {
+    "intent": "Add GitHub artifact attestations to the moltis release workflow (following Secretive's pattern) and document the attestation verification process in README, SECURITY.md, and the docs site.",
+    "outcome": "Attestations were added to three workflow jobs (upload-release, merge-docker, generate-sbom) using SHA-pinned actions/attest-build-provenance@v4, docs were updated across four files, and the changes were committed and pushed with a PR created.",
+    "learnings": {
+      "repo": [
+        "The release workflow has three distinct jobs that produce artifacts: upload-release (binaries), merge-docker (multi-arch OCI image), and generate-sbom (CycloneDX + SPDX).",
+        "The build-docker job already had attestations: write permission; upload-release and generate-sbom needed it added.",
+        "A sign-artifacts composite action exists at .github/actions/sign-artifacts/action.yml handling GPG and cosign signing.",
+        "Security documentation is split across three locations: README.md, SECURITY.md (root), docs/src/security.md, and docs/src/release-verification.md.",
+        "The project is under the moltis-org GitHub organization, so attestations will be at https://github.com/moltis-org/moltis/attestations."
+      ],
+      "code": [
+        {
+          "path": ".github/workflows/release.yml",
+          "finding": "Container attestation in merge-docker requires push-to-registry: true so the attestation is attached to the OCI image in GHCR rather than uploaded as a separate artifact."
+        }
+      ],
+      "workflow": [
+        "actions/attest-build-provenance v4 and v4.1.0 both resolve to SHA a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32; always pin to SHA for supply chain security.",
+        "A security hook blocked the permissions edit on first attempt; retrying the edit succeeded — hooks may require the edit content to pass an inspection before allowing it.",
+        "Secretive's release.yml is a useful reference implementation for attest-build-provenance usage patterns in a real project."
+      ]
+    },
+    "friction": [
+      "A security hook blocked the permissions edit to release.yml on the first attempt, requiring a retry.",
+      "Multiple partial reads of release.yml were needed to understand the full job structure — the file was read in many separate chunks across the session.",
+      "Resolving the correct SHA for actions/attest-build-provenance@v4 required multiple Bash commands (tag lookup, annotated-tag dereference) before getting the right commit hash."
+    ],
+    "open_items": [
+      "The PR was created but not yet reviewed or merged — attestations won't be active in releases until it lands.",
+      "No end-to-end test of the attestation flow was possible without actually running the release workflow; correctness of the YAML additions is unverified beyond syntax validation.",
+      "The docs/src/SUMMARY.md was read but it's unclear if a new nav entry for attestation verification was added there — may need a follow-up check."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-05T21:31:28.380155Z",
+    "agent_lines": 99,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 99,
+    "agent_percentage": 100
+  }
+}
