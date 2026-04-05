@@ -1,0 +1,60 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "bea56755b652",
+  "session_id": "983a8fb0-c04b-4e6c-9706-ca74e935483d",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-05T09:51:10.818088Z",
+  "branch": "volfco/streamable-http",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "docs/src/mcp.md",
+    "docs/src/configuration.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "1ecdec1c70a1",
+  "checkpoint_transcript_start": 288,
+  "transcript_lines_at_start": 288,
+  "token_usage": {
+    "input_tokens": 8,
+    "cache_creation_tokens": 6605,
+    "cache_read_tokens": 493053,
+    "output_tokens": 2672,
+    "api_call_count": 8
+  },
+  "summary": {
+    "intent": "Update the MCP documentation to add streamable-http transport as a supported option alongside stdio and SSE transports.",
+    "outcome": "Successfully updated docs/src/mcp.md and docs/src/configuration.md to include streamable-http examples and descriptions, then committed and pushed the changes.",
+    "learnings": {
+      "repo": [
+        "The project (volfco/streamable-http) is a worktree under /Users/penso/.superset/worktrees/moltis/, suggesting active multi-branch development.",
+        "MCP documentation lives in docs/src/mcp.md and docs/src/configuration.md.",
+        "The project supports multiple MCP transports: stdio, SSE, and streamable-http."
+      ],
+      "code": [
+        {
+          "path": "docs/src/mcp.md",
+          "line": 49,
+          "finding": "Quick-start config block around line 49 was the insertion point for the streamable-http transport example."
+        }
+      ],
+      "workflow": [
+        "Multiple reads of the same file were needed to locate the correct insertion points before editing, suggesting the file required careful navigation.",
+        "Docs changes were batched into a single commit and pushed together."
+      ]
+    },
+    "friction": [
+      "mcp.md required 4 separate reads before edits could begin, indicating difficulty locating the right context or line numbers for each edit.",
+      "Multiple discrete edits to mcp.md (at least 4 Edit calls) suggest the doc had several scattered locations needing updates rather than one contiguous block."
+    ],
+    "open_items": []
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-05T09:50:59.169094Z",
+    "agent_lines": 15,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 15,
+    "agent_percentage": 100
+  }
+}
