@@ -1,0 +1,110 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "3e13cf1c768d",
+  "session_id": "f489488a-3648-47af-b9af-959c81d6932e",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-06T11:08:34.542955Z",
+  "branch": "beaded-perch",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "Cargo.lock",
+    "Cargo.toml",
+    "crates/chat/src/lib.rs",
+    "crates/config/src/schema.rs",
+    "crates/config/src/template.rs",
+    "crates/config/src/validate.rs",
+    "crates/external-agents/Cargo.toml",
+    "crates/external-agents/src/bridge.rs",
+    "crates/external-agents/src/error.rs",
+    "crates/external-agents/src/lib.rs",
+    "crates/external-agents/src/registry.rs",
+    "crates/external-agents/src/runtimes/acp.rs",
+    "crates/external-agents/src/runtimes/claude_code.rs",
+    "crates/external-agents/src/runtimes/codex.rs",
+    "crates/external-agents/src/runtimes/mod.rs",
+    "crates/external-agents/src/runtimes/opencode.rs",
+    "crates/external-agents/src/runtimes/pi_agent.rs",
+    "crates/external-agents/src/transport.rs",
+    "crates/external-agents/src/types.rs",
+    "crates/gateway/src/services.rs",
+    "crates/graphql/tests/integration.rs",
+    "crates/secret-store/Cargo.toml",
+    "crates/service-traits/src/lib.rs",
+    "crates/sessions/src/metadata.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "cbb1c425a9a4",
+  "token_usage": {
+    "input_tokens": 70,
+    "cache_creation_tokens": 109515,
+    "cache_read_tokens": 6249414,
+    "output_tokens": 27845,
+    "api_call_count": 66
+  },
+  "summary": {
+    "intent": "Implement Phase 1 of the External CLI Agent Bridge for Moltis — foundation crate, core types/traits, config schema, session metadata, and service-traits wiring so CLI agents (Claude Code, opencode, Codex, Pi, ACP) can be bound to chat sessions.",
+    "outcome": "Created the `crates/external-agents/` crate with all core types, traits, bridge delta-sync logic, feature-gated runtime stubs, and wired it into the workspace, config schema, session metadata, service-traits bundle, and downstream consumers. All 9 unit tests pass, full workspace compiles clean, clippy and fmt pass.",
+    "learnings": {
+      "repo": [
+        "Feature flags default to on (opt-out, not opt-in) per CLAUDE.md policy — all runtime features in external-agents are default-enabled.",
+        "The `Services` bundle in `crates/service-traits/src/lib.rs` must be updated alongside any new service trait; downstream consumers (`crates/gateway/src/services.rs`, `crates/graphql/tests/integration.rs`) construct `Services {}` literals and must be patched when new fields are added.",
+        "`crates/graphql/tests/integration.rs` has a mock `Services` struct construction that must be kept in sync with the real `Services` struct.",
+        "Workspace deps use `portable-pty` already (consumed by `crates/web/`) — safe to add as dependency in new crates without adding a new external dep.",
+        "`taplo fmt` is used for TOML formatting and must be run after any Cargo.toml changes.",
+        "The nightly toolchain `nightly-2025-11-30` is pinned for `rustfmt`.",
+        "Beads (internal issue tracker) issues must be created, claimed, and closed as part of the PR workflow."
+      ],
+      "code": [
+        {
+          "path": "crates/sessions/src/metadata.rs",
+          "finding": "SessionEntry has struct literal constructors in multiple places (chat/src/lib.rs test helpers) that must be updated when new fields are added; new fields need `#[serde(default, skip_serializing_if = 'Option::is_none')]` to stay backwards-compatible with existing SQLite records."
+        },
+        {
+          "path": "crates/chat/src/lib.rs",
+          "finding": "Contains test-only SessionEntry struct literal construction that must be updated when SessionEntry gains new fields."
+        },
+        {
+          "path": "crates/gateway/src/services.rs",
+          "finding": "Uses `to_services_with_chat()` which builds a `Services` literal — must be updated for each new service added to the bundle."
+        },
+        {
+          "path": "crates/external-agents/src/bridge.rs",
+          "finding": "Clippy flagged a redundant closure in bridge.rs that needed fixing before the crate was clean."
+        }
+      ],
+      "workflow": [
+        "Parallel tool calls (Read, Write, Edit) significantly speed up crate scaffolding when files are independent.",
+        "Running `cargo check -p \u003cnew-crate\u003e` before `cargo check --workspace` lets you isolate new-crate errors from downstream breakage.",
+        "Format and clippy should be run on the new crate before running workspace-wide checks to keep signal clean.",
+        "Struct literal construction sites are a common source of compile breaks when adding fields — grep for `StructName {` early."
+      ]
+    },
+    "friction": [
+      "Multiple iterative reads of the same large files (Cargo.toml, schema.rs, validate.rs, service-traits lib.rs) due to needing different line ranges — required many sequential Read calls to piece together complete file content.",
+      "SessionEntry struct literals scattered across chat/lib.rs test helpers and sessions/metadata.rs caused compile breaks that required separate discovery and fix steps.",
+      "Services struct construction in gateway/src/services.rs and graphql integration tests both broke silently until compile — no single authoritative list of all construction sites.",
+      "taplo fmt needed a separate pass after all Rust edits were done, adding an extra step at the end."
+    ],
+    "open_items": [
+      "Phase 2: SessionBridge implementation with actual delta sync + compaction reconciliation persisted to SQLite KV (BridgeState).",
+      "Phase 3: PtyBackend and TmuxBackend implementations reusing crates/web/src/terminal.rs patterns.",
+      "Phase 4: ClaudeCodeRuntime with -p mode, interactive tmux mode, --resume/--continue reattachment.",
+      "Phase 5: Gateway integration — routing check in LiveChatService::send(), send_via_external_agent(), external_agent.* RPC methods, GonData addition.",
+      "Phase 6: Web UI — session binding cards, header badge, terminal tab integration.",
+      "Phase 7: Codex CLI (JSON-RPC), ACP generic runtime, opencode (tmux), Pi agent (JSON-RPC) — all runtime stubs exist but are unimplemented.",
+      "Phase 8: Channel integration for externally-bound sessions.",
+      "Runtime stubs (claude_code.rs, opencode.rs, codex.rs, pi_agent.rs, acp.rs) are scaffold-only with `todo!()` bodies — no actual PTY/tmux/JSON-RPC logic yet.",
+      "PromptDeliveryMode variants exist in types.rs but prompt.rs module referenced in the plan was not created — delivery logic is deferred to Phase 3/4.",
+      "pty_backend.rs and tmux_backend.rs modules referenced in the plan architecture were not created in Phase 1 — deferred to Phase 3."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-06T11:07:59.397998Z",
+    "agent_lines": 1135,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1135,
+    "agent_percentage": 100
+  }
+}

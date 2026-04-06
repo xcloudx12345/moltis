@@ -1,0 +1,49 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "3e13cf1c768d",
+  "strategy": "manual-commit",
+  "branch": "beaded-perch",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "Cargo.lock",
+    "Cargo.toml",
+    "crates/chat/src/lib.rs",
+    "crates/config/src/schema.rs",
+    "crates/config/src/template.rs",
+    "crates/config/src/validate.rs",
+    "crates/external-agents/Cargo.toml",
+    "crates/external-agents/src/bridge.rs",
+    "crates/external-agents/src/error.rs",
+    "crates/external-agents/src/lib.rs",
+    "crates/external-agents/src/registry.rs",
+    "crates/external-agents/src/runtimes/acp.rs",
+    "crates/external-agents/src/runtimes/claude_code.rs",
+    "crates/external-agents/src/runtimes/codex.rs",
+    "crates/external-agents/src/runtimes/mod.rs",
+    "crates/external-agents/src/runtimes/opencode.rs",
+    "crates/external-agents/src/runtimes/pi_agent.rs",
+    "crates/external-agents/src/transport.rs",
+    "crates/external-agents/src/types.rs",
+    "crates/gateway/src/services.rs",
+    "crates/graphql/tests/integration.rs",
+    "crates/secret-store/Cargo.toml",
+    "crates/service-traits/src/lib.rs",
+    "crates/sessions/src/metadata.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/3e/13cf1c768d/0/metadata.json",
+      "transcript": "/3e/13cf1c768d/0/full.jsonl",
+      "context": "/3e/13cf1c768d/0/context.md",
+      "content_hash": "/3e/13cf1c768d/0/content_hash.txt",
+      "prompt": "/3e/13cf1c768d/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 70,
+    "cache_creation_tokens": 109515,
+    "cache_read_tokens": 6249414,
+    "output_tokens": 27845,
+    "api_call_count": 66
+  }
+}
