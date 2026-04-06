@@ -127,3 +127,22 @@ System Prompt Suffix (optional)
 
 Cancel
 
+### Prompt 15
+
+ok it worked!
+
+~/.s/w/m/kaput-gibbon kaput-gibbon [!] ❯ scripts/test-webhook.sh https://localhost:59891/api/webhooks/ingest/wh_d79afd857f1b68d578bdeb47c2afe7b847dc --profile generic
+
+Moltis Webhook Test
+===================
+
+Sending generic deploy.completed event...
+────────────────────────────────────────────
+Profile: generic
+URL:     https://localhost:59891/api/webhooks/ingest/wh_d79afd857f1b68d578bdeb47c2afe7b847dc
+Auth:    none (no --secret provided)
+
+Request headers:
+  -H
+  X-Event-Type: ...
+

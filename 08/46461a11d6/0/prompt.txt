@@ -124,3 +124,41 @@ Session Mode
 System Prompt Suffix (optional)
 
 Cancel
+
+---
+
+ok it worked!
+
+~/.s/w/m/kaput-gibbon kaput-gibbon [!] ❯ scripts/test-webhook.sh https://localhost:59891/api/webhooks/ingest/wh_d79afd857f1b68d578bdeb47c2afe7b847dc --profile generic
+
+Moltis Webhook Test
+===================
+
+Sending generic deploy.completed event...
+────────────────────────────────────────────
+Profile: generic
+URL:     https://localhost:59891/api/webhooks/ingest/wh_d79afd857f1b68d578bdeb47c2afe7b847dc
+Auth:    none (no --secret provided)
+
+Request headers:
+  -H
+  X-Event-Type: deploy.completed
+  -H
+  X-Delivery-Id: test-1775509954
+
+Sending...
+
+Response body:
+{
+    "deliveryId": 1,
+    "eventType": "deploy.completed",
+    "receivedAt": "2026-04-06T21:12:34.958069Z",
+    "status": "queued",
+    "webhookId": "wh_d79afd857f1b68d578bdeb47c2afe7b847dc"
+}
+
+HTTP Status: 202
+────────────────────────────────────────────
+
+Done. Check Settings → Webhooks → Deliveries in the Moltis UI.
+~/.s/w/m/kaput-gibbon kaput-gibbon [+] ❯
