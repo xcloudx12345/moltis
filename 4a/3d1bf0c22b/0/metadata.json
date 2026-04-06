@@ -1,0 +1,113 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "4a3d1bf0c22b",
+  "session_id": "3d9acf2d-68f6-4a76-af8d-a4d79258a469",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-06T23:00:05.202933Z",
+  "branch": "kaput-gibbon",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/gateway/src/webhooks.rs",
+    "crates/webhooks/src/types.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "2e5da0b8ae9c",
+  "token_usage": {
+    "input_tokens": 4064,
+    "cache_creation_tokens": 397543,
+    "cache_read_tokens": 102698570,
+    "output_tokens": 122091,
+    "api_call_count": 398
+  },
+  "summary": {
+    "intent": "Add a generic webhook ingress system to Moltis that can trigger AI agents based on events from GitHub, GitLab, Stripe, and other providers, with a full UI for managing webhooks in settings.",
+    "outcome": "Fully implemented and merged webhook feature including: new `moltis-webhooks` crate (36 tests), gateway/httpd integration, web UI settings page, documentation, website landing page updates, CORS support, and multiple bug fixes discovered during testing.",
+    "learnings": {
+      "repo": [
+        "Settings sidebar nav icons are rendered via CSS `::before` pseudo-elements in `components.css` using `[data-section='NAME']::before` selectors — NOT from the `icon` property in the JS sections array",
+        "There are two style.css files: `src/assets/style.css` (Tailwind output, served) and `src/assets/css/style.css` (older copy, not served) — always edit the Tailwind source via `ui/input.css`",
+        "CSS mask-image url() paths in `input.css` are relative to the OUTPUT file location (`src/assets/style.css`), not the input file location (`ui/input.css`)",
+        "The `GatewayState` is created then immediately Arc-wrapped; `Arc::get_mut` silently returns None if any clone exists before the call, causing optional fields to stay None — use `OnceLock` for late-initialized fields instead",
+        "All existing icons use CSS mask-image with stroke-only SVGs and `background-color: currentColor` — this is the correct pattern for the icon system",
+        "The i18n build (`scripts/build-i18n.mjs`) regenerates all language HTML files from the English template via string replacement — run it after any changes to `index.en.html`",
+        "The httpd `ssh_routes` compilation error exists on main and is pre-existing (vault feature dependency issue) — not caused by webhook changes",
+        "Webhook ingress route must be exempted from session auth middleware in `auth_middleware.rs`",
+        "The cron and sandbox pages use `p-4` padding, `text-lg` title, `gap-4` spacing — webhooks should match this pattern",
+        "HTM collapses whitespace between tags and text across newlines — use `${\" \"}` to force explicit spaces between inline elements and text nodes"
+      ],
+      "code": [
+        {
+          "path": "crates/webhooks/src/rate_limit.rs",
+          "line": 1,
+          "end_line": 80,
+          "finding": "Original two-RwLock implementation had TOCTOU gap — global check then per-webhook check were not atomic. Fixed by using single Mutex holding both windows together."
+        },
+        {
+          "path": "crates/webhooks/src/profiles/github.rs",
+          "line": 1,
+          "end_line": 50,
+          "finding": "Byte-indexed string slicing like `\u0026body_text[..500]` panics on multibyte UTF-8. Fixed with a `truncate_str()` helper that walks back to find a char boundary."
+        },
+        {
+          "path": "crates/webhooks/src/profiles/generic.rs",
+          "line": 1,
+          "end_line": 30,
+          "finding": "Generic profile was using body SHA-256 hash as delivery key fallback, causing identical test payloads to always be deduplicated. Fixed by returning None (no dedup) when no explicit delivery ID header is present."
+        },
+        {
+          "path": "crates/gateway/src/webhooks.rs",
+          "line": 1,
+          "end_line": 100,
+          "finding": "API responses were returning raw auth_config and source_config fields containing secrets. Fixed by adding a `redacted()` method on Webhook that replaces secret values with `\"[redacted]\"` and calling it in list/get/update service methods."
+        },
+        {
+          "path": "crates/httpd/src/server.rs",
+          "line": 1128,
+          "end_line": 1135,
+          "finding": "CORS headers added via irrefutable `if let Ok(v) = HeaderValue::from_static(...).try_into()` pattern — simplified to direct `HeaderValue::from_static()` call to fix compiler warning."
+        },
+        {
+          "path": "crates/web/src/assets/css/components.css",
+          "line": 1,
+          "end_line": 50,
+          "finding": "Settings nav icons defined here as `::before` pseudo-elements with data-section attribute selectors, not in Tailwind/input.css or from JS icon property."
+        }
+      ],
+      "workflow": [
+        "When wiring optional services into Arc\u003cGatewayState\u003e, prefer OnceLock over Arc::get_mut — the latter silently fails if any Arc clone exists",
+        "Test the full HTTP ingress path early with curl — it surfaces integration issues that unit tests miss (auth config, route registration, state wiring)",
+        "Browser-based webhook testing tools (Hoppscotch web) cannot reach localhost due to CORS + self-signed cert restrictions — point users to the desktop app or curl",
+        "Resolving GitHub PR review conversations requires GraphQL `resolveReviewThread` mutation — the REST API does not support this",
+        "For background worker state initialization, create resources before Arc-wrapping the state struct to avoid Arc::get_mut fragility",
+        "When adding CSS icon classes, always check components.css for data-section pseudo-element patterns before assuming JS/Tailwind handles it"
+      ]
+    },
+    "friction": [
+      "OAuth token expired at session start, required re-authentication before work could begin",
+      "Arc::get_mut silently failed for webhook_store/worker_tx initialization, causing all webhook ingress requests to return 404 — discovered only through manual testing",
+      "Settings nav icon showed as black square through multiple icon attempts (icon-link → icon-globe → inline SVG → icon-webhooks CSS class) before discovering the real mechanism in components.css",
+      "style.css is gitignored so compiled Tailwind output containing new icon classes was not shipped with commits",
+      "Hoppscotch web cannot reach localhost due to CORS restrictions despite the endpoint returning 202 — misleading recommendation to users",
+      "Browser cached old icon rendering, making it hard to verify icon fixes were working",
+      "PR bot flagged unused imports (useState, ComboSelect) that were actually used in the current code — it reviewed an older commit state"
+    ],
+    "open_items": [
+      "Live-refresh chat UI when background workers append messages to open sessions (affects both webhooks and cron named sessions) — filed as beads issue moltis-2pu",
+      "CIDR allowlist IP checking only extracts from X-Forwarded-For/X-Real-Ip headers; direct connection IP (ConnectInfo) not extracted — needs router-level connect_info configuration for complete enforcement",
+      "Translations for webhook feature text in non-English website files — currently stays in English as placeholder",
+      "Named session mode creates one session per webhook ID, not per entity — per_entity mode with entity-key-based session grouping needs validation with real provider events",
+      "GitLab, Stripe, Linear, PagerDuty, Sentry profiles exist in the plan but only GitHub and generic profiles have detailed implementations in the crate",
+      "Response action tools (post comments, merge PRs, issue refunds) are specified in the plan and type system but the tool injection into agent context is not fully wired",
+      "Webhook creation UI defaults to static_header auth but allows creation without entering a secret, leading to silent auth failures — should validate or default to 'none'"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-06T22:59:16.637521Z",
+    "agent_lines": 0,
+    "human_added": 39,
+    "human_modified": 16,
+    "human_removed": 0,
+    "total_committed": 39,
+    "agent_percentage": 0
+  }
+}
