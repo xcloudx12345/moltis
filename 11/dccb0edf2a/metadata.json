@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "11dccb0edf2a",
+  "strategy": "manual-commit",
+  "branch": "lavish-hardware",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "Dockerfile"
+  ],
+  "sessions": [
+    {
+      "metadata": "/11/dccb0edf2a/0/metadata.json",
+      "transcript": "/11/dccb0edf2a/0/full.jsonl",
+      "context": "/11/dccb0edf2a/0/context.md",
+      "content_hash": "/11/dccb0edf2a/0/content_hash.txt",
+      "prompt": "/11/dccb0edf2a/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 15,
+    "cache_creation_tokens": 5532,
+    "cache_read_tokens": 805807,
+    "output_tokens": 3309,
+    "api_call_count": 13
+  }
+}

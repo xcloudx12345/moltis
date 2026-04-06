@@ -1,0 +1,58 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "11dccb0edf2a",
+  "session_id": "596ee25a-b703-4047-8788-7bb04fbcabb6",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-06T22:40:08.858473Z",
+  "branch": "lavish-hardware",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "Dockerfile"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "718e7723f2e5",
+  "checkpoint_transcript_start": 262,
+  "transcript_lines_at_start": 262,
+  "token_usage": {
+    "input_tokens": 15,
+    "cache_creation_tokens": 5532,
+    "cache_read_tokens": 805807,
+    "output_tokens": 3309,
+    "api_call_count": 13
+  },
+  "summary": {
+    "intent": "Simplify the Dockerfile by replacing the explicit feature list with default features, avoiding maintenance drift.",
+    "outcome": "Dockerfile updated to use default features (dropping `--no-default-features` with explicit list), with `local-llm-metal` confirmed safe on Linux. PR #576 updated with the cleaner approach.",
+    "learnings": {
+      "repo": [
+        "Linux CI already builds with --all-features including local-llm-metal (line 29 of CI config), meaning Metal feature compiles fine on Linux — it just doesn't activate.",
+        "The explicit feature list in Dockerfile existed only to exclude local-llm-metal and add wasm; neither exclusion was actually necessary."
+      ],
+      "code": [
+        {
+          "path": "Dockerfile",
+          "finding": "Switched from --no-default-features with explicit list to default features; wasm inclusion and metal exclusion handled implicitly."
+        }
+      ],
+      "workflow": [
+        "Before removing a feature flag, check CI config to verify the feature already compiles in the target environment.",
+        "Explicit feature lists in Dockerfiles silently drift as new default features are added upstream."
+      ]
+    },
+    "friction": [
+      "Required multiple grep passes to trace local-llm-metal dependencies (llama.cpp, metal flags) before confirming Linux safety."
+    ],
+    "open_items": [
+      "Verify wasm feature is still included via defaults or re-add explicitly if it turns out not to be a default feature."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-06T22:39:57.259741Z",
+    "agent_lines": 3,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 3,
+    "agent_percentage": 100
+  }
+}
