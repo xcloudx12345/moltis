@@ -1,0 +1,81 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "99f76357e712",
+  "session_id": "3d9acf2d-68f6-4a76-af8d-a4d79258a469",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-06T20:43:45.200974Z",
+  "branch": "kaput-gibbon",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/web/src/assets/js/page-webhooks.js"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "84a7e80d9de0",
+  "token_usage": {
+    "input_tokens": 3738,
+    "cache_creation_tokens": 239755,
+    "cache_read_tokens": 22071523,
+    "output_tokens": 56448,
+    "api_call_count": 136
+  },
+  "summary": {
+    "intent": "Add a generic webhooks system to the Moltis platform, supporting GitHub, GitLab, Stripe, and other provider triggers to run AI agents, with full settings UI, documentation, and proper navigation icons.",
+    "outcome": "Built a complete `moltis-webhooks` crate with 16 source files, 25 passing tests, gateway integration, HTTP ingress route, web UI settings page, and documentation. PR #575 created and pushed with follow-up commits for icon fix and agent/model select improvements.",
+    "learnings": {
+      "repo": [
+        "Webhooks crate follows the same pattern as `moltis-cron`: store trait + SQLite impl + service trait in service-traits + LiveXxxService in gateway + NoopXxxService for testing.",
+        "GatewayState fields for optional services (webhook_store, webhook_rate_limiter, webhook_worker_tx) are initialized to None/default in with_options; Arc::get_mut can be used right after creation (before any clones) to set them.",
+        "Public HTTP paths (no session auth required) are exempted in httpd/src/auth_middleware.rs — the pattern is to check the path prefix there.",
+        "RPC method registration happens in crates/gateway/src/methods/services.rs; read vs write auth split is in crates/gateway/src/methods/mod.rs.",
+        "The httpd crate has a pre-existing compile error under the vault feature (ssh_routes) that exists on main — not caused by this work.",
+        "Settings sidebar icons are defined as CSS classes (e.g., icon-globe, icon-activity) in a minified style.css; icon-link was already used by MCP causing the black square.",
+        "Agent and model selection in modals should use ComboSelect (from stores/model-store.js) and ModelSelect components with signals, not plain text inputs — established pattern in page-crons.js.",
+        "Gon data is populated in crates/web/src/templates.rs and serialized to the page; adding webhooks data required adding fields to the GonData struct and its construction site."
+      ],
+      "code": [
+        {
+          "path": "crates/gateway/src/server.rs",
+          "finding": "Arc::get_mut used immediately after with_options() to set webhook_store, webhook_rate_limiter, and webhook_worker_tx before the Arc is shared anywhere."
+        },
+        {
+          "path": "crates/web/src/assets/js/page-webhooks.js",
+          "finding": "Agent ID and Model Override fields converted from plain text inputs to ComboSelect/ModelSelect with signals to match cron page pattern."
+        },
+        {
+          "path": "crates/web/src/assets/js/page-settings.js",
+          "line": 147,
+          "finding": "Webhooks sidebar entry initially used icon-link (already used by MCP → black square); corrected to icon-globe."
+        }
+      ],
+      "workflow": [
+        "Parallel agents were used extensively for large file creation tasks (core crate, store/auth, profiles) and exploration — effective for independent work.",
+        "Incremental compilation checks after each integration phase (crate alone → gateway → httpd) caught issues early.",
+        "Pre-existing errors on main should be verified with a git stash/checkout before assuming they are caused by current changes.",
+        "Plan files in plans/ directory are used as living design documents — improved before implementation begins."
+      ]
+    },
+    "friction": [
+      "OAuth token expired at session start, requiring re-authentication before work could begin.",
+      "GatewayState is Arc-wrapped inside with_options(), making post-construction field mutation require Arc::get_mut workaround instead of a clean builder pattern.",
+      "Icon availability required grepping minified CSS to find usable class names; no icon reference/catalog exists.",
+      "The httpd vault feature pre-existing compile error caused confusion about whether our changes broke something — required verification against main."
+    ],
+    "open_items": [
+      "GitLab, Linear, Jira, PagerDuty, and Sentry source profiles are planned in the design doc but only GitHub, GitLab, and Stripe profiles were created in the initial implementation — remaining providers need profiles.",
+      "Response action tools (post GitHub comments, merge PRs, issue Stripe refunds, etc.) are in the plan but not yet implemented — agents can receive events but cannot act back via typed tools.",
+      "Event filter UI (allow/deny checkboxes from provider event catalog) is described in the plan but the JS implementation uses free-form text; proper profile-aware checkbox UI deferred.",
+      "per_entity session mode (grouping events by entity key with serialized per-entity processing) is in the plan and types but worker implementation may not fully handle entity locking.",
+      "Webhook feature in CLI crate was explicitly skipped (deemed unnecessary since moltis-gateway pulls it in transitively) — should be verified this is actually correct.",
+      "Docs were written but not validated against the actual implementation (e.g., exact RPC method names, delivery status values) — may have minor discrepancies."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-06T20:43:05.08246Z",
+    "agent_lines": 0,
+    "human_added": 14,
+    "human_modified": 18,
+    "human_removed": 0,
+    "total_committed": 14,
+    "agent_percentage": 0
+  }
+}
