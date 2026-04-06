@@ -1,0 +1,80 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "800bbc990205",
+  "session_id": "a75c15d8-5897-4011-94ab-aa07f3c3d2da",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-06T13:47:47.332448Z",
+  "branch": "thoughtful-pint",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "website/scripts/build-i18n.mjs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "63034076dcfd",
+  "token_usage": {
+    "input_tokens": 277,
+    "cache_creation_tokens": 552017,
+    "cache_read_tokens": 37561742,
+    "output_tokens": 90003,
+    "api_call_count": 211
+  },
+  "summary": {
+    "intent": "Modernize the Moltis website homepage to showcase all supported AI providers/LLMs with visual pills (inspired by Polyphony), add missing content sections (positioning, how-it-works, use cases, social proof), and propagate all changes to all locale files.",
+    "outcome": "Added a 'Works with your stack' pills section with 4 categorized rows and official brand icons, added positioning/how-it-works/use-cases/community-quote sections, extracted CSS to style.css, updated hero title/tagline, fixed LoC stats, and propagated all changes to all locale HTML files via the i18n build script.",
+    "learnings": {
+      "repo": [
+        "The i18n system uses website/scripts/build-i18n.mjs to generate locale files from index.en.html via string substitution — new sections appear in English until translations are added to the script",
+        "French (index.fr.html) was NOT included in build-i18n.mjs and was manually maintained — it was missing all new sections until explicitly added",
+        "The build script has separate 'title' and 'metaDesc' fields per language that are distinct from the string replacement pairs — both must be updated when rebranding",
+        "Raster icon files (webp, png) need a separate CSS class (pill-icon-color) to avoid the dark-mode invert filter that works for monochrome SVGs",
+        "tokei reports: Rust code is ~215,683 lines total; moltis-agents core is ~11K LoC"
+      ],
+      "code": [
+        {
+          "path": "website/scripts/build-i18n.mjs",
+          "finding": "Each language entry has 'title', 'metaDesc', and 'strings' array — title/metaDesc are used for \u003ctitle\u003e and OG tags directly, strings array does find/replace on body content. French locale was completely absent."
+        },
+        {
+          "path": "website/style.css",
+          "finding": "New file extracted from inline \u003cstyle\u003e in index.en.html; contains pill glassmorphism styles, pill-icon/pill-icon-color classes, and scroll-reveal animation"
+        },
+        {
+          "path": "website/images/icons/",
+          "finding": "23 icon files created: SVGs for most providers (Simple Icons or official brand SVGs), raster images for LM Studio (.webp) and MiniMax (.png) which needed separate CSS treatment"
+        }
+      ],
+      "workflow": [
+        "Simple Icons (simpleicons.org) is the authoritative source for brand SVGs at small sizes — always check there before crafting custom icons",
+        "Inline SVGs should be extracted to individual files in an icons/ directory for maintainability — easier to fix/replace individual broken icons",
+        "When using \u003cimg\u003e for icons instead of inline SVG, currentColor doesn't work — need CSS filter:invert(1) for dark mode on monochrome icons, and a separate no-invert class for colored raster logos",
+        "Raster wordmark logos need to be cropped to icon-only before use in pills — the MiniMax logo included text that needed trimming",
+        "Dev server should be started in background and cleaned up after screenshot verification"
+      ]
+    },
+    "friction": [
+      "French locale was silently excluded from build-i18n.mjs — changes to all other locales via the build script didn't affect French, causing visible regression only discovered when user navigated to the French URL",
+      "The build script's 'title'/'metaDesc' fields per language are separate from the string replacement pairs — updating the English template strings wasn't enough; each language's title/metaDesc had to be updated individually (8 separate edits)",
+      "Multiple background dev server task notifications arrived mid-session requiring read-output responses that added noise",
+      "Several SVG icons were initially broken or placeholder quality (Teams, DeepSeek, Cerebras) requiring iterative replacements",
+      "MiniMax logo included full wordmark text — required image cropping before it was usable as a pill icon",
+      "The pills section position changed mid-session (moved after value prop cards) requiring a cut-and-paste HTML restructure"
+    ],
+    "open_items": [
+      "All new homepage sections (positioning paragraph, how-it-works, use cases grid, community quote) are English-only in non-English locale files — translations need to be added to build-i18n.mjs strings arrays",
+      "LM Studio has no official SVG — using a generic monitor icon; should be replaced if they publish an SVG asset",
+      "MiniMax, Z.AI, and Venice pills have no icons (text-only) — official SVGs not found at time of implementation",
+      "Changes only propagated to index.en.html — other locale files (index.fr.html etc.) show new content in English; proper localization deferred",
+      "Social proof section has only one community quote (Noita) — more quotes/testimonials should be added as they accumulate",
+      "PR #567 was created but not merged — locale propagation and content changes still in review"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-06T13:47:08.014127Z",
+    "agent_lines": 16,
+    "human_added": 485,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 501,
+    "agent_percentage": 3.1936127744510974
+  }
+}
