@@ -1,0 +1,91 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "501f041a8500",
+  "session_id": "a75c15d8-5897-4011-94ab-aa07f3c3d2da",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-06T14:22:26.653498Z",
+  "branch": "thoughtful-pint",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "website/index.de.html",
+    "website/index.es.html",
+    "website/index.fr.html",
+    "website/index.it.html",
+    "website/index.ja.html",
+    "website/index.ko.html",
+    "website/index.pt.html",
+    "website/index.ru.html",
+    "website/index.zh.html"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "211055a00b6d",
+  "token_usage": {
+    "input_tokens": 300,
+    "cache_creation_tokens": 575984,
+    "cache_read_tokens": 42425454,
+    "output_tokens": 102805,
+    "api_call_count": 228
+  },
+  "summary": {
+    "intent": "Modernize the Moltis website to reflect new features by adding provider/LLM pills (inspired by Polyphony), improving positioning/messaging, and propagating all changes to 9 locale files.",
+    "outcome": "Added a 'Works with your stack' pills section with 4 categories and 29+ providers, extracted CSS to style.css, added positioning paragraph/how-it-works/use-cases/community quote sections, updated LoC stats, and translated all new content into 9 locales — committed and pushed as PR #567.",
+    "learnings": {
+      "repo": [
+        "The website uses a build-i18n.mjs script that generates locale files from index.en.html via string substitution pairs — new sections appear in English unless the script's string pairs are updated.",
+        "French (index.fr.html) was NOT in build-i18n.mjs and was maintained manually, so it was never regenerated automatically with other locales.",
+        "Locale files must be updated both by running the build script AND by directly editing the HTML when the build script's string pairs don't cover new content.",
+        "Raster icons (webp, png) cannot use CSS currentColor/invert the same way SVGs can — a separate pill-icon-color CSS class is needed to handle grayscale without inversion artifacts.",
+        "The website uses Tailwind CSS dark mode via a .dark class on the root element.",
+        "tokei reports: Rust codebase is ~215K lines of code, agent core (~11K LoC), total project ~377K lines across 1158 files."
+      ],
+      "code": [
+        {
+          "path": "website/scripts/build-i18n.mjs",
+          "finding": "String substitution pairs must be updated whenever English source strings change, otherwise locale files keep old translations for those strings. French was absent from this file entirely."
+        },
+        {
+          "path": "website/style.css",
+          "finding": "Extracted from inline \u003cstyle\u003e in index.en.html. pill-icon and pill-icon-color are the two CSS classes for SVG vs raster pill icons respectively."
+        },
+        {
+          "path": "website/images/icons/",
+          "finding": "23 icon files: official SVGs from Simple Icons (openai, gemini, mistral, ollama, huggingface, openrouter, teams), brand websites (fireworks, deepseek, cerebras, zai, moonshot), custom SVGs, and raster logos (lmstudio.webp, minimax.png)."
+        }
+      ],
+      "workflow": [
+        "Simple Icons (simpleicons.org) is the canonical source for brand SVGs at small sizes.",
+        "When converting brand SVGs for dark mode, hardcoded fill colors should be replaced with currentColor — but raster logos cannot do this and need a separate CSS treatment.",
+        "MiniMax provided only a wordmark URL — the icon portion had to be cropped via ImageMagick.",
+        "Regenerating locale files from English source after changing hero strings leaves previously-translated strings in English because the build script's old string pairs no longer match."
+      ]
+    },
+    "friction": [
+      "The build-i18n.mjs string pair approach breaks silently when English source strings change — locale files appeared correct but were actually serving English hero headings and category labels.",
+      "French was not in the build script at all, causing it to be missed in every regeneration pass until discovered late.",
+      "Multiple rounds of locale regeneration were needed (LoC stats, then full sections, then untranslated strings) because each issue was only discovered incrementally.",
+      "LM Studio has no public SVG logo — had to use a .webp app icon from their website.",
+      "MiniMax's provided URL was a wordmark with text, requiring cropping to isolate the icon.",
+      "Teams and DeepSeek icons were broken in first pass and required replacement SVGs.",
+      "Cerebras icon was broken and required a second replacement."
+    ],
+    "open_items": [
+      "The build-i18n.mjs string pairs are still out of sync with the new English hero/subtitle strings — future regenerations may overwrite manual translation fixes.",
+      "French was added to build-i18n.mjs but the approach for managing translations was questioned; the final state uses direct HTML edits per locale rather than the build script for new sections.",
+      "MiniMax, Z.AI, and Venice pills have no widely-recognized icon (or custom SVG placeholders) and may benefit from official assets when available.",
+      "LM Studio pill uses a .webp raster icon — an official SVG would be preferable.",
+      "Social proof section has only one community quote (Noita) — more testimonials should be added.",
+      "New website sections (positioning, how-it-works, use-cases, community quote) exist only in English in the build script — proper i18n string pairs were never added to build-i18n.mjs for these.",
+      "Changes are only in index.en.html and locale files — other locale files will drift if build-i18n.mjs is used to regenerate without also updating string pairs for new content.",
+      "PR #567 was created but the i18n infrastructure debt was not fully resolved."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-06T14:21:48.580374Z",
+    "agent_lines": 58,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 58,
+    "agent_percentage": 100
+  }
+}
