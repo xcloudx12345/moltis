@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "016437bf01ff",
+  "strategy": "manual-commit",
+  "branch": "beaded-perch",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/external-agents/src/runtimes/acp.rs",
+    "crates/external-agents/src/runtimes/claude_code.rs",
+    "crates/external-agents/src/runtimes/codex.rs",
+    "crates/external-agents/src/runtimes/opencode.rs",
+    "crates/external-agents/src/runtimes/pi_agent.rs",
+    "crates/sessions/src/lib.rs",
+    "crates/sessions/src/metadata.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/01/6437bf01ff/0/metadata.json",
+      "transcript": "/01/6437bf01ff/0/full.jsonl",
+      "context": "/01/6437bf01ff/0/context.md",
+      "content_hash": "/01/6437bf01ff/0/content_hash.txt",
+      "prompt": "/01/6437bf01ff/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 23,
+    "cache_creation_tokens": 13482,
+    "cache_read_tokens": 3178270,
+    "output_tokens": 6205,
+    "api_call_count": 21
+  }
+}
