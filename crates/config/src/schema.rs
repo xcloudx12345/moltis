@@ -1198,6 +1198,10 @@ const fn is_default_trace_content_mode(value: &TraceContentMode) -> bool {
     matches!(value, TraceContentMode::Sanitized)
 }
 
+const fn default_trace_content_mode() -> TraceContentMode {
+    TraceContentMode::Sanitized
+}
+
 const fn default_langfuse_sample_rate() -> f64 {
     1.0
 }
@@ -1249,7 +1253,10 @@ pub struct LangfuseConfig {
     )]
     pub sample_rate: f64,
     /// How much prompt/output content to attach to traces.
-    #[serde(default, skip_serializing_if = "is_default_trace_content_mode")]
+    #[serde(
+        default = "default_trace_content_mode",
+        skip_serializing_if = "is_default_trace_content_mode"
+    )]
     pub trace_content: TraceContentMode,
     /// Maximum bytes to keep for any prompt/output/tool attribute.
     #[serde(
@@ -2724,6 +2731,23 @@ deny = ["exec"]
     fn chat_config_toml_missing_queue_mode_defaults_to_followup() {
         let cfg: ChatConfig = toml::from_str("").unwrap();
         assert_eq!(cfg.message_queue_mode, MessageQueueMode::Followup);
+    }
+
+    #[test]
+    fn langfuse_trace_content_defaults_to_sanitized_when_missing_from_toml() {
+        let config: MoltisConfig = toml::from_str(
+            r#"
+[metrics.langfuse]
+enabled = true
+host = "https://cloud.langfuse.com"
+"#,
+        )
+        .unwrap();
+
+        assert_eq!(
+            config.metrics.langfuse.trace_content,
+            TraceContentMode::Sanitized
+        );
     }
 
     #[test]
