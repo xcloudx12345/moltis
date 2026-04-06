@@ -1,0 +1,126 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "73a078f0178e",
+  "session_id": "3d9acf2d-68f6-4a76-af8d-a4d79258a469",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-06T20:29:39.991854Z",
+  "branch": "kaput-gibbon",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "Cargo.lock",
+    "Cargo.toml",
+    "crates/gateway/Cargo.toml",
+    "crates/gateway/src/lib.rs",
+    "crates/gateway/src/methods/mod.rs",
+    "crates/gateway/src/methods/services.rs",
+    "crates/gateway/src/server.rs",
+    "crates/gateway/src/services.rs",
+    "crates/gateway/src/state.rs",
+    "crates/gateway/src/webhooks.rs",
+    "crates/httpd/Cargo.toml",
+    "crates/httpd/src/auth_middleware.rs",
+    "crates/httpd/src/server.rs",
+    "crates/service-traits/src/lib.rs",
+    "crates/web/src/assets/js/page-settings.js",
+    "crates/web/src/assets/js/page-webhooks.js",
+    "crates/web/src/templates.rs",
+    "crates/webhooks/Cargo.toml",
+    "crates/webhooks/migrations/20260407000000_initial.sql",
+    "crates/webhooks/src/auth.rs",
+    "crates/webhooks/src/dedup.rs",
+    "crates/webhooks/src/error.rs",
+    "crates/webhooks/src/filter.rs",
+    "crates/webhooks/src/lib.rs",
+    "crates/webhooks/src/normalize.rs",
+    "crates/webhooks/src/profiles/generic.rs",
+    "crates/webhooks/src/profiles/github.rs",
+    "crates/webhooks/src/profiles/gitlab.rs",
+    "crates/webhooks/src/profiles/mod.rs",
+    "crates/webhooks/src/profiles/stripe.rs",
+    "crates/webhooks/src/rate_limit.rs",
+    "crates/webhooks/src/store.rs",
+    "crates/webhooks/src/types.rs",
+    "crates/webhooks/src/worker.rs",
+    "plans/2026-04-06-plan-generic-webhooks.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "bfbcbb7d24a0",
+  "token_usage": {
+    "input_tokens": 3690,
+    "cache_creation_tokens": 206581,
+    "cache_read_tokens": 13393553,
+    "output_tokens": 44747,
+    "api_call_count": 96
+  },
+  "summary": {
+    "intent": "Add provider-specific webhook support (GitHub, GitLab, Stripe, Linear, Jira, PagerDuty, Sentry) to trigger AI agents, with full settings UI for managing webhooks.",
+    "outcome": "A complete `moltis-webhooks` crate was built with 25 passing tests, integrated into the gateway via service traits and RPC methods, HTTP ingress route added, web UI settings page created, and the feature committed and pushed as a PR.",
+    "learnings": {
+      "repo": [
+        "The project uses a workspace Cargo.toml with `members` and `default-members` arrays — new crates must be added to both.",
+        "Optional services follow a `NoopXxxService` + `LiveXxxService` pattern with a trait defined in `crates/service-traits/src/lib.rs`.",
+        "GatewayState is Arc-wrapped immediately after construction via `with_options()`; `Arc::get_mut` can be used right after creation (before any clones) to set fields that aren't yet wired through the constructor.",
+        "Public HTTP paths (exempt from session auth) are allowlisted in `httpd/src/auth_middleware.rs`.",
+        "RPC method registration happens in `crates/gateway/src/methods/services.rs` with separate read/write authorization lists in `crates/gateway/src/methods/mod.rs`.",
+        "The `moltis-httpd` crate had a pre-existing compile error on main related to the `vault` feature and `ssh_routes` — unrelated to this feature.",
+        "Workspace-level dependencies (like `hex`) must be declared in the root `Cargo.toml` `[workspace.dependencies]` before crates can reference them with `workspace = true`.",
+        "Frontend gon data (server-injected JS config) is defined in `crates/web/src/templates.rs` as a struct and must be extended to expose new backend data to the UI."
+      ],
+      "code": [
+        {
+          "path": "crates/gateway/src/server.rs",
+          "finding": "Worker and store initialization happens here; webhook store migrations, store creation, and worker spawn with chat.send_sync callback were all wired in this file."
+        },
+        {
+          "path": "crates/gateway/src/state.rs",
+          "finding": "GatewayState holds optional webhook_store, webhook_rate_limiter, and webhook_worker_tx fields — initialized to None/default in with_options, set via Arc::get_mut after construction."
+        },
+        {
+          "path": "crates/httpd/src/server.rs",
+          "finding": "HTTP routes are added to the app after finalize_gateway_app(); the ingress route POST /api/webhooks/ingest/{public_id} was added here."
+        },
+        {
+          "path": "crates/webhooks/src/auth.rs",
+          "finding": "Covers 9 auth modes: none, static header, bearer, GitHub HMAC-SHA256, GitLab token, Stripe timestamp+signature, Linear HMAC, PagerDuty v2 signature, Sentry HMAC."
+        },
+        {
+          "path": "crates/webhooks/src/store.rs",
+          "finding": "Store trait + SqliteWebhookStore with full CRUD for webhooks, deliveries, and response_actions tables; cascade deletes handled at schema level."
+        }
+      ],
+      "workflow": [
+        "Large feature builds benefit from parallel agent spawning for file creation tasks (core crate, store/auth, profiles/helpers) — significantly reduces sequential blocking.",
+        "Incremental compilation checks after each integration step (crate → gateway → httpd) isolates errors faster than a single end-to-end build.",
+        "Pre-existing compile errors on main should be confirmed before attributing them to new changes (`cargo check` on main branch as baseline).",
+        "Plan files in `plans/` are used as living documents — improved iteratively before implementation begins, then implementation follows the plan."
+      ]
+    },
+    "friction": [
+      "Initial 401 OAuth token expiry blocked the session start; user had to re-send the first message.",
+      "GatewayState Arc-wrapping pattern made post-construction field mutation non-obvious — required Arc::get_mut workaround instead of a clean constructor parameter.",
+      "The `hex` workspace dependency was missing and had to be added mid-build after a compile failure.",
+      "Two small compile errors in worker.rs required fixes after initial agent-generated code was written.",
+      "The `moltis-httpd` pre-existing vault/ssh_routes compile error caused confusion about whether new changes had broken the build.",
+      "The `with_options` constructor for GatewayState already has many parameters — adding more would make it unwieldy, forcing the Arc::get_mut pattern."
+    ],
+    "open_items": [
+      "Jira (Atlassian Connect JWT auth) and PagerDuty/Sentry profiles are documented in the plan but only GitHub, GitLab, Stripe, and Generic profiles were implemented in code.",
+      "Event filter logic (`EventFilter::accepts()`) is stubbed as a placeholder in `src/filter.rs`.",
+      "`per_entity` session mode (grouping events by entity key with serialized per-entity processing) is defined in types but worker implementation details may be incomplete.",
+      "Response action tools (post GitHub comments, merge PRs, issue Stripe refunds) are described in the plan but their tool implementations were not explicitly confirmed as built.",
+      "The 6-step wizard UI described in the plan was simplified to a modal; the full provider-aware event catalog checkbox UI may not be fully implemented.",
+      "Web UI settings page (`page-webhooks.js`) was agent-generated but not explicitly verified for correctness against the settings page pattern.",
+      "CLI feature flag wiring was explicitly skipped (webhooks always available, like cron) — may need revisiting if feature gating is desired.",
+      "The pre-existing `moltis-httpd` vault/ssh_routes compile error on main should be fixed independently."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-06T20:28:59.511779Z",
+    "agent_lines": 4957,
+    "human_added": 595,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 5552,
+    "agent_percentage": 89.28314121037464
+  }
+}

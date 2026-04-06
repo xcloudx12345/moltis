@@ -1,0 +1,60 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "73a078f0178e",
+  "strategy": "manual-commit",
+  "branch": "kaput-gibbon",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "Cargo.lock",
+    "Cargo.toml",
+    "crates/gateway/Cargo.toml",
+    "crates/gateway/src/lib.rs",
+    "crates/gateway/src/methods/mod.rs",
+    "crates/gateway/src/methods/services.rs",
+    "crates/gateway/src/server.rs",
+    "crates/gateway/src/services.rs",
+    "crates/gateway/src/state.rs",
+    "crates/gateway/src/webhooks.rs",
+    "crates/httpd/Cargo.toml",
+    "crates/httpd/src/auth_middleware.rs",
+    "crates/httpd/src/server.rs",
+    "crates/service-traits/src/lib.rs",
+    "crates/web/src/assets/js/page-settings.js",
+    "crates/web/src/assets/js/page-webhooks.js",
+    "crates/web/src/templates.rs",
+    "crates/webhooks/Cargo.toml",
+    "crates/webhooks/migrations/20260407000000_initial.sql",
+    "crates/webhooks/src/auth.rs",
+    "crates/webhooks/src/dedup.rs",
+    "crates/webhooks/src/error.rs",
+    "crates/webhooks/src/filter.rs",
+    "crates/webhooks/src/lib.rs",
+    "crates/webhooks/src/normalize.rs",
+    "crates/webhooks/src/profiles/generic.rs",
+    "crates/webhooks/src/profiles/github.rs",
+    "crates/webhooks/src/profiles/gitlab.rs",
+    "crates/webhooks/src/profiles/mod.rs",
+    "crates/webhooks/src/profiles/stripe.rs",
+    "crates/webhooks/src/rate_limit.rs",
+    "crates/webhooks/src/store.rs",
+    "crates/webhooks/src/types.rs",
+    "crates/webhooks/src/worker.rs",
+    "plans/2026-04-06-plan-generic-webhooks.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/73/a078f0178e/0/metadata.json",
+      "transcript": "/73/a078f0178e/0/full.jsonl",
+      "context": "/73/a078f0178e/0/context.md",
+      "content_hash": "/73/a078f0178e/0/content_hash.txt",
+      "prompt": "/73/a078f0178e/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 3690,
+    "cache_creation_tokens": 206581,
+    "cache_read_tokens": 13393553,
+    "output_tokens": 44747,
+    "api_call_count": 96
+  }
+}

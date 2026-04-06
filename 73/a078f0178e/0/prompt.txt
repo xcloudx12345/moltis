@@ -1,0 +1,17 @@
+Look at plans/2026-04-06-plan-generic-webhooks.md and improve it, I want to add webhooks for github, gitlab triggers, stripe triggers etc to run AI agents based on those.
+
+---
+
+Look at plans/2026-04-06-plan-generic-webhooks.md and improve it, I want to add webhooks for github, gitlab triggers, stripe triggers etc to run AI agents based on those.
+
+---
+
+Remember the web-ui settings to delete/edit existing webhooks too. Webhooks don't need to be part of the onboarding, I think it needs to be in the settings only.
+
+---
+
+Proceed with the plan now. Build everything.
+
+---
+
+commit push and create a PR
