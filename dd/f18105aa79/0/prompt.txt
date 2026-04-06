@@ -1,0 +1,17 @@
+Can you check if the openclaw imports is also importing sub-agents, since we now have subagents features
+
+---
+
+Please proceed
+
+---
+
+Anything else to add?
+
+---
+
+Did you add a test to test subagent imports?
+
+---
+
+commit and push

@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "ddf18105aa79",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 4,
+  "files_touched": [
+    "crates/openclaw-import/src/agents.rs",
+    "crates/openclaw-import/src/lib.rs",
+    "docs/src/openclaw-import.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/dd/f18105aa79/0/metadata.json",
+      "transcript": "/dd/f18105aa79/0/full.jsonl",
+      "context": "/dd/f18105aa79/0/context.md",
+      "content_hash": "/dd/f18105aa79/0/content_hash.txt",
+      "prompt": "/dd/f18105aa79/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 70,
+    "cache_creation_tokens": 103404,
+    "cache_read_tokens": 4763039,
+    "output_tokens": 15277,
+    "api_call_count": 60
+  }
+}
