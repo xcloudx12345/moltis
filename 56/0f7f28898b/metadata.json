@@ -1,0 +1,50 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "560f7f28898b",
+  "strategy": "manual-commit",
+  "branch": "thoughtful-pint",
+  "checkpoints_count": 11,
+  "files_touched": [
+    "website/images/icons/anthropic.svg",
+    "website/images/icons/cerebras.svg",
+    "website/images/icons/code.svg",
+    "website/images/icons/deepseek.svg",
+    "website/images/icons/discord.svg",
+    "website/images/icons/fireworks.svg",
+    "website/images/icons/gemini.svg",
+    "website/images/icons/github.svg",
+    "website/images/icons/globe.svg",
+    "website/images/icons/graphql.svg",
+    "website/images/icons/huggingface.svg",
+    "website/images/icons/lmstudio.webp",
+    "website/images/icons/minimax.png",
+    "website/images/icons/mistral.svg",
+    "website/images/icons/moonshot.svg",
+    "website/images/icons/ollama.svg",
+    "website/images/icons/openai-compat.svg",
+    "website/images/icons/openai.svg",
+    "website/images/icons/openrouter.svg",
+    "website/images/icons/teams.svg",
+    "website/images/icons/telegram.svg",
+    "website/images/icons/whatsapp.svg",
+    "website/images/icons/zai.svg",
+    "website/index.en.html",
+    "website/style.css"
+  ],
+  "sessions": [
+    {
+      "metadata": "/56/0f7f28898b/0/metadata.json",
+      "transcript": "/56/0f7f28898b/0/full.jsonl",
+      "context": "/56/0f7f28898b/0/context.md",
+      "content_hash": "/56/0f7f28898b/0/content_hash.txt",
+      "prompt": "/56/0f7f28898b/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 167,
+    "cache_creation_tokens": 489050,
+    "cache_read_tokens": 15320501,
+    "output_tokens": 68512,
+    "api_call_count": 121
+  }
+}
