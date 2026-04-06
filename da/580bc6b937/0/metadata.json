@@ -1,0 +1,87 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "da580bc6b937",
+  "session_id": "3d9acf2d-68f6-4a76-af8d-a4d79258a469",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-06T20:41:06.034081Z",
+  "branch": "kaput-gibbon",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/src/assets/js/page-settings.js"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "92339cee9b2f",
+  "token_usage": {
+    "input_tokens": 3716,
+    "cache_creation_tokens": 224591,
+    "cache_read_tokens": 18042082,
+    "output_tokens": 52704,
+    "api_call_count": 118
+  },
+  "summary": {
+    "intent": "Add a generic webhooks system to Moltis that supports GitHub, GitLab, Stripe, and other provider triggers to run AI agents in response to external events.",
+    "outcome": "A complete webhooks feature was built and merged into a PR, including a new `moltis-webhooks` crate (25 passing tests), gateway/HTTP integration, web UI settings page, and comprehensive documentation.",
+    "learnings": {
+      "repo": [
+        "The codebase uses a service-traits pattern: define a trait + Noop impl in `crates/service-traits/src/lib.rs`, then a Live impl in `crates/gateway/src/`.",
+        "GatewayState is Arc-wrapped; fields that need late initialization must be set via `Arc::get_mut` immediately after construction (before any clones), or initialized in the constructor.",
+        "RPC methods are registered in `crates/gateway/src/methods/services.rs` with separate read/write authorization lists in `crates/gateway/src/methods/mod.rs`.",
+        "Public HTTP paths (no session auth) are exempted in `crates/httpd/src/auth_middleware.rs`.",
+        "Routes are added to the app after `finalize_gateway_app` in `crates/httpd/src/server.rs`.",
+        "The `moltis-httpd` crate has a pre-existing compile error under the vault feature (ssh_routes) that exists on main — not introduced by this work.",
+        "Gon data (server→client bootstrapping) is defined in `crates/web/src/templates.rs` as a struct serialized to JSON.",
+        "Settings sidebar icons are defined as CSS classes (e.g., `icon-globe`, `icon-activity`) in a minified style.css; `icon-link` was already used by MCP, `icon-globe` is the best fit for webhooks."
+      ],
+      "code": [
+        {
+          "path": "crates/gateway/src/state.rs",
+          "finding": "webhook_store, webhook_rate_limiter, and webhook_worker_tx fields are added here; initialized to None/default in with_options constructor."
+        },
+        {
+          "path": "crates/httpd/src/auth_middleware.rs",
+          "finding": "Public path exemptions for unauthenticated HTTP routes (like webhook ingress) are registered here."
+        },
+        {
+          "path": "crates/gateway/src/methods/services.rs",
+          "finding": "RPC method registration point for all service methods including the 10 new webhook RPC methods."
+        },
+        {
+          "path": "crates/web/src/assets/js/page-settings.js",
+          "line": 147,
+          "finding": "Webhooks settings tab entry; was using icon-link (duplicate with MCP), fixed to icon-globe."
+        }
+      ],
+      "workflow": [
+        "Large feature builds benefit from parallel subagents for independent file creation tasks (core crate files, store/auth, profiles).",
+        "Compile early and often: running `cargo check -p moltis-webhooks` after initial file creation caught two small issues before integration.",
+        "Verify pre-existing errors on main before attributing compile failures to new changes (`git stash` + compile check on main).",
+        "The plan file served as a living document, updated twice before implementation began — once for provider profiles and once for settings-only placement/edit/delete flows."
+      ]
+    },
+    "friction": [
+      "OAuth token expiry caused the first user message to fail entirely, requiring the user to repeat their request.",
+      "GatewayState is Arc-wrapped making late field mutation require `Arc::get_mut` workaround rather than simple field assignment.",
+      "Pre-existing `moltis-httpd` vault feature compile error obscured whether httpd-level changes were correct — required checking main branch to confirm it was pre-existing.",
+      "Icon for webhooks in the settings nav was a black square (`icon-link` fallback) — required a follow-up fix after the initial implementation."
+    ],
+    "open_items": [
+      "Response action tools (post GitHub comments, merge PRs, issue Stripe refunds) referenced in the plan are scaffolded but the actual tool implementations calling provider APIs are not yet built.",
+      "GitLab and Stripe profiles have basic structure but are less complete than GitHub profile — event normalization and entity key extraction need expansion.",
+      "Web UI settings page (`page-webhooks.js`) is a frontend JS file but lacks full integration testing; the deliveries inspector UI is present but not battle-tested.",
+      "The `EventFilter::accepts()` logic in `src/filter.rs` is noted as a placeholder.",
+      "Per-entity session mode with serialized processing per entity key (e.g., all events for PR #567 in one session) is described in the plan but worker implementation details may be incomplete.",
+      "Jira, PagerDuty, Sentry, and Linear profiles are listed in the plan but only GitHub, GitLab, Stripe, and Generic profiles were implemented in the crate.",
+      "Webhook onboarding exclusion is documented in the plan but the actual onboarding UI code was not modified to verify it's absent.",
+      "No e2e or integration tests exist for the full HTTP ingress → worker → agent execution pipeline."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-06T20:40:08.552824Z",
+    "agent_lines": 1,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1,
+    "agent_percentage": 100
+  }
+}
