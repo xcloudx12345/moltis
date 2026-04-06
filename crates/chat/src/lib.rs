@@ -339,8 +339,7 @@ fn trace_id_for_span(span: &Span) -> Option<String> {
     let context = span.context();
     let trace_span = context.span();
     let span_context = trace_span.span_context();
-    span_context
-        .is_valid()
+    (span_context.is_valid() && span_context.is_sampled())
         .then(|| span_context.trace_id().to_string())
 }
 
