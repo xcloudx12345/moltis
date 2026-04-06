@@ -1,0 +1,40 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "c7176c194f96",
+  "strategy": "manual-commit",
+  "branch": "mahogany-night",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/config/src/schema.rs",
+    "crates/config/src/template.rs",
+    "crates/config/src/validate.rs",
+    "crates/cron/migrations/20260406100000_cron_runs_session_key.sql",
+    "crates/cron/src/service.rs",
+    "crates/cron/src/store.rs",
+    "crates/cron/src/store_file.rs",
+    "crates/cron/src/store_memory.rs",
+    "crates/cron/src/store_sqlite.rs",
+    "crates/cron/src/types.rs",
+    "crates/gateway/src/methods/services.rs",
+    "crates/gateway/src/server.rs",
+    "crates/httpd/src/server.rs",
+    "crates/httpd/tests/heartbeat_cron.rs",
+    "crates/tools/src/cron_tool.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/c7/176c194f96/0/metadata.json",
+      "transcript": "/c7/176c194f96/0/full.jsonl",
+      "context": "/c7/176c194f96/0/context.md",
+      "content_hash": "/c7/176c194f96/0/content_hash.txt",
+      "prompt": "/c7/176c194f96/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 140,
+    "cache_creation_tokens": 144385,
+    "cache_read_tokens": 13933671,
+    "output_tokens": 40527,
+    "api_call_count": 134
+  }
+}
