@@ -1,0 +1,74 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "72d817718c03",
+  "session_id": "596ee25a-b703-4047-8788-7bb04fbcabb6",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-06T22:37:56.84902Z",
+  "branch": "lavish-hardware",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "Dockerfile"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "10fd83f336ce",
+  "token_usage": {
+    "input_tokens": 27,
+    "cache_creation_tokens": 47975,
+    "cache_read_tokens": 925724,
+    "output_tokens": 9385,
+    "api_call_count": 21
+  },
+  "summary": {
+    "intent": "Investigate why the Matrix notification channel wasn't appearing in the web UI for Docker-based deployments, then fix and ship the change.",
+    "outcome": "Found that the Dockerfile used --no-default-features with an explicit feature list missing matrix, firecrawl, ngrok, and slack. Added the missing features to the Dockerfile and committed/pushed/opened a PR.",
+    "learnings": {
+      "repo": [
+        "The Dockerfile uses --no-default-features with an explicit feature list, diverging from Cargo.toml default features — any new default feature must be manually added to the Dockerfile.",
+        "local-llm-metal is intentionally excluded from Docker builds (macOS-only); wasm is Docker-specific.",
+        "channels_offered in backend logs comes from config, not compiled-in features — so logs can show matrix even when the feature is not compiled in.",
+        "Matrix plugin registration is behind #[cfg(feature = \"matrix\")] in crates/gateway/src/server.rs, so omitting the feature silently disables the plugin without error."
+      ],
+      "code": [
+        {
+          "path": "Dockerfile",
+          "line": 47,
+          "end_line": 50,
+          "finding": "cargo build --release uses --no-default-features with explicit feature list; was missing matrix, firecrawl, ngrok, slack"
+        },
+        {
+          "path": "crates/cli/Cargo.toml",
+          "line": 118,
+          "end_line": 118,
+          "finding": "matrix is listed as a default feature here, but this only applies to non-Docker builds"
+        },
+        {
+          "path": "crates/gateway/src/server.rs",
+          "line": 2634,
+          "end_line": 2634,
+          "finding": "Matrix plugin registration is gated behind #[cfg(feature = \"matrix\")]"
+        }
+      ],
+      "workflow": [
+        "When a feature appears in Cargo default features but is absent from Docker builds, backend logs (from config) can misleadingly show the channel as offered while the plugin is never actually registered.",
+        "Grepping for --no-default-features across the repo is a fast way to audit which build targets diverge from Cargo defaults."
+      ]
+    },
+    "friction": [
+      "The Dockerfile feature list was never kept in sync with Cargo.toml default features — no automated check exists to catch drift.",
+      "Backend logs reporting offered_channels from config rather than compiled features made initial diagnosis misleading."
+    ],
+    "open_items": [
+      "No automated CI check to validate that Dockerfile --features list stays in sync with Cargo.toml default features.",
+      "Other deploy templates (docs) reference --no-default-features; worth auditing whether any are actually used in production builds with outdated feature lists."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-06T22:37:39.125599Z",
+    "agent_lines": 3,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 3,
+    "agent_percentage": 100
+  }
+}
