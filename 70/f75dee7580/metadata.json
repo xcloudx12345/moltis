@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "70f75dee7580",
+  "strategy": "manual-commit",
+  "branch": "letsrock85/fix/graphql-session-key-consistency",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/chat/src/lib.rs",
+    "crates/httpd/tests/graphql_chat_binding.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/70/f75dee7580/0/metadata.json",
+      "transcript": "/70/f75dee7580/0/full.jsonl",
+      "context": "/70/f75dee7580/0/context.md",
+      "content_hash": "/70/f75dee7580/0/content_hash.txt",
+      "prompt": "/70/f75dee7580/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 36,
+    "cache_creation_tokens": 55203,
+    "cache_read_tokens": 1350356,
+    "output_tokens": 6310,
+    "api_call_count": 34
+  }
+}
