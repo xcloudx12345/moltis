@@ -1,0 +1,126 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "b962037385de",
+  "session_id": "3d9acf2d-68f6-4a76-af8d-a4d79258a469",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-07T09:30:13.52688Z",
+  "branch": "kaput-gibbon",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/webhooks/src/worker.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "3abb36fa1ea0",
+  "token_usage": {
+    "input_tokens": 4084,
+    "cache_creation_tokens": 1515080,
+    "cache_read_tokens": 106932201,
+    "output_tokens": 124107,
+    "api_call_count": 412
+  },
+  "summary": {
+    "intent": "Build a complete generic webhooks feature for Moltis that allows running AI agents triggered by GitHub, GitLab, Stripe, and other webhook providers.",
+    "outcome": "Fully implemented `moltis-webhooks` crate with 7 provider profiles, HTTP ingress endpoint, SQLite store, background worker with crash recovery, web UI settings page, documentation, and test tooling. PR #575 created and all review comments fixed.",
+    "learnings": {
+      "repo": [
+        "Settings sidebar nav icons are rendered via CSS `::before` pseudo-elements in `components.css` using `data-section` attribute selectors — NOT from an `icon` property in the JS sections array. This is the source of many 'black square' icon bugs.",
+        "The compiled `style.css` (Tailwind output) is gitignored; the `components.css` file in `assets/css/` is the one that must be modified for settings sidebar icons.",
+        "There are TWO style.css files: `src/assets/style.css` (Tailwind output, served) and `src/assets/css/style.css` (components, also served). The HTML loads the Tailwind one via versioned asset path.",
+        "Arc::get_mut() silently returns None if the Arc has already been cloned elsewhere, making it unreliable for post-construction field initialization. Use OnceLock for fields that must be set after Arc creation.",
+        "The i18n website build uses a string-replacement script in `website/scripts/build-i18n.mjs` that regenerates all language files from the English template.",
+        "Webhook endpoint URL must use server's public URL (ngrok/tailscale), not `window.location.origin`. The `preferredPublicBaseUrl` pattern exists in `onboarding-view.js` for this.",
+        "HTM (JSX-like) collapses whitespace between tags across newlines; use `${\" \"}` to force explicit spaces between inline elements and text.",
+        "The codebase has a pre-existing build error in `moltis-httpd` with vault/ssh_routes feature — unrelated to any changes.",
+        "CORS headers are needed on the webhook ingress endpoint for browser-based test tools (Hoppscotch web). The endpoint is at `/api/webhooks/ingest/` and needs `Access-Control-Allow-Origin: *`.",
+        "Dedup using body SHA-256 hash as fallback is too aggressive for generic webhooks — identical test payloads from curl always get deduplicated. Only dedup when sender provides explicit idempotency headers.",
+        "GatewayState uses `Arc\u003cGatewayState\u003e` pattern; fields cannot be mutated after Arc creation without OnceLock or passing through the constructor."
+      ],
+      "code": [
+        {
+          "path": "crates/webhooks/src/worker.rs",
+          "line": 1,
+          "end_line": 50,
+          "finding": "Worker startup must drain unprocessed (queued/received) deliveries from the store to survive server restarts — crash recovery pattern."
+        },
+        {
+          "path": "crates/webhooks/src/rate_limit.rs",
+          "line": 1,
+          "end_line": 80,
+          "finding": "TOCTOU gap when using two separate RwLocks for global and per-webhook rate limits. Fix: use single Mutex holding both sliding windows so check-and-record is atomic."
+        },
+        {
+          "path": "crates/webhooks/src/profiles/github.rs",
+          "line": 1,
+          "end_line": 30,
+          "finding": "Byte-index string slicing like `\u0026body_text[..500]` panics on multibyte UTF-8. Must use a safe truncation helper that walks back to char boundary."
+        },
+        {
+          "path": "crates/webhooks/src/normalize.rs",
+          "line": 1,
+          "end_line": 20,
+          "finding": "Added `truncate_str(s, max_bytes)` helper that safely truncates UTF-8 strings to a byte limit without panicking on multibyte characters."
+        },
+        {
+          "path": "crates/gateway/src/state.rs",
+          "line": 1,
+          "end_line": 50,
+          "finding": "webhook_store, webhook_rate_limiter, webhook_worker_tx changed from Option\u003cT\u003e to OnceLock\u003cT\u003e to allow safe post-Arc initialization."
+        },
+        {
+          "path": "crates/gateway/src/webhooks.rs",
+          "line": 1,
+          "end_line": 40,
+          "finding": "Auth secrets (auth_config, source_config) must be redacted via Webhook::redacted() before returning from list/get/create/update RPCs. Store keeps real values for ingress verification."
+        },
+        {
+          "path": "crates/web/src/assets/css/components.css",
+          "line": 1,
+          "end_line": 10,
+          "finding": "All settings sidebar nav icons defined here as `.settings-nav-item[data-section=\"NAME\"]::before` with mask-image pointing to SVG files in icons/masks/."
+        },
+        {
+          "path": "crates/httpd/src/server.rs",
+          "line": 1128,
+          "end_line": 1150,
+          "finding": "Remote IP extraction for CIDR enforcement reads from X-Forwarded-For then X-Real-Ip headers. ConnectInfo extractor requires router-level setup, header approach works behind proxies."
+        }
+      ],
+      "workflow": [
+        "Use Arc::get_mut() only immediately after Arc::new() before any clones; use OnceLock for fields that need late initialization on an already-shared Arc.",
+        "For browser-based webhook testing tools, CORS headers + OPTIONS preflight handler are required even for POST endpoints that otherwise don't need them.",
+        "When building background workers, always implement crash recovery (drain incomplete jobs from store on startup) — not just forward-looking dequeue.",
+        "Hoppscotch web cannot reach localhost due to CORS + self-signed cert + mixed content. The desktop app or curl are the correct tools for localhost webhook testing.",
+        "beads issues can be filed via `gh issue create` against the moltis repo for tracking.",
+        "GitHub PR review threads can be resolved via GraphQL mutation `resolveReviewThread` with the thread node ID."
+      ]
+    },
+    "friction": [
+      "Arc::get_mut() silently failed (returned None), causing webhook_store to stay None and every ingress request to return 404. No warning was logged, so it was invisible until debugging.",
+      "Settings sidebar icon system is non-obvious — the `icon` property in JS sections array is unused; CSS components.css handles it via attribute selectors. This caused multiple 'black square' debugging iterations.",
+      "HTM whitespace collapsing caused 'withHoppscotch' to appear without a space — had to use explicit JSX whitespace hack.",
+      "OAuth token expired at session start, causing initial authentication error before the user could retry.",
+      "Hoppscotch web CORS error — the tool works on the web but can't reach localhost Moltis instances due to browser restrictions, making the initial recommendation misleading.",
+      "max-w-form class doesn't exist or isn't applied in the webhooks context — had to revert to full width after attempting to constrain the layout.",
+      "Tailwind-compiled style.css is gitignored so CSS class additions there don't persist — had to add icon to components.css instead.",
+      "Dedup was too aggressive using body SHA-256 hash fallback — repeated curl test commands all got deduplicated, making local testing frustrating."
+    ],
+    "open_items": [
+      "Live-refresh chat UI when background workers append messages to already-open sessions (affects both webhooks and cron named sessions) — filed as beads issue moltis-2pu.",
+      "Website i18n translations for webhook feature text are placeholder English in all 9 language files — translations need to be added to build-i18n.mjs.",
+      "CIDR allowlist enforcement is implemented (IP extracted, field stored) but the actual CIDR matching/blocking logic in the ingress handler needs verification that it correctly rejects non-allowed IPs.",
+      "GitLab, Stripe, Linear, PagerDuty, Sentry profiles exist with auth and entity-key logic but lack integration tests equivalent to the GitHub profile tests.",
+      "Response action tools (post comments, merge PRs, issue refunds) are defined in the plan but not yet implemented as actual agent tools.",
+      "Named session per-entity locking (serialize events by entity key within a session) is described in plan but not implemented — concurrent events for same PR could interleave.",
+      "Source profile is described as read-only after creation in the plan but the edit UI doesn't enforce this restriction."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-07T09:29:17.401789Z",
+    "agent_lines": 0,
+    "human_added": 19,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 19,
+    "agent_percentage": 0
+  }
+}
