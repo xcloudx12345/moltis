@@ -1,0 +1,100 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "35deaa1deac1",
+  "session_id": "3d9acf2d-68f6-4a76-af8d-a4d79258a469",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-07T11:11:43.264264Z",
+  "branch": "kaput-gibbon",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/web/src/assets/js/page-webhooks.js",
+    "crates/webhooks/tests/ingress_integration.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "e5d2fac236f1",
+  "token_usage": {
+    "input_tokens": 4122,
+    "cache_creation_tokens": 1528411,
+    "cache_read_tokens": 117824264,
+    "output_tokens": 131937,
+    "api_call_count": 440
+  },
+  "summary": {
+    "intent": "Add a generic webhook ingress system to Moltis that allows running AI agents in response to GitHub, GitLab, Stripe, and other provider webhook events.",
+    "outcome": "Fully implemented the webhooks feature end-to-end: new `moltis-webhooks` crate, gateway integration, HTTP ingress endpoint, web UI settings page, documentation, test scripts, and PR review fixes. PR #575 created and all review comments resolved.",
+    "learnings": {
+      "repo": [
+        "Settings sidebar nav icons are rendered via CSS `::before` pseudo-elements in `components.css` using `[data-section='X']` attribute selectors — NOT from the `icon` property in the JS sections array",
+        "There are two style.css files: `src/assets/style.css` (Tailwind output, gitignored) and `src/assets/css/style.css` (committed copy). The HTML loads the versioned Tailwind output via asset_prefix.",
+        "Arc::get_mut silently returns None if the Arc has already been cloned — use OnceLock for late initialization of fields on Arc\u003cGatewayState\u003e",
+        "The webhook ingress endpoint needed CORS headers with OPTIONS preflight handling so browser-based tools like Hoppscotch web can reach it",
+        "Gon data (server-side JSON to JS) is in `crates/web/src/templates.rs` and is how settings pages get initial data",
+        "The cron crate pattern (store trait, sqlite impl, service trait, noop impl, gateway wiring) is the reference architecture for new background-execution features",
+        "Website i18n uses `scripts/build-i18n.mjs` for string replacement — adding new strings to English requires running the build script to propagate to all language files",
+        "Remote IP for CIDR enforcement must be extracted from X-Forwarded-For / X-Real-Ip headers in axum handlers"
+      ],
+      "code": [
+        {
+          "path": "crates/webhooks/src/worker.rs",
+          "finding": "Crash recovery must drain 'received', 'queued', AND 'processing' deliveries on startup — processing deliveries can be mid-execution when server stops"
+        },
+        {
+          "path": "crates/webhooks/src/profiles/generic.rs",
+          "finding": "Body SHA-256 hash as dedup key for generic profile is too aggressive — identical test payloads get deduplicated. Only use dedup when sender provides explicit delivery ID headers"
+        },
+        {
+          "path": "crates/webhooks/src/rate_limit.rs",
+          "finding": "Two separate RwLocks for global + per-webhook check-then-record creates TOCTOU gap — use single Mutex to make check-and-record atomic"
+        },
+        {
+          "path": "crates/webhooks/src/profiles/github.rs",
+          "finding": "String byte slicing like \u0026body[..500] panics on multibyte UTF-8 boundaries — use a truncate_str() helper that walks back to a char boundary"
+        },
+        {
+          "path": "crates/gateway/src/webhooks.rs",
+          "finding": "auth_config and source_config contain raw secrets — must call Webhook::redacted() before returning from list/get/create/update service methods"
+        },
+        {
+          "path": "crates/web/src/assets/js/page-webhooks.js",
+          "finding": "GitLab auth uses 'token' config key but the JS modal's auth config builder was routing gitlab_token into the 'secret' branch instead of 'token'"
+        },
+        {
+          "path": "crates/gateway/src/server.rs",
+          "finding": "Arc::get_mut(\u0026mut state) silently returned None because state was already cloned before the webhook fields could be set — switched all three webhook fields to OnceLock"
+        }
+      ],
+      "workflow": [
+        "Use `gh api graphql` to resolve PR review threads programmatically after fixing comments",
+        "Test scripts for webhooks need `-k` flag for self-signed TLS certs in local dev",
+        "Hoppscotch web app cannot reach localhost due to CORS/mixed-content restrictions — direct users to desktop app instead",
+        "Background tasks (Bash with run_in_background) return output via task notification files at /private/tmp paths",
+        "PR review bot comments can be stale (reviewing older commit) — verify against current code before acting on them"
+      ]
+    },
+    "friction": [
+      "Arc::get_mut silently failing caused webhook ingress to return 404 on every request — no error logged, very hard to debug",
+      "Two style.css files caused confusion about which one is served and why icon CSS classes weren't rendering",
+      "Settings sidebar icon system is entirely undocumented — the JS `icon` property is unused, icons come from components.css ::before rules",
+      "Hoppscotch web app recommended as testing tool but can't reach localhost due to CORS — had to add CORS headers to ingress endpoint and redirect users to desktop app",
+      "Multiple rounds of PR review found issues (TOCTOU, crash recovery, secrets leakage, UTF-8 truncation) that should have been caught in initial implementation",
+      "OAuth token expiry blocked the session start requiring user to re-authenticate"
+    ],
+    "open_items": [
+      "Live-refresh chat UI when background workers append messages to an already-open named session (filed as beads issue moltis-2pu) — affects both webhooks and cron",
+      "Translations for webhook feature text in non-English website language files (currently stays in English)",
+      "CIDR allowlist enforcement — remote IP extraction is now implemented but actual CIDR matching logic was added as a placeholder",
+      "Full provider profiles for Linear, Jira, PagerDuty, Sentry — only GitHub, GitLab, Stripe, and Generic were implemented",
+      "Response action tools (post comments, merge PRs, issue refunds) — planned in spec but not implemented in this PR",
+      "Per-entity session locking to prevent concurrent processing of the same PR/issue/subscription"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-07T11:11:01.287449Z",
+    "agent_lines": 0,
+    "human_added": 293,
+    "human_modified": 4,
+    "human_removed": 0,
+    "total_committed": 293,
+    "agent_percentage": 0
+  }
+}
