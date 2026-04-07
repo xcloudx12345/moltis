@@ -1,0 +1,103 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "41225697f861",
+  "session_id": "3d9acf2d-68f6-4a76-af8d-a4d79258a469",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-07T13:51:28.496661Z",
+  "branch": "kaput-gibbon",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/webhooks/src/auth.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "272a304137c5",
+  "token_usage": {
+    "input_tokens": 4139,
+    "cache_creation_tokens": 1933707,
+    "cache_read_tokens": 122628117,
+    "output_tokens": 134325,
+    "api_call_count": 453
+  },
+  "summary": {
+    "intent": "Add a generic webhook ingress system to Moltis so that external services (GitHub, GitLab, Stripe, etc.) can trigger AI agent sessions via HTTP POST, with provider-specific auth, event filtering, payload normalization, and a settings UI to manage webhooks.",
+    "outcome": "Full webhook feature shipped in PR #575: new moltis-webhooks crate (48 tests), gateway/httpd integration, SQLite-backed store with migrations, web UI settings page, documentation, test script, and multiple correctness fixes found through PR review rounds (Arc::get_mut silent failure, UTF-8 truncation panics, rate limiter TOCTOU, secrets leaking in API responses, crash recovery, GitLab auth key mismatch).",
+    "learnings": {
+      "repo": [
+        "Settings sidebar icons are rendered via CSS `::before` pseudo-elements in `crates/web/src/assets/css/components.css` keyed on `[data-section='X']` — the `icon` property in the JS sections array is unused for sidebar rendering.",
+        "There are two style.css files: `crates/web/src/assets/style.css` (Tailwind output, gitignored) and `crates/web/src/assets/css/style.css` (committed). The app serves the Tailwind output but it is not committed, so CSS-class-based icons added to input.css only work if the build artifact exists on disk.",
+        "GatewayState is wrapped in Arc immediately on construction via `with_options` returning `Arc\u003cSelf\u003e`. Using `Arc::get_mut` to set fields after construction silently fails if any other clone of the Arc exists, leaving fields as None.",
+        "The correct pattern for late-initializing fields on an Arc\u003cGatewayState\u003e is `std::sync::OnceLock`, not `Arc::get_mut`.",
+        "Public webhook ingress route (`/api/webhooks/ingest/:id`) must be added to the auth middleware exemption list alongside other public paths.",
+        "HTM (the JS template library used) collapses whitespace across newlines between text nodes and JSX-like elements; explicit `${' '}` is needed for inline spaces between text and anchor tags.",
+        "The app's preferred public base URL (ngrok \u003e tailscale \u003e localhost) is computed in `onboarding-view.js` as `preferredPublicBaseUrl` — needs to be inlined or extracted for use in other pages.",
+        "The generic webhook profile previously used SHA-256 of the body as a dedup key fallback, causing identical test payloads to always deduplicate. Correct behavior: return None delivery key when no explicit idempotency header is present.",
+        "Crash recovery for background workers must include `processing` status alongside `received`/`queued` — deliveries in mid-flight when the server stops should be retried."
+      ],
+      "code": [
+        {
+          "path": "crates/gateway/src/server.rs",
+          "line": 3268,
+          "end_line": 3275,
+          "finding": "Arc::get_mut was used to set webhook_store/webhook_worker_tx on GatewayState after construction. This silently returns None if any Arc clone exists at that point, leaving the fields as None and causing 404 on all ingress requests. Fixed by switching to OnceLock."
+        },
+        {
+          "path": "crates/web/src/assets/css/components.css",
+          "finding": "Settings sidebar nav icons are CSS-only via `.settings-nav-item[data-section='X']::before { mask-image: url(...) }`. The JS sections array `icon` property has no effect on sidebar rendering."
+        },
+        {
+          "path": "crates/webhooks/src/profiles/github.rs",
+          "finding": "String byte-slice truncation `\u0026s[..500]` panics on multibyte UTF-8. Fixed by adding `truncate_str()` helper in normalize.rs that walks back to a char boundary."
+        },
+        {
+          "path": "crates/webhooks/src/rate_limit.rs",
+          "finding": "Original implementation used two separate RwLocks (global + per-webhook), creating a TOCTOU gap where a concurrent request could pass both checks before either was recorded. Fixed by using a single Mutex holding both sliding windows."
+        },
+        {
+          "path": "crates/webhooks/src/auth.rs",
+          "finding": "GitLab auth reads config key 'token' but a JS bug was sending 'secret' for gitlab_token auth mode. Both the JS modal and a regression test were added to prevent recurrence."
+        },
+        {
+          "path": "crates/gateway/src/webhooks.rs",
+          "finding": "auth_config and source_config (containing secrets/tokens) were returned verbatim in list/get/create/update API responses. Fixed by adding Webhook::redacted() method replacing secret fields with '[REDACTED]' before returning to callers."
+        },
+        {
+          "path": "crates/webhooks/src/store.rs",
+          "finding": "list_unprocessed_deliveries only queried for 'received' and 'queued' statuses, missing 'processing'. Deliveries mid-execution at server shutdown were not retried. Fixed by including 'processing' in the crash-recovery query."
+        }
+      ],
+      "workflow": [
+        "Use OnceLock for fields that need to be set on an Arc\u003cT\u003e after construction instead of relying on Arc::get_mut, which silently fails when the refcount \u003e 1.",
+        "Browser-based API tools (Hoppscotch web) cannot reach localhost with self-signed TLS due to CORS and mixed-content restrictions. Desktop app or curl are needed for local testing.",
+        "CORS headers must be added to webhook ingress responses (and an OPTIONS preflight handler) for browser-based tools to work even with a public URL.",
+        "PR review rounds caught multiple correctness issues that should have been caught by tests upfront: auth key naming, UTF-8 safety, TOCTOU in concurrent data structures, secret redaction, and crash recovery completeness.",
+        "When adding features to gitignored build artifacts (Tailwind CSS), the compiled output must exist locally for dev to work — but icon approaches that don't depend on the build artifact (inline SVG, or the committed components.css) are more reliable."
+      ]
+    },
+    "friction": [
+      "Arc::get_mut silently failed (returned None) causing all webhook ingress requests to return 404 — no warning, no error, required deep debugging to identify the root cause.",
+      "Settings sidebar icon system is entirely CSS-driven (components.css ::before) with no connection to the JS sections array icon property — this was not discoverable without reading the CSS, causing multiple failed icon attempts.",
+      "Two style.css files with different paths caused confusion about which one the app serves and whether compiled CSS changes take effect.",
+      "Hoppscotch web app fails with CORS errors against localhost — the UI linked to the web app initially, which led to user-facing failures before switching to recommend the desktop app.",
+      "Deduplication based on body hash was too aggressive for testing — identical curl payloads were always deduplicated, making it impossible to send multiple test deliveries.",
+      "The plan initially omitted crash recovery implementation despite documenting it, leading to a P1 PR comment requiring a fix.",
+      "Auth secrets were returned in API responses (P1 security issue) — required explicit redaction layer that should have been designed in from the start.",
+      "GitLab auth config key mismatch (JS sent 'secret', Rust expected 'token') was a silent integration bug with no type safety across the JS/Rust boundary."
+    ],
+    "open_items": [
+      "Live chat UI refresh when background workers (webhooks, cron) append messages to already-open sessions — filed as beads issue moltis-2pu.",
+      "Webhook feature text in the website landing page is English-only in all 9 language variants — translations need to be added to the i18n build script.",
+      "CIDR allowlist enforcement is implemented in the store/types layer but remote IP extraction relies solely on X-Forwarded-For/X-Real-Ip headers — does not work for direct connections without a reverse proxy.",
+      "Response tools (post GitHub comments, merge PRs, issue Stripe refunds) described in the plan are not yet implemented — the worker currently only sends the delivery message to the agent session.",
+      "Stripe and Linear provider profiles were described in the plan but only GitHub, GitLab, and Generic profiles were fully implemented in the crate."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-07T13:50:22.735458Z",
+    "agent_lines": 0,
+    "human_added": 54,
+    "human_modified": 6,
+    "human_removed": 0,
+    "total_committed": 54,
+    "agent_percentage": 0
+  }
+}
