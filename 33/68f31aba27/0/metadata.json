@@ -1,0 +1,104 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "3368f31aba27",
+  "session_id": "3d9acf2d-68f6-4a76-af8d-a4d79258a469",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-07T14:00:06.702873Z",
+  "branch": "kaput-gibbon",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/webhooks/src/lib.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "39fefde85947",
+  "token_usage": {
+    "input_tokens": 4154,
+    "cache_creation_tokens": 1937662,
+    "cache_read_tokens": 127082554,
+    "output_tokens": 136046,
+    "api_call_count": 464
+  },
+  "summary": {
+    "intent": "Add a generic webhook ingress system to Moltis that triggers AI agents from GitHub, GitLab, Stripe, and other webhook sources, with full UI management in settings.",
+    "outcome": "Built and shipped a complete webhook feature (PR #575): new `moltis-webhooks` crate with 7 source profiles, 9 auth modes, SQLite store, background worker, HTTP ingress endpoint, RPC API, web UI settings page, docs, test script, and 51 passing tests. Multiple bugs fixed during code review iterations.",
+    "learnings": {
+      "repo": [
+        "Settings sidebar nav icons are rendered via CSS `::before` pseudo-elements in `components.css` using `[data-section='...']` attribute selectors — NOT from the `icon` property in the JS sections array",
+        "There are two style.css files: `src/assets/style.css` (Tailwind output, served) and `src/assets/css/style.css` (different file, not served by HTML). The HTML loads the Tailwind one via versioned path.",
+        "SQLite `ON DELETE CASCADE` does not work without `PRAGMA foreign_keys = ON` on the connection; must be set explicitly in migrations or use explicit child deletes as a fallback",
+        "Arc::get_mut() silently returns None if any clone exists before the call — fields initialized this way may silently stay None. Use OnceLock or initialize before Arc wrapping instead.",
+        "Icon mask SVGs use stroke-only paths (fill='none') and are rendered via mask-image + background-color: currentColor in the CSS icon system",
+        "The cron/sandbox pages use `p-4`, `text-lg` title, and `gap-4` — webhooks page had to match this layout pattern",
+        "Hoppscotch web app cannot reach localhost due to CORS + mixed content restrictions; only the desktop app works for local Moltis instances",
+        "GonData in templates.rs must be extended with new feature data for the JS layer to access it at page load",
+        "Website i18n is handled via `website/scripts/build-i18n.mjs` string replacement — English changes to `index.en.html` must be followed by running the build script to propagate to all language files"
+      ],
+      "code": [
+        {
+          "path": "crates/webhooks/src/profiles/github.rs",
+          "finding": "String slicing with byte indices (e.g. `\u0026s[..500]`) panics on multibyte UTF-8; need a safe truncation helper that walks back to a char boundary"
+        },
+        {
+          "path": "crates/webhooks/src/rate_limit.rs",
+          "finding": "Two separate RwLocks for global and per-webhook limits create a TOCTOU race; must use a single Mutex to make check-and-record atomic"
+        },
+        {
+          "path": "crates/webhooks/src/auth.rs",
+          "finding": "Stripe timestamp validation must fail closed — non-numeric `t=` values must reject, not silently skip validation"
+        },
+        {
+          "path": "crates/webhooks/src/store.rs",
+          "finding": "Crash recovery query must include 'processing' status in addition to 'received' and 'queued' to handle mid-execution deliveries interrupted by a restart"
+        },
+        {
+          "path": "crates/gateway/src/webhooks.rs",
+          "finding": "Auth secrets (auth_config, source_config) in Webhook structs must be redacted to '[REDACTED]' at the gateway service layer before returning to clients — they must never leak via list/get/update API responses"
+        },
+        {
+          "path": "crates/webhooks/src/profiles/generic.rs",
+          "finding": "Generic profile should NOT fall back to body SHA-256 hash as dedup key — identical payloads without an explicit delivery ID header should always be processed"
+        },
+        {
+          "path": "crates/httpd/src/server.rs",
+          "finding": "Webhook ingress endpoint needs Access-Control-Allow-Origin: * plus OPTIONS preflight handler to be reachable from browser-based tools like Hoppscotch"
+        },
+        {
+          "path": "crates/web/src/assets/js/page-webhooks.js",
+          "finding": "GitLab auth mode uses config key 'token', not 'secret' — the modal's auth config builder must special-case 'gitlab_token' before falling through to the generic 'secret' branch"
+        }
+      ],
+      "workflow": [
+        "Arc::get_mut is fragile for late field initialization — prefer OnceLock for fields that need to be set after Arc creation but before serving requests",
+        "When a review bot comments on 'unused imports', verify against the current HEAD not the commit the bot reviewed — the imports may have been added in a subsequent commit",
+        "Write regression tests for every reviewer-caught bug immediately at fix time, not as a follow-up — tests for multibyte panics, auth key mismatches, TOCTOU, and secret leakage all should have existed from the start",
+        "CSS mask-image icons with stroke-only SVGs render correctly but appear as black squares if the wrong icon class is used or the CSS is stale/cached",
+        "Background worker session updates are not pushed to open WebSocket sessions — named session mode works but UI requires a reload to see new messages appended by the worker"
+      ]
+    },
+    "friction": [
+      "Arc::get_mut silently failed causing webhook_store to stay None — ingress returned 404 on every request with no error log, extremely hard to debug without knowing the Arc clone pattern",
+      "Two style.css files with different content caused confusion about which one was actually served",
+      "Settings sidebar icon system is undocumented — the JS `icon` property is unused and icons come from CSS data-section selectors in components.css, wasting significant debugging time",
+      "Hoppscotch web app does not work with localhost due to CORS/mixed-content — the initial recommendation was wrong and had to be corrected twice",
+      "SQLite cascade deletes silently doing nothing without the foreign_keys pragma is a footgun not caught until code review",
+      "Stripe timestamp validation failing open (skipping rather than rejecting invalid values) was caught by reviewer, not by original implementation or tests"
+    ],
+    "open_items": [
+      "Live-refresh chat UI when background workers append messages to open named sessions (affects both webhooks and cron) — filed as beads issue moltis-2pu",
+      "Website i18n translations for webhook feature text are in English across all 9 language files — translations need to be added to the build script per-language",
+      "CIDR allowlist enforcement is implemented with IP extraction from X-Forwarded-For/X-Real-Ip headers but has no tests for the full allow/deny flow",
+      "Linear, Jira, and PagerDuty provider profiles were specified in the plan but only GitHub, GitLab, Stripe, and Generic were implemented",
+      "Response action tools (post comments, merge PRs, issue refunds) were designed in the plan but not implemented — agents can receive webhooks but cannot act back via typed tools",
+      "Per-entity session locking (serialized processing per PR/issue) was planned but not implemented — concurrent deliveries for the same entity can race"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-07T13:59:13.810283Z",
+    "agent_lines": 0,
+    "human_added": 19,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 19,
+    "agent_percentage": 0
+  }
+}
