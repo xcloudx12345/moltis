@@ -1,0 +1,113 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "5e6cc3508efc",
+  "session_id": "cc80b4cc-7ce0-4760-ade8-ffd73779df0d",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-08T15:43:32.326416Z",
+  "branch": "glistening-amazonsaurus",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/msteams/src/jwt.rs",
+    "crates/msteams/src/graph.rs",
+    "crates/msteams/src/state.rs",
+    "crates/msteams/src/outbound.rs",
+    "crates/msteams/src/plugin.rs",
+    "crates/httpd/src/server.rs",
+    "docs/src/teams.md",
+    "crates/msteams/src/auth.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "c99bc8580ee4",
+  "token_usage": {
+    "input_tokens": 6202,
+    "cache_creation_tokens": 2001294,
+    "cache_read_tokens": 83347369,
+    "output_tokens": 140134,
+    "api_call_count": 329
+  },
+  "summary": {
+    "intent": "Implement a comprehensive Microsoft Teams channel integration for the Moltis project, bringing it up to parity with the OpenClaw reference implementation, then improve onboarding, documentation, and web UI for the Teams channel setup.",
+    "outcome": "Full Teams channel implementation delivered including JWT auth, Adaptive Cards, retry logic with backoff, streaming, file attachments, Graph API tools (search, pins, member info, reactions), Tailscale Funnel integration in onboarding, comprehensive docs, and all PR review fixes applied.",
+    "learnings": {
+      "repo": [
+        "The moltis workspace uses a worktree-based development workflow at ~/.superset/worktrees/moltis/\u003cbranch-name\u003e",
+        "Biome version matters: project pins @biomejs/biome@2.4.6 in biome.json but local npx resolves 0.3.3, causing CI formatting failures — always use npx --yes @biomejs/biome@2.4.6",
+        "Channel plugins are registered via the channels crate descriptor (ChannelDescriptor) and capabilities like supports_threads/supports_reactions must be set there",
+        "The httpd webhook handler must return 202 immediately and spawn processing async to avoid Teams retry-on-timeout behavior",
+        "std::sync::RwLock guards cannot be held across .await points — must scope-drop before any async call",
+        "RedactedConfig field count must exactly match the number of always-present fields or runtime serialization panics",
+        "Main uses moltis_common::http_client::build_default_http_client() — not reqwest::Client::new() directly",
+        "The config validate.rs uses Map(Box::new(Leaf)) for channel configs, relying on serde deserialization for semantic validation",
+        "Channel CLI bootstrap commands live in crates/cli/src/channel_commands.rs with print_setup_links() for portal URL guidance",
+        "The onboarding web UI fetches Tailscale status at startup via /api/tailscale/status and exposes preferredPublicBaseUrl() helper after the RemoteAccessStep was added to main"
+      ],
+      "code": [
+        {
+          "path": "crates/msteams/src/config.rs",
+          "finding": "RedactedConfig hardcoded count was 9 but actual always-present fields were 14 — caused runtime serialization panics"
+        },
+        {
+          "path": "crates/msteams/src/jwt.rs",
+          "finding": "JWKS cache should fall back to stale keys on fetch failure rather than failing validation — prevents auth outages during transient Microsoft JWKS endpoint issues"
+        },
+        {
+          "path": "crates/msteams/src/auth.rs",
+          "finding": "Bot Framework token (audience: api.botframework.com) must NOT be used for Graph API calls — Graph requires a separate token with scope https://graph.microsoft.com/.default"
+        },
+        {
+          "path": "crates/msteams/src/graph.rs",
+          "finding": "OData $search queries must use query parameter encoding (reqwest .query()) not URL string interpolation to avoid malformed URLs"
+        },
+        {
+          "path": "crates/httpd/src/server.rs",
+          "finding": "JWT pre-validation must return 401 when Authorization header is absent, not fall through to shared-secret check — absence of header should not bypass JWT auth"
+        },
+        {
+          "path": "crates/msteams/src/outbound.rs",
+          "finding": "update_activity() silently swallowed errors — must propagate errors so callers can handle streaming edit failures"
+        },
+        {
+          "path": "crates/msteams/src/plugin.rs",
+          "finding": "welcomed_conversations HashSet is in-memory only — does not survive restarts, meaning welcome cards re-send after restart; documented as known limitation"
+        },
+        {
+          "path": "crates/gateway/src/teams_agent_tools.rs",
+          "finding": "Agent tools need access to MsTeamsPlugin internals — cleanest pattern is adding pub helper methods on the plugin (graph_client(), edit_message(), delete_message()) rather than making internal structs pub"
+        }
+      ],
+      "workflow": [
+        "Always run biome check with exact pinned version: npx --yes @biomejs/biome@2.4.6 check --write .",
+        "When std::sync::RwLock guards cause Send issues in tokio::spawn, scope them with explicit blocks to ensure they drop before the spawn boundary",
+        "When merging a branch with 70+ upstream commits, expect JS/config conflicts — merge strategy: keep both sides for additive changes, prefer main's patterns for implementation details",
+        "Clippy with #[allow(dead_code)] is appropriate for public API surface methods not yet called internally",
+        "Format Rust with cargo +nightly-2025-11-30 fmt --all to match the workspace's nightly pinned formatter"
+      ]
+    },
+    "friction": [
+      "Biome version mismatch (local 0.3.x vs CI 2.4.x) caused repeated CI failures on formatting — had to discover and fix by checking biome.json version constraint",
+      "The RedactedConfig field count bug was a silent runtime panic risk that wasn't caught by any test — only found via PR review",
+      "tokio::spawn + std::sync::RwLock caused non-obvious Send bounds errors requiring guard scoping",
+      "The Graph API was initially using the wrong token audience (Bot Framework token instead of Graph-scoped token) — caught in PR review, not during development",
+      "Multiple merge conflict rounds as main was very active (73 commits in one merge) with overlapping JS and config files",
+      "OData $search URL construction was malformed (string interpolation instead of query params) — caught in PR review"
+    ],
+    "open_items": [
+      "Localization (fr/zh) for Teams channel strings — deferred as all channels have this gap",
+      "E2E Playwright tests for Teams channel setup — deferred, no channel has dedicated e2e tests yet",
+      "ngrok native Rust SDK integration (ngrok crate) as a one-click tunnel option alongside Tailscale Funnel — intentionally deferred to a separate PR",
+      "welcomed_conversations persistence across restarts — currently in-memory HashSet, welcome cards re-send after restart",
+      "Wiring Graph API agent tools (search, pins, member-info) into actual LLM tool dispatch beyond just registration — tools are registered but not yet tested end-to-end",
+      "Poll vote tracking persistence — poll cards are rendered but vote state is not stored",
+      "Per-channel config UI in web — edit modal has stream_mode, reply_style, bot_name, welcome_card but not the full per-team/per-channel TOML override structure"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-08T15:42:47.493236Z",
+    "agent_lines": 95,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 95,
+    "agent_percentage": 100
+  }
+}
