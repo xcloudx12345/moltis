@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "c8dbc8faa193",
+  "strategy": "manual-commit",
+  "branch": "wirehaired-glider",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/matrix/src/handler.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/c8/dbc8faa193/0/metadata.json",
+      "transcript": "/c8/dbc8faa193/0/full.jsonl",
+      "context": "/c8/dbc8faa193/0/context.md",
+      "content_hash": "/c8/dbc8faa193/0/content_hash.txt",
+      "prompt": "/c8/dbc8faa193/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 10,
+    "cache_creation_tokens": 67637,
+    "cache_read_tokens": 450683,
+    "output_tokens": 1438,
+    "api_call_count": 8
+  }
+}
