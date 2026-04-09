@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "78a64cc60638",
+  "strategy": "manual-commit",
+  "branch": "stealth-harp",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/chat/src/lib.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/78/a64cc60638/0/metadata.json",
+      "transcript": "/78/a64cc60638/0/full.jsonl",
+      "context": "/78/a64cc60638/0/context.md",
+      "content_hash": "/78/a64cc60638/0/content_hash.txt",
+      "prompt": "/78/a64cc60638/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 78,
+    "cache_creation_tokens": 71992,
+    "cache_read_tokens": 4748575,
+    "output_tokens": 16437,
+    "api_call_count": 71
+  }
+}
