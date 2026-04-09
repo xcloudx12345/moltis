@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "4e7afc1b36e2",
+  "strategy": "manual-commit",
+  "branch": "historical-carrot",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "crates/chat/src/lib.rs",
+    "crates/gateway/src/local_llm_setup.rs",
+    "crates/gateway/src/server.rs",
+    "crates/provider-setup/src/lib.rs",
+    "crates/providers/src/lib.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/4e/7afc1b36e2/0/metadata.json",
+      "transcript": "/4e/7afc1b36e2/0/full.jsonl",
+      "context": "/4e/7afc1b36e2/0/context.md",
+      "content_hash": "/4e/7afc1b36e2/0/content_hash.txt",
+      "prompt": "/4e/7afc1b36e2/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 44,
+    "cache_creation_tokens": 81401,
+    "cache_read_tokens": 1676217,
+    "output_tokens": 10343,
+    "api_call_count": 34
+  }
+}

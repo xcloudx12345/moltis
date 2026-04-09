@@ -1,0 +1,13 @@
+Look at https://github.com/moltis-org/moltis/issues/602 and how to fix this best
+
+---
+
+Proceed
+
+---
+
+Is there any way to make this more future proof?
+
+---
+
+Go for option 2
