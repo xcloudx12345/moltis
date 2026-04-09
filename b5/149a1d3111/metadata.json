@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "b5149a1d3111",
+  "strategy": "manual-commit",
+  "branch": "stealth-harp",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/agents/src/prompt.rs",
+    "crates/chat/src/lib.rs",
+    "crates/config/src/schema.rs",
+    "crates/config/src/template.rs",
+    "crates/config/src/validate.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/b5/149a1d3111/0/metadata.json",
+      "transcript": "/b5/149a1d3111/0/full.jsonl",
+      "context": "/b5/149a1d3111/0/context.md",
+      "content_hash": "/b5/149a1d3111/0/content_hash.txt",
+      "prompt": "/b5/149a1d3111/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 147,
+    "cache_creation_tokens": 202264,
+    "cache_read_tokens": 11550468,
+    "output_tokens": 29432,
+    "api_call_count": 134
+  }
+}
