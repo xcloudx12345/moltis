@@ -1,0 +1,65 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "d4d083e5b195",
+  "session_id": "5dc575b0-a623-4120-9296-2b22cbc6c18b",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-09T11:10:35.23533Z",
+  "branch": "historical-carrot",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/chat/src/lib.rs",
+    "crates/graphql/src/types/mod.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "f01953951bc5",
+  "checkpoint_transcript_start": 696,
+  "transcript_lines_at_start": 696,
+  "token_usage": {
+    "input_tokens": 13,
+    "cache_creation_tokens": 8025,
+    "cache_read_tokens": 884477,
+    "output_tokens": 2771,
+    "api_call_count": 12
+  },
+  "summary": {
+    "intent": "Merge main branch into historical-carrot feature branch and update the chat/graphql consumers to use the new ModelCapabilities abstraction directly instead of provider lookups.",
+    "outcome": "Merge succeeded cleanly with all 264 provider tests and 160 chat tests passing. Consumer-side changes were committed, exposing supports_reasoning via GraphQL and wiring chat to use capabilities directly.",
+    "learnings": {
+      "repo": [
+        "New Gemini 3.x models flow through catalog_to_discovered → DiscoveredModel (capabilities: None) → ModelCapabilities::infer(), so no manual capability registration is needed for new models matching existing prefix patterns.",
+        "supports_reasoning_for_model() uses id.starts_with('gemini-3') to gate reasoning support; adding new model families requires updating this function.",
+        "gemma- prefix is excluded from chat-capable models; gemini live/image variants are also excluded — these are explicit exclusion patterns in lib.rs."
+      ],
+      "code": [
+        {
+          "path": "crates/chat/src/lib.rs",
+          "finding": "Refactored to use ModelCapabilities directly instead of provider lookups — the key payoff of the historical-carrot refactor."
+        },
+        {
+          "path": "crates/graphql/src/types/mod.rs",
+          "finding": "Added supports_reasoning field to the GraphQL ModelInfo type."
+        }
+      ],
+      "workflow": [
+        "Kept merge commit and consumer changes as separate commits rather than amending the merge commit.",
+        "Background task notifications carry an output file path that must be explicitly read to retrieve results."
+      ]
+    },
+    "friction": [
+      "API 500 Internal Server Error interrupted one of the test run tool calls, requiring the result to be recovered from a background task output file."
+    ],
+    "open_items": [
+      "Verify downstream consumers beyond chat/graphql are updated to use capabilities directly rather than provider lookups.",
+      "The historical-carrot branch is still a worktree — needs eventual PR/merge to main once the full refactor is complete."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-09T11:10:22.525747Z",
+    "agent_lines": 8,
+    "human_added": 381,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 389,
+    "agent_percentage": 2.056555269922879
+  }
+}
