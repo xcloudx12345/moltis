@@ -1,0 +1,74 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "20fc5a401287",
+  "session_id": "ffc724ad-e37c-429d-88a4-5ea02d58129f",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-09T16:54:09.106109Z",
+  "branch": "nervous-ironclad",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/providers/src/openai.rs",
+    "crates/providers/tests/minimax_integration.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "d839813e389f",
+  "token_usage": {
+    "input_tokens": 151,
+    "cache_creation_tokens": 143541,
+    "cache_read_tokens": 7516798,
+    "output_tokens": 34675,
+    "api_call_count": 69
+  },
+  "summary": {
+    "intent": "Fix MiniMax provider bugs (system prompt delivery, tool calling) reported in GitHub issues #578, #582, #592, and add live API integration tests to prevent regressions, with a model discovery mechanism to detect new models.",
+    "outcome": "Fixed the MiniMax system prompt delivery bug by prepending system content to the first user message instead of using a silently-ignored top-level `system` field; created 12 live API integration tests covering all three issues plus model discovery; all 270 unit tests and 12 integration tests pass.",
+    "learnings": {
+      "repo": [
+        "MiniMax rejects `role: 'system'` in the messages array (error 2013) AND silently ignores a non-standard top-level `system` JSON field — system prompts must be prepended to the first user message with markers like `[System Instructions]`.",
+        "The workspace clippy config denies `.expect()` and `.unwrap()` globally; integration test files need `#![allow(clippy::unwrap_used, clippy::expect_used)]` at the top.",
+        "Integration tests use `#[ignore]` so they don't run in CI by default; run with `cargo test --test minimax_integration -- --ignored` and a live API key.",
+        "The internal tool format for `LlmProvider` is flat (`{name, description, parameters}`) not nested OpenAI format (`{type: 'function', function: {name, ...}}`); using the wrong format causes models to return tool calls as plain text.",
+        "Provider integration tests live in `crates/providers/tests/` as separate test binaries, not inline `#[cfg(test)]` modules.",
+        "The nightly formatter (`cargo +nightly-2025-11-30 fmt`) must be used; stable fmt produces different output that fails nightly clippy checks."
+      ],
+      "code": [
+        {
+          "path": "crates/providers/src/openai.rs",
+          "finding": "Renamed `apply_top_level_system_prompt` to `apply_system_prompt_rewrite` and changed behavior: instead of top-level `system` field, system content is prepended to the first user message. The method `requires_top_level_system_prompt` was renamed to `rejects_system_role`. All 3 call sites (probe, complete, stream_with_tools_sse) updated."
+        },
+        {
+          "path": "crates/providers/tests/minimax_integration.rs",
+          "finding": "New file with 12 live API integration tests. Requires `MINIMAX_API_KEY` env var. Covers system prompt delivery (streaming + non-streaming), tool call round trips, optional array params, multi-turn tool use, model catalog health checks, and new model detection."
+        }
+      ],
+      "workflow": [
+        "Run integration tests against real APIs to catch bugs that mocks miss — all three GitHub issues were 'closed' but the bugs were still present because only mocks were used.",
+        "Model catalog drift detection tests (checking known models are still live + detecting unexpected new ones) are valuable for provider maintenance.",
+        "When the workspace has strict lint rules, add `#![allow(...)]` at the file level for test files rather than per-function.",
+        "Collapsible `if` / `if let` chains trigger clippy warnings; prefer `if let Some(x) = foo \u0026\u0026 condition { }` style."
+      ]
+    },
+    "friction": [
+      "The previous 'fix' for MiniMax system prompts (top-level `system` field) was silently wrong — MiniMax accepted the request without error but ignored the field, making it hard to detect without live API tests.",
+      "Tool format mismatch (flat internal vs nested OpenAI) caused tool calls to come back as plain text with no error — required reading provider internals to diagnose.",
+      "Clippy denied `.unwrap()`/`.expect()` workspace-wide, requiring `#![allow]` attributes added after initial test file was written.",
+      "CUDA build failure on macOS blocked running clippy on the full workspace; had to scope clippy to the providers crate specifically.",
+      "The nightly formatter reformatted code in a way that then conflicted with clippy expectations, requiring an extra format+lint iteration."
+    ],
+    "open_items": [
+      "Same provider integration test pattern needs to be applied to all other providers (user explicitly said 'we'll do the same things with other providers, I'll add all API keys').",
+      "CI secret `MINIMAX_API_KEY` needs to be added to the repo for integration tests to run in CI jobs.",
+      "Model discovery mechanism exists in tests but no automated alerting when new MiniMax models appear — needs a CI job or scheduled check.",
+      "The `#582` optional array params fix should be verified more thoroughly — the test passes but the underlying serialization path for null arrays was not explicitly shown as fixed in the transcript."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-09T16:53:41.856585Z",
+    "agent_lines": 660,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 660,
+    "agent_percentage": 100
+  }
+}
