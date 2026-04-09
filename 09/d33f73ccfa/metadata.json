@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "09d33f73ccfa",
+  "strategy": "manual-commit",
+  "branch": "yielding-asp",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/agents/src/prompt.rs",
+    "crates/chat/src/lib.rs",
+    "crates/config/src/lib.rs",
+    "crates/config/src/loader.rs",
+    "crates/gateway/src/server.rs",
+    "crates/plugins/src/bundled/boot_md.rs",
+    "crates/plugins/src/bundled/mod.rs",
+    "docs/src/hooks.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/09/d33f73ccfa/0/metadata.json",
+      "transcript": "/09/d33f73ccfa/0/full.jsonl",
+      "context": "/09/d33f73ccfa/0/context.md",
+      "content_hash": "/09/d33f73ccfa/0/content_hash.txt",
+      "prompt": "/09/d33f73ccfa/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 40,
+    "cache_creation_tokens": 61489,
+    "cache_read_tokens": 2534749,
+    "output_tokens": 12762,
+    "api_call_count": 38
+  }
+}

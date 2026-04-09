@@ -1,0 +1,80 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "09d33f73ccfa",
+  "session_id": "fecb92ba-c4d2-42c6-b664-2b3ffcce0395",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-09T11:10:26.831657Z",
+  "branch": "yielding-asp",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/agents/src/prompt.rs",
+    "crates/chat/src/lib.rs",
+    "crates/config/src/lib.rs",
+    "crates/config/src/loader.rs",
+    "crates/gateway/src/server.rs",
+    "crates/plugins/src/bundled/boot_md.rs",
+    "crates/plugins/src/bundled/mod.rs",
+    "docs/src/hooks.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "1de825d352de",
+  "token_usage": {
+    "input_tokens": 40,
+    "cache_creation_tokens": 61489,
+    "cache_read_tokens": 2534749,
+    "output_tokens": 12762,
+    "api_call_count": 38
+  },
+  "summary": {
+    "intent": "Fix the broken boot-md hook (GitHub #594) by migrating BOOT.md from a no-op hook-based approach to the established workspace markdown pattern used by SOUL.md, AGENTS.md, TOOLS.md, and MEMORY.md.",
+    "outcome": "Implementation completed across all 7 target files: new loader functions added to config crate, boot_text threaded through PromptPersona and prompt-building functions, the broken boot_md.rs hook deleted, hook registration removed from server.rs, and docs updated. Tests delegated to a subagent.",
+    "learnings": {
+      "repo": [
+        "Workspace markdown files (SOUL.md, AGENTS.md, TOOLS.md, MEMORY.md, now BOOT.md) all follow a single pattern: loaded per-session via PromptPersona, injected via build_system_prompt_full()",
+        "GatewayStart is a read-only event that fires once at server start, not per session — hook-based injection at this event is fundamentally wrong for per-session context",
+        "The boot_message key returned by ModifyPayload had zero consumers in the codebase — the feature was silently broken from the start",
+        "builtin_hook_metadata() in crates/gateway/src/server.rs maintains a list of built-in hook descriptions that must be kept in sync with actual registered hooks",
+        "append_truncated_text_block() + WORKSPACE_FILE_MAX_CHARS are the standard utilities for injecting workspace files into the system prompt with size limits",
+        "load_boot_md_for_agent() follows agent-local-first-then-global fallback pattern consistent with other workspace file loaders"
+      ],
+      "code": [
+        {
+          "path": "crates/agents/src/prompt.rs",
+          "finding": "build_system_prompt_with_session_runtime and build_system_prompt_minimal_runtime both needed a new boot_text: Option\u003c\u0026str\u003e parameter; every test call site also required updating — there were many inline and multi-line call patterns"
+        },
+        {
+          "path": "crates/chat/src/lib.rs",
+          "finding": "Multiple call sites with three different indentation levels required separate replace_all passes for persona.soul_text.as_deref() -\u003e boot_text insertion"
+        },
+        {
+          "path": "crates/config/src/lib.rs",
+          "finding": "New public functions must be explicitly re-exported from crate root lib.rs, not just defined in loader.rs"
+        }
+      ],
+      "workflow": [
+        "When a parameter is added to a widely-called function, the number of test call sites can be unexpectedly large — delegating that mechanical update to a subagent is effective",
+        "replace_all on multi-argument function call patterns requires careful handling of indentation variations across call sites",
+        "Reading files in parallel at session start (all 7 target files simultaneously) significantly reduces time before edits begin"
+      ]
+    },
+    "friction": [
+      "Three different indentation levels for the same call pattern in chat/src/lib.rs required three separate replace_all passes instead of one",
+      "Test call sites in prompt.rs were numerous and mixed inline/multi-line formats, requiring delegation to a subagent to avoid tedious one-by-one edits",
+      "build_system_prompt convenience wrapper parameter count had to be manually verified after adding the new boot_text param to ensure None counts stayed correct"
+    ],
+    "open_items": [
+      "Verification commands not yet run: cargo test -p moltis-agents -- boot, cargo test -p moltis-config -- boot, cargo check --workspace, just lint, just format-check",
+      "Test additions (test_boot_text_injected_into_prompt and test_load_boot_md_for_agent) were delegated to a subagent — outcome not confirmed in transcript",
+      "docs/src/hooks.md edit added BOOT.md to workspace context section — should verify the section exists and placement is correct relative to other workspace files"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-09T11:10:00.849042Z",
+    "agent_lines": 99,
+    "human_added": 39,
+    "human_modified": 8,
+    "human_removed": 0,
+    "total_committed": 146,
+    "agent_percentage": 67.8082191780822
+  }
+}
