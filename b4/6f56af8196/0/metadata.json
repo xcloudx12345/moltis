@@ -1,0 +1,90 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "b46f56af8196",
+  "session_id": "ffc724ad-e37c-429d-88a4-5ea02d58129f",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-09T22:40:56.24144Z",
+  "branch": "nervous-ironclad",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".github/workflows/provider-integration.yml",
+    "crates/providers/src/openai.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "077ec162a74d",
+  "token_usage": {
+    "input_tokens": 402,
+    "cache_creation_tokens": 544223,
+    "cache_read_tokens": 58054921,
+    "output_tokens": 116819,
+    "api_call_count": 276
+  },
+  "summary": {
+    "intent": "Fix MiniMax provider bugs (system prompt delivery, tool calling) from GitHub issues #578, #582, #592, and add live API integration tests for all LLM providers to detect model catalog drift and API regressions.",
+    "outcome": "Fixed the MiniMax system prompt bug (prepend to first user message instead of ignored top-level field), created 101 integration tests across 11 providers (MiniMax, Moonshot, Fireworks, Anthropic, OpenAI, Mistral, OpenRouter, Kimi Code, DeepSeek, Gemini, Z.AI), fixed GPT-5 probe bug (max_completion_tokens 1→16), added a daily CI workflow, and resolved PR review comments about Secret exposure in CI and multimodal content handling.",
+    "learnings": {
+      "repo": [
+        "MiniMax silently ignores the top-level `system` JSON field; system prompts must be prepended to the first user message wrapped in `[System Instructions]` markers",
+        "Moonshot requires `reasoning_content` on replayed assistant tool call messages in multi-turn; ChatMessage doesn't carry this field, making multi-turn tool use broken",
+        "Gemini requires `thought_signature` on replayed tool calls in multi-turn conversations — same structural limitation as Moonshot",
+        "GPT-5 and o1/o3/o4 reasoning models reject max_completion_tokens=1 with a 400 error; minimum viable probe value is 16",
+        "OpenAI /models endpoint returns 102 models not in the catalog; Moonshot returns 13 new, Fireworks 11 new, Z.AI has glm-5-turbo and glm-5.1 not cataloged",
+        "Fireworks has 4 dead models in the catalog (including llama-v3p1-70b-instruct); Anthropic has claude-3-7-sonnet-20250219 dead",
+        "Gemini /models endpoint returns model IDs with `models/` prefix that must be stripped when comparing against our bare catalog IDs",
+        "Integration tests are `#[ignore]`d so they don't run in normal cargo test; must pass `--ignored` flag to activate them",
+        "Workspace lint denies `.expect()` and `.unwrap()` — integration test files need `#![allow(clippy::unwrap_used, clippy::expect_used)]`",
+        "Kimi Code uses the same underlying models as Moonshot but requires a separate paid membership; not worth maintaining separate tests",
+        "Tool format expected by LlmProvider is flat: `{name, description, parameters}` — NOT the nested OpenAI format `{type: function, function: {name, ...}}`"
+      ],
+      "code": [
+        {
+          "path": "crates/providers/src/openai.rs",
+          "finding": "apply_system_prompt_rewrite (renamed from apply_top_level_system_prompt) prepends system content to first user message for providers that reject system role; must handle multimodal array content via as_str() returning None — fixed to extract text parts from array content"
+        },
+        {
+          "path": "crates/providers/src/openai.rs",
+          "finding": "apply_probe_output_cap_chat sets max_completion_tokens; value of 1 causes 400 errors on GPT-5/reasoning models — bumped to 16"
+        },
+        {
+          "path": "crates/providers/tests/minimax_integration.rs",
+          "finding": "Model discovery raw HTTP calls must use api_key().expose_secret() (secrecy crate) rather than reading env var directly into String"
+        }
+      ],
+      "workflow": [
+        "Daily CI cron (not per-PR) is the right cadence for live API integration tests — avoids burning credits on every commit while still catching drift",
+        "Each CI matrix job should only expose the secret for its own provider, not all secrets to every job",
+        "When probe tests fail with 400 on new model families, it's worth investigating minimum token limits rather than assuming the model is broken",
+        "Case-insensitive keyword assertions in LLM tests avoid false failures from models that change casing in responses",
+        "Rate limit failures (429) from free tier APIs during test runs are transient — not worth special-casing in test logic",
+        "The Bash tool doesn't inherit direnv-loaded env vars; must source .envrc explicitly or pass env vars inline when running tests"
+      ]
+    },
+    "friction": [
+      "Bash tool doesn't inherit direnv env vars — had to manually source .envrc or find where new keys were stored to run tests",
+      "OAuth token used for git push lacked `workflow` scope, requiring SSH key (YubiKey tap) to push workflow file changes",
+      "Gemini /models endpoint returns `models/gemini-*` prefixed IDs but catalog uses bare IDs — model discovery test needed prefix stripping",
+      "Fireworks free tier rate limits caused transient test failures requiring reruns",
+      "Mistral API was returning intermittent 503s during the test session, making it hard to confirm test correctness",
+      "Kimi Code requires active paid membership beyond just having an API key — 402 error with no useful message until tested",
+      "nightly rustfmt formatting conflicted with clippy expectations, requiring an extra format pass after clippy fixes"
+    ],
+    "open_items": [
+      "Cerebras and Venice integration tests not yet written — need CEREBRAS_API_KEY and VENICE_API_KEY",
+      "GitHub Copilot integration tests not possible with plain env var — requires OAuth device flow token storage",
+      "Moonshot and Gemini multi-turn tool use is broken at the ChatMessage level — reasoning_content/thought_signature not persisted across turns; tracked as known limitation in tests but not fixed",
+      "Z.AI Code (Z_CODE_API_KEY) tests not written — same models as Z.AI but different endpoint; deferred",
+      "Kimi Code tests exist but require expensive membership to run — consider removing or permanently skipping",
+      "Model catalog is stale for multiple providers (102 new OpenAI models, 13 Moonshot, 11 Fireworks, 2 Z.AI) — catalog update deferred",
+      "OpenAI integration tests require credit on the account — tests are correct but will fail on accounts with zero balance"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-09T22:40:14.853453Z",
+    "agent_lines": 0,
+    "human_added": 45,
+    "human_modified": 18,
+    "human_removed": 0,
+    "total_committed": 45,
+    "agent_percentage": 0
+  }
+}

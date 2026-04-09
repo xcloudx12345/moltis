@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "b46f56af8196",
+  "strategy": "manual-commit",
+  "branch": "nervous-ironclad",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".github/workflows/provider-integration.yml",
+    "crates/providers/src/openai.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/b4/6f56af8196/0/metadata.json",
+      "transcript": "/b4/6f56af8196/0/full.jsonl",
+      "context": "/b4/6f56af8196/0/context.md",
+      "content_hash": "/b4/6f56af8196/0/content_hash.txt",
+      "prompt": "/b4/6f56af8196/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 402,
+    "cache_creation_tokens": 544223,
+    "cache_read_tokens": 58054921,
+    "output_tokens": 116819,
+    "api_call_count": 276
+  }
+}
