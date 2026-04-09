@@ -1,0 +1,86 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "caf68aaad1db",
+  "session_id": "ffc724ad-e37c-429d-88a4-5ea02d58129f",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-09T18:01:20.137452Z",
+  "branch": "nervous-ironclad",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/providers/src/openai.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "93a153465f23",
+  "token_usage": {
+    "input_tokens": 242,
+    "cache_creation_tokens": 220093,
+    "cache_read_tokens": 23457623,
+    "output_tokens": 72652,
+    "api_call_count": 150
+  },
+  "summary": {
+    "intent": "Fix MiniMax provider bugs (system prompt not delivered, tool calls returned as text) with real API integration tests, then extend the same test coverage to Moonshot, Fireworks, Anthropic, and OpenAI providers with model catalog drift detection.",
+    "outcome": "Fixed the MiniMax system prompt bug (system content now prepended to first user message instead of top-level field), created 49 live integration tests across 5 providers, fixed the GPT-5 probe bug (max_completion_tokens too low), and shipped everything in PR #622.",
+    "learnings": {
+      "repo": [
+        "MiniMax rejects role:'system' in messages array (error 2013) AND silently ignores a top-level 'system' JSON field — system content must be prepended to the first user message with [System Instructions] markers.",
+        "Moonshot requires the original reasoning_content from step 1 to be replayed in multi-turn tool use; ChatMessage doesn't carry reasoning_content so multi-turn tool use is broken by design.",
+        "The internal tool format is flat {name, description, parameters}, NOT the nested OpenAI {type:'function', function:{name,...}} format — using the wrong format causes models to return tool calls as plain text.",
+        "GPT-5 models reject max_completion_tokens values below ~16; the probe was using max_completion_tokens:1 which caused 400 errors on newer models.",
+        "Fireworks had 4 dead models in the catalog and 11 new undiscovered ones; Moonshot had 13 new models; OpenAI had 102 new models not in the catalog.",
+        "The workspace lint config denies .expect() and .unwrap() globally — integration test files need #[allow(clippy::unwrap_used)] attributes.",
+        "apply_top_level_system_prompt was renamed to apply_system_prompt_rewrite and requires_top_level_system_prompt to rejects_system_role after the fix."
+      ],
+      "code": [
+        {
+          "path": "crates/providers/src/openai.rs",
+          "finding": "apply_system_prompt_rewrite (formerly apply_top_level_system_prompt) prepends system content to first user message for MiniMax; called in probe, complete, and stream_with_tools_sse paths."
+        },
+        {
+          "path": "crates/providers/src/openai.rs",
+          "finding": "GPT-5 probe uses max_completion_tokens:16 (bumped from 1, then 2, which were both rejected by GPT-5 models); non-GPT-5 models still use max_tokens:1."
+        },
+        {
+          "path": "crates/providers/tests/minimax_integration.rs",
+          "finding": "12 integration tests covering system prompt delivery (3), tool calling (4), streaming (1), probe (1), model catalog drift (3). Run with: cargo test --test minimax_integration -- --ignored"
+        },
+        {
+          "path": "crates/providers/tests/moonshot_integration.rs",
+          "finding": "Multi-turn tool use test is marked to document a known limitation (reasoning_content not preserved in ChatMessage) rather than asserting success."
+        }
+      ],
+      "workflow": [
+        "Keyword assertions in LLM tests must be case-insensitive (e.g., contains_ignore_ascii_case) — models may not preserve keyword casing.",
+        "Model catalog drift tests (detect_new_models_via_api) should hit the /models endpoint and diff against the hardcoded catalog to surface new models automatically.",
+        "Rate limit failures from integration test suites are transient — don't redesign tests around them, just rerun after cooldown.",
+        "Fireworks llama-v3p1-70b-instruct is dead; use a live model (e.g., llama-v3p3-70b-instruct) as the test default."
+      ]
+    },
+    "friction": [
+      "MiniMax silently ignores the top-level 'system' field with no error — the bug looked fixed (issues closed) but was never actually working.",
+      "GPT-5 probe required iterating through multiple max_completion_tokens values (1 → 2 → 16) via live API calls to find the minimum accepted value.",
+      "Fireworks rate-limited the multi-turn test during the test run — required manual cooldown and rerun.",
+      "OpenAI tests initially failed due to insufficient credit on the account; required user to add credit before tests could pass.",
+      "Nightly formatter and clippy had formatting disagreements that required an extra format pass.",
+      "CUDA build failures surfaced during workspace clippy on macOS (pre-existing, no GPU on macOS) — had to scope clippy to specific crates."
+    ],
+    "open_items": [
+      "GitHub Copilot integration tests deferred — uses OAuth device flow, not a plain API key; needs stored OAuth tokens from Copilot device flow.",
+      "Moonshot multi-turn tool use is broken: API requires original reasoning_content from step 1, which ChatMessage doesn't carry — needs a design fix to propagate reasoning_content through turns.",
+      "OpenAI catalog has 102 new undiscovered models — catalog needs updating.",
+      "Moonshot catalog has 13 new undiscovered models — catalog needs updating.",
+      "Fireworks catalog has 4 dead models and 11 new ones — catalog needs updating.",
+      "Anthropic: claude-3-7-sonnet-20250219 is dead — remove from catalog.",
+      "Other providers (remaining ones beyond the 5 covered) still need integration tests added as API keys are provided."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-09T18:00:47.227849Z",
+    "agent_lines": 4,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 4,
+    "agent_percentage": 100
+  }
+}
