@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "38b6463f463f",
+  "strategy": "manual-commit",
+  "branch": "nervous-ironclad",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/providers/tests/moonshot_integration.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/38/b6463f463f/0/metadata.json",
+      "transcript": "/38/b6463f463f/0/full.jsonl",
+      "context": "/38/b6463f463f/0/context.md",
+      "content_hash": "/38/b6463f463f/0/content_hash.txt",
+      "prompt": "/38/b6463f463f/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 19,
+    "cache_creation_tokens": 23305,
+    "cache_read_tokens": 3095469,
+    "output_tokens": 13563,
+    "api_call_count": 19
+  }
+}
