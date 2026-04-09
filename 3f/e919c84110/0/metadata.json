@@ -1,0 +1,67 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "3fe919c84110",
+  "session_id": "cf22f8c5-bcfa-4468-9880-fe40f94c69fc",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-09T09:20:53.406155Z",
+  "branch": "alpineq/fix/provider-setup-include-lmstudio",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/provider-setup/src/lib.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "97f8bb7baab3",
+  "token_usage": {
+    "input_tokens": 31,
+    "cache_creation_tokens": 56597,
+    "cache_read_tokens": 1113885,
+    "output_tokens": 6771,
+    "api_call_count": 29
+  },
+  "summary": {
+    "intent": "Fix PR #600 review comments by adding a dedicated `local_only` field to `KnownProvider` struct and renaming/clarifying a test.",
+    "outcome": "Added `local_only` field to all `KnownProvider` entries, updated `is_local_only()` to use the new field, fixed a test name/comment, committed and pushed. Compilation and tests passed cleanly.",
+    "learnings": {
+      "repo": [
+        "The `KnownProvider` struct in crates/provider-setup/src/lib.rs previously used `key_optional: true` as a proxy for local-only providers (ollama, lmstudio), which was semantically incorrect.",
+        "The `local-llm` provider uses `AuthType::Local` which already triggered `is_local_only()` via a separate code path, independent of `key_optional`.",
+        "KnownProvider is JSON-serialized with a `keyOptional` field exposed to the frontend — this is intentionally separate from `local_only` and was left unchanged.",
+        "Only ollama (line ~894) and lmstudio (line ~903) had `key_optional: true` among all known providers."
+      ],
+      "code": [
+        {
+          "path": "crates/provider-setup/src/lib.rs",
+          "line": 894,
+          "end_line": 903,
+          "finding": "ollama and lmstudio are the only providers with `key_optional: true`; they are also the providers that needed `local_only: true`."
+        },
+        {
+          "path": "crates/provider-setup/src/lib.rs",
+          "line": 2309,
+          "end_line": 2309,
+          "finding": "A KnownProvider struct literal in tests also needed the new `local_only` field added to compile."
+        }
+      ],
+      "workflow": [
+        "Using sed to batch-add a field after a pattern across many struct entries is more efficient than individual Edit calls when the pattern is consistent.",
+        "Rust struct literals are exhaustive — adding a new field causes compile errors in all construction sites, making it easy to find all places needing updates."
+      ]
+    },
+    "friction": [
+      "Initially attempted to use Edit tool for each provider entry individually before switching to sed for batch edits — wasted several tool calls.",
+      "Had to manually check the `local-llm` provider separately because it used `AuthType::Local` rather than `key_optional` to signal local-only behavior, making it easy to miss."
+    ],
+    "open_items": [
+      "The `keyOptional` JSON field exposed to the frontend is still derived from `key_optional` rather than `local_only` — if these concepts diverge further, the frontend serialization may need revisiting."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-09T09:20:38.07926Z",
+    "agent_lines": 34,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 34,
+    "agent_percentage": 100
+  }
+}
