@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "dd42bb28cb6c",
+  "strategy": "manual-commit",
+  "branch": "glitter-saver",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "crates/providers/src/openai.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/dd/42bb28cb6c/0/metadata.json",
+      "transcript": "/dd/42bb28cb6c/0/full.jsonl",
+      "context": "/dd/42bb28cb6c/0/context.md",
+      "content_hash": "/dd/42bb28cb6c/0/content_hash.txt",
+      "prompt": "/dd/42bb28cb6c/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 40,
+    "cache_creation_tokens": 63514,
+    "cache_read_tokens": 1959307,
+    "output_tokens": 17707,
+    "api_call_count": 32
+  }
+}
