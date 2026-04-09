@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "76621ebb69a2",
+  "strategy": "manual-commit",
+  "branch": "yielding-asp",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/gateway/src/server.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/76/621ebb69a2/0/metadata.json",
+      "transcript": "/76/621ebb69a2/0/full.jsonl",
+      "context": "/76/621ebb69a2/0/context.md",
+      "content_hash": "/76/621ebb69a2/0/content_hash.txt",
+      "prompt": "/76/621ebb69a2/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 74,
+    "cache_creation_tokens": 80632,
+    "cache_read_tokens": 5192043,
+    "output_tokens": 18204,
+    "api_call_count": 68
+  }
+}

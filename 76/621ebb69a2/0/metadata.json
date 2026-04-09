@@ -1,0 +1,79 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "76621ebb69a2",
+  "session_id": "fecb92ba-c4d2-42c6-b664-2b3ffcce0395",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-09T11:20:58.948073Z",
+  "branch": "yielding-asp",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/gateway/src/server.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "a13aace12829",
+  "token_usage": {
+    "input_tokens": 74,
+    "cache_creation_tokens": 80632,
+    "cache_read_tokens": 5192043,
+    "output_tokens": 18204,
+    "api_call_count": 68
+  },
+  "summary": {
+    "intent": "Fix GitHub issue #594 where the boot-md hook was a no-op because it fired on a read-only GatewayStart event and its result was silently discarded, by replacing it with the established workspace markdown pattern used by SOUL.md, AGENTS.md, etc.",
+    "outcome": "BOOT.md is now loaded per-session via PromptPersona and injected into the system prompt via append_boot_section(). The broken hook was deleted, all tests pass, and a PR was created and merged with a follow-up fix for a stale test caught by a bot reviewer.",
+    "learnings": {
+      "repo": [
+        "Workspace markdown files (SOUL.md, AGENTS.md, TOOLS.md, MEMORY.md, now BOOT.md) follow a consistent pattern: loaded via load_*_for_agent() in config/loader.rs, stored in PromptPersona in chat/src/lib.rs, injected via append_*_section() in agents/src/prompt.rs",
+        "GatewayStart is a read-only event that fires once at server start, not per session — hooks returning ModifyPayload on it are silently discarded",
+        "The build_system_prompt_with_session_runtime() and build_system_prompt_minimal_runtime() functions have many call sites (7 in chat/lib.rs, ~20 in test code) that all needed updating when adding a new parameter",
+        "The crate exports public API through crates/config/src/lib.rs — new loader functions must be re-exported there",
+        "Greptile bot reviews PRs and caught a stale test (discover_hooks_registers_builtin_handlers in server.rs) that still asserted 'boot-md' existed after the hook was removed",
+        "The worktree has no remote configured — git pull from main is a no-op in ephemeral worktrees"
+      ],
+      "code": [
+        {
+          "path": "crates/config/src/loader.rs",
+          "finding": "load_workspace_markdown() and agent_workspace_dir() are the base utilities; all workspace file loaders follow pattern: agent-specific path first, fall back to global with .or_else(load_boot_md)"
+        },
+        {
+          "path": "crates/agents/src/prompt.rs",
+          "finding": "boot_text injection point is after identity/soul but before workspace-specific details (agents_text, tools_text, memory_text). Uses shared append_truncated_text_block() with WORKSPACE_FILE_MAX_CHARS limit"
+        },
+        {
+          "path": "crates/gateway/src/server.rs",
+          "finding": "discover_hooks_registers_builtin_handlers test enumerates expected hook names — must be updated when adding/removing builtin hooks"
+        },
+        {
+          "path": "crates/plugins/src/bundled/boot_md.rs",
+          "finding": "Deleted — the entire hook-based approach was architecturally wrong; boot content needs per-session injection not a server-start event handler"
+        }
+      ],
+      "workflow": [
+        "When adding a parameter to a widely-called function in Rust, expect ~20+ call sites including tests to update — an agent sub-task was used to batch-update test call sites",
+        "Running cargo check --workspace early catches broken imports before running full test suite",
+        "Clippy failures due to cmake/build issues on unrelated crates can be filtered by running clippy only on affected crates (-p flags)",
+        "cargo fmt must be run after edits — format check will fail even on minor whitespace issues"
+      ]
+    },
+    "friction": [
+      "Adding boot_text parameter to build_system_prompt_with_session_runtime required updating ~20 test call sites — tedious mechanical work that required a sub-agent",
+      "Multiple indentation levels in call sites (2-space, 4-space, 8-space) meant replace_all couldn't handle all cases in one pass",
+      "Clippy was run on --workspace but failed due to a cmake build issue in an unrelated crate, obscuring whether affected crates were clean — had to re-run with -p flags per crate",
+      "The greptile bot caught a stale test (discover_hooks_registers_builtin_handlers) that the implementation didn't catch — required a follow-up commit after PR creation"
+    ],
+    "open_items": [
+      "The stale gateway test fix was committed separately after PR creation — worth checking if there are other tests that enumerate builtin hooks that could go stale in future",
+      "docs/src/hooks.md was updated to remove boot-md and add BOOT.md to workspace context section — verify docs build correctly if there's a docs CI check",
+      "No clippy run on the full workspace succeeded (cmake issue) — the cmake-related build failure in an unrelated crate should be investigated separately"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-09T11:20:28.154629Z",
+    "agent_lines": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 0,
+    "agent_percentage": 0
+  }
+}
