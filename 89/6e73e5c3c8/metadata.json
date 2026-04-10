@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "896e73e5c3c8",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/ui/e2e/specs/chat-input.spec.js"
+  ],
+  "sessions": [
+    {
+      "metadata": "/89/6e73e5c3c8/0/metadata.json",
+      "transcript": "/89/6e73e5c3c8/0/full.jsonl",
+      "context": "/89/6e73e5c3c8/0/context.md",
+      "content_hash": "/89/6e73e5c3c8/0/content_hash.txt",
+      "prompt": "/89/6e73e5c3c8/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 16,
+    "cache_creation_tokens": 52782,
+    "cache_read_tokens": 481019,
+    "output_tokens": 1163,
+    "api_call_count": 11
+  }
+}
