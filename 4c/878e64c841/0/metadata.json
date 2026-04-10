@@ -1,0 +1,96 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "4c878e64c841",
+  "session_id": "50b1daa3-487c-4a10-a026-cb2288316181",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-10T12:57:00.175301Z",
+  "branch": "robust-monday",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/skills/src/lib.rs",
+    "crates/gateway/tests/read_skill_tool.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "2a9f8b3c4943",
+  "token_usage": {
+    "input_tokens": 375,
+    "cache_creation_tokens": 786700,
+    "cache_read_tokens": 86171893,
+    "output_tokens": 169916,
+    "api_call_count": 331
+  },
+  "summary": {
+    "intent": "Implement a native `read_skill` tool for the moltis agent platform so skills can be activated reliably without depending on the model inferring to use `exec`+`cat`, then iterate on PR review feedback until Greptile reaches 5/5 confidence, and finally add comprehensive regression tests to prevent future breakage.",
+    "outcome": "PR #630 merged-ready with 5 commits: `ReadSkillTool` with full safety guards, `safety.rs` prompt-injection scanner, updated `prompt_gen.rs`, gateway registration, hermes-agent feature parity (binary detection, `assets/` subdir, per-subdir caps, frontmatter surfacing), 4 Greptile iterations fixing 9 comments, and a final regression test pass covering discoverer↔prompt parity, create→read and write→read round-trips, hot-discovery, plugin-as-file sidecar rejection, and shared `SIDECAR_SUBDIRS` constant to prevent drift.",
+    "learnings": {
+      "repo": [
+        "Skills were never reliably end-to-end functional before this PR — the original design (Jan 31 2026, commit d4744381) injected an absolute `path=` attribute into `\u003cavailable_skills\u003e` and instructed the model to 'read its SKILL.md file' with no named tool, relying on smart models to infer `exec`+`cat`.",
+        "The only place `SkillContent::load_skill` is called in the runtime is `crates/cli/src/main.rs` for `moltis skills info \u003cname\u003e` — it was never wired into the chat/gateway/agent loop.",
+        "`CreateSkillTool`, `UpdateSkillTool`, `DeleteSkillTool`, and `WriteSkillFilesTool` all existed before `ReadSkillTool`; the read side was simply never implemented.",
+        "Gateway's `FsSkillDiscoverer` uses `default_paths()` for all other skill tools but the new `ReadSkillTool` needed `default_paths_for(data_dir)` to stay consistent — mismatch was a Greptile finding.",
+        "The `SIDECAR_SUBDIRS` list (`references/`, `templates/`, `scripts/`, `assets/`) existed in two places (skill_tools.rs and prompt_gen.rs) and was consolidated into a single constant in `crates/skills/src/lib.rs` to make drift a compile-time error.",
+        "`just lint` fails on macOS due to a pre-existing llama-cpp-sys CUDA build error (tracked as moltis-csq) — targeted `cargo clippy -p \u003ccrate\u003e` is the reliable alternative.",
+        "Beads (the project's issue tracker) is used for task tracking with issue IDs like `moltis-6p0`, `moltis-5xp`, etc.; issues are claimed before work starts and closed when done.",
+        "The `local-llm-metal` feature flag is needed for gateway clippy on macOS."
+      ],
+      "code": [
+        {
+          "path": "crates/tools/src/skill_tools.rs",
+          "finding": "ReadSkillTool dispatches two paths: plugin-backed (single `.md` file) and directory-backed (`SKILL.md` + sidecar subdirs). Plugin-backed skills must reject `file_path` sidecar requests with a clear error since there is no sidecar directory."
+        },
+        {
+          "path": "crates/skills/src/safety.rs",
+          "finding": "Prompt-injection scanner ported from hermes-agent with 9 patterns; runs warn-only (does not block), consistent with hermes behavior."
+        },
+        {
+          "path": "crates/skills/src/prompt_gen.rs",
+          "finding": "The `path=` attribute and absolute SKILL.md path leak were deliberately removed from `\u003cavailable_skills\u003e`; the activation instruction now names `read_skill(name=..., file_path=...)` explicitly. Sidecar subdir list is now generated from `moltis_skills::SIDECAR_SUBDIRS`."
+        },
+        {
+          "path": "crates/gateway/src/server.rs",
+          "finding": "ReadSkillTool registered in the skill-tools block using `FsSkillDiscoverer::default_paths_for(data_dir)` to match the scope used by write tools — not `default_paths()` which uses a different resolution path."
+        },
+        {
+          "path": "crates/gateway/tests/read_skill_tool.rs",
+          "finding": "Integration tests grew from 5 to 14 cases across the PR lifecycle, covering: tool presence in registry, primary read, sidecar read, unknown-name error, traversal rejection, assets/ listing, binary handling, discoverer↔prompt parity, tool-name parity, hot-discovery, create→read round-trip, write_files→read round-trip, plugin-as-file sidecar rejection."
+        },
+        {
+          "path": "crates/skills/src/discover.rs",
+          "finding": "New `FsSkillDiscoverer::default_paths_for(data_dir)` method added with direct unit tests; `default_paths()` is the older variant that may resolve differently."
+        }
+      ],
+      "workflow": [
+        "Greploop pattern: iterate on Greptile review comments until 5/5 confidence + 0 unresolved threads, triggering Greptile re-review after each commit batch.",
+        "Background task notifications are unreliable summary labels — a task reported 'exit code 0' but was actually the pre-existing lint failure; always verify with direct status queries.",
+        "Clippy `expect_used` lint fires on `.expect()` calls in async contexts — replace with explicit error mapping or `serde_json::Map` construction to avoid it.",
+        "When adding a subdir to a sidecar system, export a shared constant rather than duplicating the list across crates — drift is otherwise invisible until a model silently omits a dir from its prompt.",
+        "Greptile tends to find new issues each iteration as earlier ones are resolved; 4 iterations were needed to go from 4/5 to 5/5.",
+        "Per-subdir caps (e.g. `MAX_SIDECAR_FILES_PER_SUBDIR = 8`) prevent a heavy subdir from silently hiding others under a shared global cap."
+      ]
+    },
+    "friction": [
+      "`just lint` always fails on macOS due to pre-existing llama-cpp-sys CUDA build error (moltis-csq), requiring manual targeted clippy invocations per crate.",
+      "Greptile required 4 iteration cycles with manual re-trigger and polling between each — background polling tasks accumulated stale notifications.",
+      "Background task notification summaries were misleading (one reported 'exit code 0' for a run that actually failed with exit code 101).",
+      "Dolt remote not configured in the worktree — `bd dolt pull` failed; commit is local-only and not synced to any Dolt remote.",
+      "The shared `SIDECAR_SUBDIRS` constant required touching both `crates/skills/src/lib.rs` and `crates/tools/src/skill_tools.rs` to eliminate the drift, since the skills crate doesn't depend on tools and tools depends on skills — the constant had to live in skills and be imported into tools."
+    ],
+    "open_items": [
+      "moltis-avv: token-budget fallback for skills prompt — left open per plan spec, not addressed in this PR.",
+      "`skills_list` and `skills_categories` progressive-disclosure tools (hermes-agent pattern) — documented as out-of-scope; maps to moltis-avv.",
+      "Platform gating for skills (needs frontmatter spec change) — not implemented.",
+      "Required env var validation for skills — not implemented.",
+      "Slashy path resolution for skill activation — not implemented.",
+      "Full `just lint` passing on macOS — blocked by pre-existing moltis-csq (llama-cpp-sys CUDA build failure), unrelated to this work."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-10T12:56:12.35467Z",
+    "agent_lines": 0,
+    "human_added": 552,
+    "human_modified": 6,
+    "human_removed": 0,
+    "total_committed": 552,
+    "agent_percentage": 0
+  }
+}
