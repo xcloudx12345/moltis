@@ -1,0 +1,95 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "a2c08f9b2f1c",
+  "session_id": "50b1daa3-487c-4a10-a026-cb2288316181",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-10T10:54:51.4754Z",
+  "branch": "robust-monday",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/tools/src/skill_tools.rs",
+    "crates/skills/src/prompt_gen.rs",
+    "crates/skills/src/parse.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "8a764a503f7d",
+  "token_usage": {
+    "input_tokens": 198,
+    "cache_creation_tokens": 275561,
+    "cache_read_tokens": 28663206,
+    "output_tokens": 92890,
+    "api_call_count": 169
+  },
+  "summary": {
+    "intent": "Implement a native ReadSkillTool for the moltis gateway that lets agents read skill files without leaking absolute paths, add a prompt-injection safety scanner, and update the system-prompt to reference the new tool. Then enhance ReadSkillTool with hermes-agent-inspired features and fix PR review comments.",
+    "outcome": "PR #630 was opened, pushed, and iteratively improved across three commits (66ad3c22, 212c39eb, plus a PR-fixes commit). All five planned beads issues were closed; a follow-up issue for hermes-ported features was also opened, completed, and closed. 58 skill_tools unit tests, 11 safety tests, 8 gateway integration tests, and 109 skills tests all pass; targeted clippy clean on all four affected crates.",
+    "learnings": {
+      "repo": [
+        "Skills discovery uses FsSkillDiscoverer shared across tool instances in gateway/src/server.rs; new skill tools must be registered in the skill-tools block there.",
+        "Path containment for skill files is enforced via normalize_relative_skill_file_path (reusable guard already present in skill_tools.rs); new tools should reuse it rather than rolling their own.",
+        "The prompt_gen.rs \u003cavailable_skills\u003e block previously leaked absolute SKILL.md paths via a path= attribute — this was the root bug motivating the plan.",
+        "The hermes-agent safety scanner (9 injection patterns) was already available for porting; it lives in crates/skills/src/safety.rs after this session.",
+        "moltis-csq is a pre-existing macOS llama-cpp-sys CUDA build failure that blocks `just lint` but is unrelated to any changes in this workspace; targeted per-crate clippy is the reliable alternative.",
+        "Sidecar directories follow the agentskills.io convention: references/, templates/, scripts/, assets/ — assets/ was missing from the original implementation and added via the hermes follow-up.",
+        "Frontmatter stripping for plugin-injected content needed a tolerant strip_optional_frontmatter helper added to crates/skills/src/parse.rs to avoid leaking raw YAML into agent responses.",
+        "Dolt remote is not configured in the robust-monday worktree, so `bd dolt pull` fails; commits are local-only until pushed to GitHub."
+      ],
+      "code": [
+        {
+          "path": "crates/tools/src/skill_tools.rs",
+          "finding": "ReadSkillTool primary read path must call strip_optional_frontmatter (from parse.rs) before returning body content to avoid leaking raw plugin frontmatter YAML to the agent."
+        },
+        {
+          "path": "crates/tools/src/skill_tools.rs",
+          "finding": "read_sidecar must reject symlinked skill directories (fs::symlink_metadata check before descending) to prevent escape via symlink chains, not just symlinked individual files."
+        },
+        {
+          "path": "crates/skills/src/prompt_gen.rs",
+          "finding": "The activation instruction for read_skill must mention assets/ alongside references/, templates/, scripts/ to match the actual sidecar surface area; tests assert this."
+        },
+        {
+          "path": "crates/skills/src/prompt_gen.rs",
+          "finding": "The path-leak assertion used a broad || condition across test cases; PR review requested tightening it to a per-case assert so failures are unambiguous."
+        },
+        {
+          "path": "crates/skills/src/parse.rs",
+          "finding": "New strip_optional_frontmatter helper added: returns body after YAML front-matter block if present, otherwise returns the full string unchanged — tolerant of missing or malformed front-matter."
+        },
+        {
+          "path": "crates/gateway/tests/read_skill_tool.rs",
+          "finding": "Integration test seeding pattern: create a tempdir, write a minimal skill structure, point FsSkillDiscoverer at it, instantiate ReadSkillTool, and call execute() directly — no HTTP layer needed."
+        }
+      ],
+      "workflow": [
+        "Beads issues were claimed before starting each sub-task and closed immediately after tests passed, keeping epic progress accurate throughout the session.",
+        "Background Bash tasks (clippy, integration tests) were launched in parallel with editing work; task-notification messages were used to confirm results without blocking.",
+        "Targeted per-crate clippy (cargo clippy -p moltis-skills -p moltis-tools etc.) is the reliable lint path when just lint is blocked by an unrelated build failure.",
+        "PR description was updated after the follow-up commit to cover both commits, keeping reviewers informed without opening a second PR.",
+        "cargo fmt --check was run before every commit; empty output = clean."
+      ]
+    },
+    "friction": [
+      "just lint is permanently broken on macOS due to moltis-csq (llama-cpp-sys CUDA build failure), forcing targeted per-crate clippy as a workaround every session.",
+      "Dolt remote is not configured in the robust-monday worktree, so `bd dolt pull` fails silently — no sync of beads state back to the remote Dolt instance.",
+      "Background task-notification summaries can be misleading: bcalmwoi9 was labeled 'exit code 0' by the notification but actually exited 101; had to manually check the output file.",
+      "The symlink-escape rejection for sidecar reads was initially only applied to individual files, not the skill directory itself — caught by PR review, not by the original tests."
+    ],
+    "open_items": [
+      "moltis-avv (token-budget fallback for skill reads) is intentionally left open; the plan explicitly deferred it.",
+      "skills_list and skills_categories progressive-disclosure tools (ported from hermes-agent) are out of scope for this PR — maps to moltis-avv or a new issue.",
+      "Platform gating in skill frontmatter (hermes feature: only surface skills compatible with current platform) requires a frontmatter spec change not yet defined.",
+      "Required env-var validation for skills (hermes feature: warn if a skill's declared env deps are missing) was explicitly deferred.",
+      "Slashy path resolution (hermes: resolve /skill-name shorthand to the canonical skill directory) was explicitly deferred.",
+      "moltis-csq (macOS llama-cpp-sys CUDA build failure) blocks full just lint runs and should be fixed independently."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-10T10:54:09.887932Z",
+    "agent_lines": 262,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 262,
+    "agent_percentage": 100
+  }
+}
