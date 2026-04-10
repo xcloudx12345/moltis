@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "54dac4443784",
+  "strategy": "manual-commit",
+  "branch": "robust-monday",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/agents/src/prompt.rs",
+    "crates/gateway/src/server.rs",
+    "crates/gateway/tests/read_skill_tool.rs",
+    "crates/skills/src/lib.rs",
+    "crates/skills/src/prompt_gen.rs",
+    "crates/skills/src/safety.rs",
+    "crates/tools/src/skill_tools.rs",
+    "docs/src/system-prompt.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/54/dac4443784/0/metadata.json",
+      "transcript": "/54/dac4443784/0/full.jsonl",
+      "context": "/54/dac4443784/0/context.md",
+      "content_hash": "/54/dac4443784/0/content_hash.txt",
+      "prompt": "/54/dac4443784/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 93,
+    "cache_creation_tokens": 150811,
+    "cache_read_tokens": 10441182,
+    "output_tokens": 35266,
+    "api_call_count": 88
+  }
+}
