@@ -1,0 +1,73 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "7a5370907ac7",
+  "session_id": "959bfef8-a00a-4af3-b88e-6afa4446d238",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-10T14:38:14.996172Z",
+  "branch": "bubble-milk",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/config/src/template.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "42a737e675d8",
+  "checkpoint_transcript_start": 135,
+  "transcript_lines_at_start": 135,
+  "token_usage": {
+    "input_tokens": 26,
+    "cache_creation_tokens": 8294,
+    "cache_read_tokens": 787875,
+    "output_tokens": 3214,
+    "api_call_count": 11
+  },
+  "summary": {
+    "intent": "Fix a bug where the Whisper STT provider ignored the configured model and language fields, then get the fix reviewed and merged.",
+    "outcome": "Bug fixed with full test coverage, PR #643 opened against main, and a Greptile inline comment about template wording resolved and pushed.",
+    "learnings": {
+      "repo": [
+        "SttProviderId::Whisper is instantiated in crates/gateway/src/voice.rs; GroqStt is the reference implementation for multi-field STT constructors.",
+        "The project uses a with_options pattern for STT constructors that accept api_key, model, and language.",
+        "just lint runs clippy+fmt but also triggers a macOS CUDA build for llama-cpp-sys-2, causing spurious failures unrelated to most changes.",
+        "Greptile is configured as an automated PR reviewer and leaves inline comments."
+      ],
+      "code": [
+        {
+          "path": "crates/gateway/src/voice.rs",
+          "line": 519,
+          "end_line": 519,
+          "finding": "SttProviderId::Whisper branch previously called WhisperStt::new(Some(k)), hardcoding whisper-1 and dropping the language config field entirely."
+        },
+        {
+          "path": "crates/voice/src/stt/whisper.rs",
+          "finding": "WhisperStt had no language field; added language: Option\u003cString\u003e, with_options constructor, and fallback logic in transcribe so self.language is used when request.language is None."
+        },
+        {
+          "path": "crates/config/src/template.rs",
+          "finding": "Added commented [voice.stt.whisper] example block for discoverability; wording was later revised in response to a Greptile PR comment."
+        }
+      ],
+      "workflow": [
+        "cargo check -p \u003ccrate1\u003e -p \u003ccrate2\u003e is used for fast targeted compile checks rather than a full workspace build.",
+        "The project pins a nightly toolchain (nightly-2025-11-30) for fmt and clippy.",
+        "Background bash tasks can be launched and their output retrieved later via output files."
+      ]
+    },
+    "friction": [
+      "just lint blew up on a pre-existing macOS CUDA build issue in llama-cpp-sys-2, making it unreliable as a lint gate for unrelated changes.",
+      "WhisperStt lacked a language field entirely, so the fix required both the struct and the call site to be updated — the bug was more pervasive than a single-line fix."
+    ],
+    "open_items": [
+      "The llama-cpp-sys-2 macOS CUDA build failure surfaced by just lint was not filed as a bug and should be tracked separately.",
+      "PR #643 was created but not yet merged; merge into main is pending review/approval."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-10T14:37:59.836862Z",
+    "agent_lines": 1,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1,
+    "agent_percentage": 100
+  }
+}

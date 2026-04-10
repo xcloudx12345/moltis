@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "7a5370907ac7",
+  "strategy": "manual-commit",
+  "branch": "bubble-milk",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/config/src/template.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/7a/5370907ac7/0/metadata.json",
+      "transcript": "/7a/5370907ac7/0/full.jsonl",
+      "context": "/7a/5370907ac7/0/context.md",
+      "content_hash": "/7a/5370907ac7/0/content_hash.txt",
+      "prompt": "/7a/5370907ac7/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 26,
+    "cache_creation_tokens": 8294,
+    "cache_read_tokens": 787875,
+    "output_tokens": 3214,
+    "api_call_count": 11
+  }
+}

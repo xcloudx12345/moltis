@@ -1,0 +1,24 @@
+Look at https://github.com/moltis-org/moltis/issues/631 and how come it never worked, how to fix and make a plan
+
+---
+
+Proceed
+
+---
+
+<task-notification>
+<task-id>btk7xxf19</task-id>
+<tool-use-id>toolu_01Gk4DpwhtpFgpVorE4NwhUw</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-penso--superset-worktrees-moltis-bubble-milk/959bfef8-a00a-4af3-b88e-6afa4446d238/tasks/btk7xxf19.output</output-file>
+<status>completed</status>
+<summary>Background command "Check compile" completed (exit code 0)</summary>
+</task-notification>
+Read the output file to retrieve the result: /private/tmp/claude-501/-Users-penso--superset-worktrees-moltis-bubble-milk/959bfef8-a00a-4af3-b88e-6afa4446d238/tasks/btk7xxf19.output
+
+---
+
+commit push create a PR
+
+---
+
+Fix and resolve PR comments
