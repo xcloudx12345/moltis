@@ -1,0 +1,91 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "23697b81aa4c",
+  "session_id": "f024d2bf-daa2-42a8-9ab7-7f217e777303",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-10T11:13:24.645414Z",
+  "branch": "warm-pond",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/gateway/src/server.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "2f724728a09b",
+  "token_usage": {
+    "input_tokens": 138,
+    "cache_creation_tokens": 156727,
+    "cache_read_tokens": 10944510,
+    "output_tokens": 44178,
+    "api_call_count": 108
+  },
+  "summary": {
+    "intent": "Fix the dcg-guard hook silently failing open when 'dcg' is not on the gateway process PATH, particularly under systemd where $HOME/.local/bin is stripped from the environment.",
+    "outcome": "Three-commit fix landed on PR #635: handler script augments PATH before resolving dcg, emits loud stderr warning when dcg is missing, startup check logs guard state at boot, HOOK.md install instructions corrected, stale handler auto-refresh on next restart, async subprocess for version probe, and HOME fallback parity between Rust and shell. Seven unit tests added, all passing.",
+    "learnings": {
+      "repo": [
+        "Hooks always run in the gateway process (not the sandbox), inheriting the gateway env — confirmed at crates/plugins/src/shell_hook.rs:101-117. The sandbox PATH is irrelevant to hook resolution.",
+        "seed_dcg_guard_hook() originally gated all seeding on HOOK.md existence, meaning existing installs with stale pre-fix handlers were never refreshed — a silent regression for all users already affected by #626.",
+        "The 'which' crate is a workspace dependency but hook_eligibility.rs:63-70 uses a std::process::Command('which') idiom instead; both patterns exist in the repo.",
+        "Local E2E Validation CI check requires running ./scripts/local-validate.sh \u003cPR_NUMBER\u003e locally and posting a status — it does not run automatically in GitHub Actions.",
+        "The dcg install instruction 'cargo install dcg' seeded in HOOK.md never worked; upstream only supports 'uv tool install destructive-command-guard' and 'pipx install destructive-command-guard'.",
+        "sibling seed_* helpers in server.rs use synchronous file I/O; only the subprocess version probe needed to be async."
+      ],
+      "code": [
+        {
+          "path": "crates/gateway/src/server.rs",
+          "line": 4402,
+          "end_line": 4438,
+          "finding": "DCG_GUARD_HANDLER_SH: original fail-open branch was completely silent (cat \u003e/dev/null; exit 0) with no logging, making it impossible to detect an inert guard in gateway logs."
+        },
+        {
+          "path": "crates/gateway/src/server.rs",
+          "line": 4154,
+          "end_line": 4154,
+          "finding": "seed_dcg_guard_hook(): the early-return on create_dir_all failure suppressed the startup status log entirely — operators saw nothing about guard state on boot."
+        },
+        {
+          "path": "crates/gateway/src/server.rs",
+          "line": 4373,
+          "end_line": 4373,
+          "finding": "DCG_GUARD_HOOK_MD: contained 'cargo install dcg' which has never worked per upstream README."
+        },
+        {
+          "path": "crates/plugins/src/shell_hook.rs",
+          "line": 101,
+          "end_line": 117,
+          "finding": "ShellHookHandler spawns sh -c inheriting the gateway process environment — PATH narrowness is a gateway concern, not a sandbox concern."
+        }
+      ],
+      "workflow": [
+        "Greptile automated code review caught two real bugs in follow-up commits: (1) blocking std::process::Command inside async context, (2) HOME-unset fallback mismatch between Rust probe and shell handler.",
+        "Fingerprint-based file refresh (checking for a known marker string rather than file existence) is a clean pattern for auto-remediating stale seeded files without a schema version field.",
+        "When a shell handler and Rust code both compute the same directory list, introduce a shared constant (DCG_GUARD_HOME_FALLBACK) and reference it in both places to prevent future drift.",
+        "Killing a long-running local validator (clippy full workspace) and restarting after fixing newly discovered issues is preferable to letting it complete on stale code.",
+        "Replying directly to inline review comments with the fixing commit SHA is a good practice to close the feedback loop without waiting for re-review."
+      ]
+    },
+    "friction": [
+      "Local E2E Validation CI gate requires a manual local script invocation (./scripts/local-validate.sh \u003cPR\u003e) — not discoverable from the PR status check alone; had to inspect the failing run log to find this.",
+      "local-validate.sh runs a full workspace clippy which takes long enough that it had to be killed and restarted twice after new fixes were committed.",
+      "Greptile's review comments were spread across both inline PR comments and a top-level summary comment, requiring separate API calls (pulls/635/comments vs issues/635/comments) to enumerate them all.",
+      "The 'which' crate availability had to be verified by grepping Cargo.toml before use — it was present in the workspace but not in the gateway crate's own Cargo.toml."
+    ],
+    "open_items": [
+      "Manual QA on a real systemd deployment still pending: delete ~/.moltis/hooks/dcg-guard/, restart Moltis, confirm startup log line appears.",
+      "Manual QA with dcg installed: confirm rm -rf through exec tool is blocked.",
+      "Manual QA with dcg uninstalled: confirm 'NOT scanned' warning appears per-invocation in gateway logs.",
+      "Full 'just lint' run on Linux CI — local macOS run timed out on unrelated CUDA feature build; gateway crate was linted directly with --features local-llm-metal as a workaround.",
+      "CI checks for commit 1009f80d and the HOME-fallback commit were still queued/running at end of session — no confirmation all checks passed.",
+      "Local E2E Validation script needs to be re-run against the final HEAD commit after killing the in-progress run."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-10T11:12:45.011948Z",
+    "agent_lines": 98,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 98,
+    "agent_percentage": 100
+  }
+}
