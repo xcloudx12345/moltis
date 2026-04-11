@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "c441f764a037",
+  "strategy": "manual-commit",
+  "branch": "evergreen-paper",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/agents/src/lib.rs",
+    "crates/agents/src/runner.rs",
+    "crates/agents/src/tool_arg_validator.rs",
+    "crates/agents/src/tool_loop_detector.rs",
+    "crates/chat/src/lib.rs",
+    "crates/config/src/schema.rs",
+    "crates/config/src/template.rs",
+    "crates/config/src/validate.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/c4/41f764a037/0/metadata.json",
+      "transcript": "/c4/41f764a037/0/full.jsonl",
+      "context": "/c4/41f764a037/0/context.md",
+      "content_hash": "/c4/41f764a037/0/content_hash.txt",
+      "prompt": "/c4/41f764a037/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 118,
+    "cache_creation_tokens": 273330,
+    "cache_read_tokens": 13927464,
+    "output_tokens": 72870,
+    "api_call_count": 99
+  }
+}
