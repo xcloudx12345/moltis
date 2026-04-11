@@ -1,0 +1,85 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "2b0c022927ce",
+  "session_id": "80926b43-603a-4cff-98b7-492fe77d6cfe",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-11T13:53:32.306116Z",
+  "branch": "cstewart-hc/feat/deterministic-compaction",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/chat/src/compaction_run/shared.rs",
+    "crates/chat/src/compaction_run/deterministic.rs",
+    "crates/chat/src/compaction_run/recency_preserving.rs",
+    "crates/chat/src/compaction_run/test_support.rs",
+    "crates/chat/src/compaction_run/structured.rs",
+    "crates/chat/src/compaction_run/llm_replace.rs",
+    "crates/chat/src/compaction_run/mod.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "0d4cabd30e5f",
+  "checkpoint_transcript_start": 1504,
+  "transcript_lines_at_start": 1504,
+  "token_usage": {
+    "input_tokens": 42,
+    "cache_creation_tokens": 54612,
+    "cache_read_tokens": 17756291,
+    "output_tokens": 47405,
+    "api_call_count": 37
+  },
+  "summary": {
+    "intent": "Split a monolithic 1,655-line compaction_run.rs file into per-strategy submodules (Option A) to improve reviewer orientation and code organization on PR #653.",
+    "outcome": "Successfully refactored compaction_run.rs into a module directory with 7 files (mod.rs, shared.rs, deterministic.rs, recency_preserving.rs, structured.rs, llm_replace.rs, test_support.rs), with all 219 chat tests passing and fmt/clippy clean in both default and no-default-features configurations.",
+    "learnings": {
+      "repo": [
+        "The compaction pipeline supports four strategies: deterministic, recency_preserving, structured, and llm_replace — dispatched from run_compaction() in mod.rs.",
+        "The public API surface is run_compaction(), extract_summary_body(), and CompactionRunError — callers in lib.rs did not need changes after the split.",
+        "Tests are colocated with strategies in #[cfg(test)] mod tests blocks per file; shared test helpers live in test_support.rs.",
+        "The crate runs CI checks in two feature configurations: default and no-default-features — both must pass clippy and fmt.",
+        "This work is on PR #653 in the moltis repo, branch cstewart-hc/feat/deterministic-compaction."
+      ],
+      "code": [
+        {
+          "path": "crates/chat/src/compaction_run/shared.rs",
+          "finding": "Contains HeadTailBounds, compute_boundaries, finalize_kept, in_place_prune_or_err, prune_tool_results_before, sanitize_tool_pairs, build_middle_marker, message_tokens, align_boundary_forward_past_tool_group — helpers consumed by multiple strategies."
+        },
+        {
+          "path": "crates/chat/src/compaction_run/mod.rs",
+          "finding": "Dispatcher and public API: run_compaction(), extract_summary_body(), CompactionRunError. Submodule declarations live here."
+        },
+        {
+          "path": "crates/chat/src/compaction_run/structured.rs",
+          "finding": "Contains STRUCTURED_TEMPLATE, STRUCTURED_SYSTEM_INSTRUCTIONS, structured_first_compaction_instructions(), structured_iterative_instructions(), extract_previous_summary(), and structured_strategy() — largest strategy file at ~460 lines."
+        },
+        {
+          "path": "crates/chat/src/compaction_run/test_support.rs",
+          "finding": "Shared test helpers used by both structured.rs and llm_replace.rs tests; required cfg(test) gating to fix clippy dead_code warnings."
+        }
+      ],
+      "workflow": [
+        "Pure code-movement refactors (zero behavior change) are easiest to verify when committed separately — reviewers can confirm the diff is mechanical without scrutinizing logic.",
+        "Clippy must be run separately for each feature configuration (default and no-default-features) as errors can differ between them.",
+        "After a module-to-directory rename in Rust, the old .rs file must be explicitly deleted — cargo build won't error but the old file becomes dead code.",
+        "Running fmt before the final clippy pass avoids spurious formatting-related clippy findings.",
+        "Per-file line counts after a split are a useful sanity check — none exceeding 460 lines confirmed the split was balanced."
+      ]
+    },
+    "friction": [
+      "Multiple rounds of clippy errors required iterative fixes across structured.rs, llm_replace.rs, recency_preserving.rs, and shared.rs after the initial split.",
+      "fmt failures required additional edit passes on structured.rs and recency_preserving.rs after clippy was already clean.",
+      "test_support.rs needed explicit cfg(test) annotation to silence dead_code clippy warnings since it's only used in test contexts."
+    ],
+    "open_items": [
+      "PR #653 still under review — the refactor commit was added on top of the existing feature work, making it a large-diff PR.",
+      "Future strategy additions (e.g., auxiliary-model support mentioned as 'moltis-8me') will land as new files in the compaction_run/ directory."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-11T13:53:02.474817Z",
+    "agent_lines": 1823,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1823,
+    "agent_percentage": 100
+  }
+}
