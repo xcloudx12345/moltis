@@ -1,0 +1,77 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "c2ea1c2f1874",
+  "session_id": "80926b43-603a-4cff-98b7-492fe77d6cfe",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-11T14:18:22.755101Z",
+  "branch": "cstewart-hc/feat/deterministic-compaction",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/src/assets/js/page-chat.js",
+    "crates/web/src/assets/js/websocket.js",
+    "crates/chat/src/lib.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "fc89742f0125",
+  "checkpoint_transcript_start": 1907,
+  "transcript_lines_at_start": 1907,
+  "token_usage": {
+    "input_tokens": 44,
+    "cache_creation_tokens": 37602,
+    "cache_read_tokens": 22299965,
+    "output_tokens": 21940,
+    "api_call_count": 39
+  },
+  "summary": {
+    "intent": "Update the web UI to display compaction metadata (mode, token usage, settings hint) that was already being broadcast on the backend in PR #653.",
+    "outcome": "Both JS frontend files and the Rust chat service were updated: renderCompactCard now shows mode/tokens/hint, the websocket router handles both 'compact' and 'auto_compact' done events with a shared debounce, a notify_channels_of_compaction helper was added to chat/src/lib.rs and wired into both compact call sites, and 3 new unit tests were added. All checks passed (fmt, clippy, 221 chat tests).",
+    "learnings": {
+      "repo": [
+        "Compaction events are broadcast on the 'chat' channel with state='compact' (manual RPC) or state='auto_compact' (context window exceeded); both use phase='done' to signal completion.",
+        "The channel notification pattern follows send_retry_status_to_channels as a model — a dedicated format_channel_compaction_notice helper was the idiomatic approach.",
+        "RPC response shape for chat.compact intentionally returns only the history array (serde_json::json!(compacted)); all metadata flows via broadcast events, so no RPC contract change was needed.",
+        "The send() pre-emptive compact path goes through ChatService::compact, so wiring notify_channels_of_compaction there covers both the RPC and pre-emptive cases.",
+        "Structured compaction can fall back to RecencyPreserving on LLM failure; the broadcast reports the effective mode, not the requested mode.",
+        "Biome is used for JS linting/formatting in this repo.",
+        "Compaction mode keys in broadcast events use snake_case matching moltis.toml serialization (e.g., 'recency_preserving', 'structured')."
+      ],
+      "code": [
+        {
+          "path": "crates/web/src/assets/js/page-chat.js",
+          "finding": "renderCompactCard was updated to display mode, token counts (input + output + total), and a settings hint. Inline styling was used instead of new CSS classes to avoid adding ctx-row-full or similar classes that didn't exist."
+        },
+        {
+          "path": "crates/web/src/assets/js/websocket.js",
+          "finding": "Both 'auto_compact' done and 'compact' done events route to renderCompactCard. A shared debounce was added to prevent duplicate cards when send() triggers a pre-emptive compact (which also fires an auto_compact event)."
+        },
+        {
+          "path": "crates/chat/src/lib.rs",
+          "finding": "Added format_channel_compaction_notice helper and notify_channels_of_compaction, wired into ChatService::compact and the run_with_tools auto-compact path. Three unit tests added: format_channel_compaction_notice_structured, format_channel_compaction_notice_recency, and compaction_mode_key_matches_toml_serialization."
+        }
+      ],
+      "workflow": [
+        "When adding new CSS classes, verify they exist in the stylesheet first (checked ctx-row-full and ctx classes) — if absent, use inline styles instead.",
+        "Run Biome before committing JS changes; auto-fixes may be needed.",
+        "Clippy should be run in both default features and --no-default-features configurations before pushing."
+      ]
+    },
+    "friction": [
+      "Initial CSS class (ctx-row-full) used in renderCompactCard didn't exist, requiring a fallback to inline styling.",
+      "The debounce for auto_compact and compact events needed to be unified to prevent duplicate card renders on the send() pre-emptive path — not immediately obvious from the existing code structure."
+    ],
+    "open_items": [
+      "Frontend could detect mode mismatch (requested_mode !== effective_mode) when Structured falls back to RecencyPreserving and show a more specific message like 'Structured fell back to RecencyPreserving'.",
+      "UI settings panel integration for changing chat.compaction.mode is referenced in the settingsHint but not yet built.",
+      "Greptile re-index was pending at time of push for PR #653."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-11T14:17:51.768034Z",
+    "agent_lines": 254,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 254,
+    "agent_percentage": 100
+  }
+}
