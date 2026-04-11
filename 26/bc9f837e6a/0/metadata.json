@@ -1,0 +1,107 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "26bc9f837e6a",
+  "session_id": "80926b43-603a-4cff-98b7-492fe77d6cfe",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-11T12:09:58.396394Z",
+  "branch": "cstewart-hc/feat/deterministic-compaction",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/config/src/schema.rs",
+    "crates/config/src/lib.rs",
+    "crates/config/src/validate.rs",
+    "crates/config/src/template.rs",
+    "docs/src/compaction.md",
+    "docs/src/SUMMARY.md",
+    "crates/chat/Cargo.toml",
+    "crates/gateway/Cargo.toml",
+    "crates/cli/Cargo.toml",
+    "crates/chat/src/compaction_run.rs",
+    "crates/chat/src/lib.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "1450e726ea3c",
+  "checkpoint_transcript_start": 258,
+  "transcript_lines_at_start": 258,
+  "token_usage": {
+    "input_tokens": 168,
+    "cache_creation_tokens": 194262,
+    "cache_read_tokens": 35397087,
+    "output_tokens": 78829,
+    "api_call_count": 148
+  },
+  "summary": {
+    "intent": "The user wanted to understand how deterministic compaction (just merged in PR #653) compares to LLM-based approaches used in other codebases, then implement a multi-mode compaction system with proper config, docs, and tracking issues.",
+    "outcome": "Filed a beads epic (moltis-dxw) with 4 child issues, implemented CompactionConfig/CompactionMode enum (Deterministic, RecencyPreserving, Structured, LlmReplace), restored the LlmReplace path behind a cargo feature flag, wrote docs, updated the config template, and committed all scaffolding to the feat/deterministic-compaction branch.",
+    "learnings": {
+      "repo": [
+        "moltis uses a worktree layout at ~/.superset/worktrees/moltis/\u003cfork\u003e/\u003cbranch\u003e/ for PR work",
+        "Config schema lives in crates/config/src/schema.rs, with re-exports in lib.rs, validation in validate.rs, and user-facing template in template.rs — all four files must be updated together for a new config key",
+        "The chat crate's compact_session is the canonical compaction entry point; it was previously LLM-only, replaced by deterministic extraction in PR #653",
+        "cargo feature llm-compaction must be forwarded through the dependency chain: moltis-chat → moltis-gateway → moltis-cli to reach the final binary",
+        "moltis-csq (llama-cpp-sys) has a known CMake/CUDA build failure on macOS that is unrelated to application code — clippy on the full workspace will always surface this",
+        "just lint is the canonical lint recipe; it runs an OS-aware clippy invocation",
+        "beads is the project management tool; issues are referenced as moltis-\u003cid\u003e and epics link child issues with dependency wiring"
+      ],
+      "code": [
+        {
+          "path": "crates/config/src/schema.rs",
+          "finding": "New CompactionConfig struct and CompactionMode enum added here; ChatConfig gets a compaction: CompactionConfig field"
+        },
+        {
+          "path": "crates/config/src/validate.rs",
+          "finding": "build_schema_map must be updated for every new config struct; semantic warnings for LLM modes without a summary_model go near the existing workspace_file_max_chars check"
+        },
+        {
+          "path": "crates/chat/src/compaction_run.rs",
+          "finding": "New dispatcher module routing CompactionMode variants; llm_replace path gated behind #[cfg(feature = 'llm-compaction')]"
+        },
+        {
+          "path": "crates/chat/src/lib.rs",
+          "finding": "compact_session now takes \u0026CompactionConfig and delegates to compaction_run::run; ChatService::compact does the same; call site in run_with_tools passes config ref"
+        },
+        {
+          "path": "docs/src/compaction.md",
+          "finding": "New doc page explaining all four compaction modes with trade-off table, config reference, and upgrade guidance"
+        },
+        {
+          "path": "crates/config/src/template.rs",
+          "finding": "New [chat.compaction] section with rich inline comments describing each mode added to the generated config template"
+        }
+      ],
+      "workflow": [
+        "Cross-repo analysis (openclaw, hermes-agent) was essential for informing the design — reading reference implementations before proposing modes avoided reinventing solved problems",
+        "Greptile re-runs automatically on new commits and its check result (0 comments added) is a useful signal that review findings were addressed",
+        "Checking no-default-features builds separately from default builds catches cfg-gated unused import warnings that normal builds hide",
+        "Format issues surfaced iteratively across multiple fmt recheck cycles — running fmt check before committing is mandatory",
+        "hermes-agent's tool-output pruning pre-pass (phase 1, no LLM) is the highest bang-for-buck compaction improvement not yet in moltis"
+      ]
+    },
+    "friction": [
+      "Multiple fmt recheck cycles were needed (4+ rounds) because compaction_run.rs had repeated formatting violations — the file was written incrementally and each edit introduced new fmt issues",
+      "The no-default-features build revealed a conditional-import issue requiring additional cfg gates on error enum variants after the main build was already clean",
+      "The pre-PR LLM compaction code was deleted (~95 lines); it had to be reconstructed from git history rather than being available to read directly",
+      "The moltis-csq CMake/CUDA failure on macOS makes workspace-level just lint always noisy, requiring manual filtering to confirm only touched crates are clean",
+      "REST API for GitHub PR reviews does not expose .resolved state on threads — required a separate GraphQL query to confirm all 6 threads were resolved"
+    ],
+    "open_items": [
+      "moltis-h0c: Implement RecencyPreserving mode — head+tail verbatim preservation with tool-output pruning pre-pass and no LLM; estimated ~300-500 lines in compaction_run.rs",
+      "moltis-aff: Implement Structured mode — head+LLM-summary-of-middle+tail with Goal/Progress/Decisions template, iterative re-compaction state, tool-pair sanitization, and boundary alignment; estimated ~400-600 lines",
+      "moltis-8me: Auxiliary model subsystem — allow compaction to use a separate cheap provider/model (e.g. Gemini Flash) independent of the session model",
+      "Tool-pair repair (repairToolUseResultPairing equivalent) needed before RecencyPreserving/Structured land since those modes keep partial history where orphaned tool_result messages become possible",
+      "Identifier-preservation policy (strict prompt prefix) not yet ported from openclaw — should be added to the LlmReplace/Structured prompt as a low-effort quality improvement",
+      "Split→summarize→merge multi-stage compaction (openclaw pattern) deferred — only needed for sessions larger than the context window",
+      "Quality-audit retries (openclaw's 973-line safeguard subsystem) explicitly deferred until quality bar warrants it",
+      "PR #653 (deterministic compaction baseline) still needs to merge before the follow-up compaction mode PRs can land on main"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-11T12:09:16.588607Z",
+    "agent_lines": 987,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 987,
+    "agent_percentage": 100
+  }
+}

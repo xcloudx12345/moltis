@@ -1,0 +1,36 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "26bc9f837e6a",
+  "strategy": "manual-commit",
+  "branch": "cstewart-hc/feat/deterministic-compaction",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/chat/Cargo.toml",
+    "crates/chat/src/compaction_run.rs",
+    "crates/chat/src/lib.rs",
+    "crates/cli/Cargo.toml",
+    "crates/config/src/lib.rs",
+    "crates/config/src/schema.rs",
+    "crates/config/src/template.rs",
+    "crates/config/src/validate.rs",
+    "crates/gateway/Cargo.toml",
+    "docs/src/SUMMARY.md",
+    "docs/src/compaction.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/26/bc9f837e6a/0/metadata.json",
+      "transcript": "/26/bc9f837e6a/0/full.jsonl",
+      "context": "/26/bc9f837e6a/0/context.md",
+      "content_hash": "/26/bc9f837e6a/0/content_hash.txt",
+      "prompt": "/26/bc9f837e6a/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 168,
+    "cache_creation_tokens": 194262,
+    "cache_read_tokens": 35397087,
+    "output_tokens": 78829,
+    "api_call_count": 148
+  }
+}
