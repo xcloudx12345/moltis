@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "d4cff416df40",
+  "strategy": "manual-commit",
+  "branch": "stirring-acoustic",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/config/src/template.rs",
+    "crates/tools/src/approval.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/d4/cff416df40/0/metadata.json",
+      "transcript": "/d4/cff416df40/0/full.jsonl",
+      "context": "/d4/cff416df40/0/context.md",
+      "content_hash": "/d4/cff416df40/0/content_hash.txt",
+      "prompt": "/d4/cff416df40/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 41,
+    "cache_creation_tokens": 82568,
+    "cache_read_tokens": 1575928,
+    "output_tokens": 10174,
+    "api_call_count": 26
+  }
+}
