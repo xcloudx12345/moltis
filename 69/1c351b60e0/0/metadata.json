@@ -1,0 +1,109 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "691c351b60e0",
+  "session_id": "80926b43-603a-4cff-98b7-492fe77d6cfe",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-11T11:00:31.018994Z",
+  "branch": "cstewart-hc/feat/deterministic-compaction",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/chat/src/compaction.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "cdaccbcfaee3",
+  "token_usage": {
+    "input_tokens": 63,
+    "cache_creation_tokens": 265825,
+    "cache_read_tokens": 4183221,
+    "output_tokens": 47881,
+    "api_call_count": 43
+  },
+  "summary": {
+    "intent": "Review PR #653 (feat/deterministic-compaction) for correctness issues, then implement all review findings including clippy blockers, correctness bugs, and test quality improvements.",
+    "outcome": "All blockers and P2 issues fixed: clippy clean, fmt clean, 201/201 chat lib tests pass (40/40 compaction tests, +1 new). Changes committed and pushed to the feature branch.",
+    "learnings": {
+      "repo": [
+        "The workspace lint config denies both `clippy::unwrap_used` AND `clippy::expect_used` in tests; the pattern to bypass this is a `#[allow(clippy::unwrap_used, clippy::expect_used)]` attribute on the test module, matching the precedent in crates/chat/src/chat_error.rs.",
+        "The nightly toolchain pin is `nightly-2025-11-30`; clippy must be run with `cargo +nightly-2025-11-30 clippy -p moltis-chat --all-targets -- -D warnings`.",
+        "The project uses a `beads` issue tracker (not GitHub Issues); issues are created/closed via a `beads` CLI tool.",
+        "`mod compaction` is declared privately in lib.rs, so `pub` on functions inside it only exposes them within the crate — `pub(crate)` or `pub(super)` is more accurate.",
+        "PR reviews are partially automated by a Greptile bot that flags issues with priority levels (P2, etc.) in the PR review state."
+      ],
+      "code": [
+        {
+          "path": "crates/chat/src/compaction.rs",
+          "line": 250,
+          "end_line": 279,
+          "finding": "`compress_summary` bucketed both `\u003csummary\u003e` and `\u003c/summary\u003e` as headers, causing them to be placed adjacent at the top with body content outside the tags. Fixed by stripping the wrapper before budget logic and re-wrapping after via a new `split_summary_wrapper` helper."
+        },
+        {
+          "path": "crates/chat/src/compaction.rs",
+          "line": 432,
+          "end_line": 432,
+          "finding": "`collect_unique_tool_names` read the `name` field from ALL message roles, not just tool messages, causing user participant names to appear in the tools list. Fixed by restricting to messages where role is `tool`/`tool_result` via a new `is_tool_role` helper."
+        },
+        {
+          "path": "crates/chat/src/compaction.rs",
+          "line": 204,
+          "end_line": 206,
+          "finding": "`extract_existing_compacted_summary` suffix stripping was fragile: `trim_end_matches(COMPACT_RECENT_MESSAGES_NOTE)` failed because a trailing `\\n` was present after the note. Fixed by using explicit `strip_suffix` with `trim_end()` between each step."
+        },
+        {
+          "path": "crates/chat/src/compaction.rs",
+          "line": 131,
+          "end_line": 143,
+          "finding": "`compute_compaction_summary` docstring said it returns `None` for empty input but it actually returned `Some(\"\u003csummary\u003e…user=0…\")`, making the `None` match arm in callers unreachable dead code. Fixed to actually return `None` for empty history."
+        },
+        {
+          "path": "crates/chat/src/compaction.rs",
+          "line": 305,
+          "end_line": 318,
+          "finding": "Fallback budget math computed `notice_len` from `all_dropped` but the final notice used `all_dropped + header_drops`, meaning the notice could exceed budget by 1-2 chars when header drops bumped the count to more digits. Fixed to reserve space for the worst-case count."
+        },
+        {
+          "path": "crates/chat/src/compaction.rs",
+          "line": 1248,
+          "end_line": 1248,
+          "finding": "The regression test for `compress_summary_protects_summary_tags_under_budget_pressure` only asserted both tags were present, not that they correctly wrapped the body — it passed against malformed output. Added `extract_tag_block` assertion to verify body content is actually between the tags."
+        },
+        {
+          "path": "crates/chat/src/compaction.rs",
+          "line": 1061,
+          "end_line": 1073,
+          "finding": "`extract_existing_compacted_summary_strips_full_wrapping` test used hand-rolled `\u003csummary\u003e...\u003c/summary\u003e` tags, but production persists content after `format_compact_summary` converts those to `Summary:\\n…`. Rewritten to build fixture via `get_compact_continuation_message`."
+        },
+        {
+          "path": "crates/chat/src/compaction.rs",
+          "line": 1,
+          "end_line": 1,
+          "finding": "Attribution comment contained a mojibake/zero-width character in the horizontal rule (`────────────�──────`). Cosmetic but worth fixing."
+        }
+      ],
+      "workflow": [
+        "serde_json's `Value` indexing (e.g. `value[\"key\"]`) returns `Value::Null` for missing keys rather than panicking — safe to chain without unwrapping, unlike HashMap/Vec indexing.",
+        "Running `cargo +nightly clippy --all-targets -- -D warnings` before reviewing PR lint status catches test-module lint failures that a targeted `--lib` run might miss.",
+        "When fixing fmt issues in a file you're already modifying, it's cleaner to fix them in the same commit rather than leaving pre-existing fmt failures."
+      ]
+    },
+    "friction": [
+      "Clippy denied `expect_used` in addition to `unwrap_used` in tests, requiring a module-level `#[allow(...)]` attribute — this wasn't obvious until the first clippy run after the fix attempt.",
+      "Two pre-existing rustfmt failures in test assert formatting blocked `fmt --check` and required additional edit iterations to resolve, separate from the functional changes.",
+      "The `compress_summary` tag-reordering bug was masked in production by `format_compact_summary`'s `replacen` call, making it invisible to existing tests and easy to miss without directly inspecting the intermediate compressed string."
+    ],
+    "open_items": [
+      "Minor: `collect_unique_tool_names` uses `sort_unstable` + `dedup` which alphabetizes tool names rather than preserving chronological order — intentional choice but worth revisiting for UX.",
+      "Minor: `compress_summary` case-insensitive dedup (compaction.rs:232-239) can discard distinct bullets that share the same lowercased form — unlikely in practice but not addressed.",
+      "Minor: `pub` visibility on `summarize_messages`, `merge_compact_summaries`, `format_compact_summary`, `extract_existing_compacted_summary`, `compress_summary` is wider than needed given `mod compaction` is private — could be tightened to `pub(crate)` or `pub(super)`.",
+      "The `recent_messages_preserved=true` path in `extract_existing_compacted_summary` is now tested but was previously dead code in all production call sites — worth tracking whether any caller ever enables this flag."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-11T10:59:57.724301Z",
+    "agent_lines": 163,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 163,
+    "agent_percentage": 100
+  }
+}

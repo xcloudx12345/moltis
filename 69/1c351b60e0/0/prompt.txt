@@ -1,0 +1,13 @@
+I see "if message["role"] == "tool" || message["role"] == "tool_result" {" in the code, but what if role does not exist? What happens, how do we know it already exists?
+
+---
+
+Can you review the PR and find any issues?
+
+---
+
+proceed then
+
+---
+
+commit and push
