@@ -1,0 +1,61 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "c8d7a37b0712",
+  "session_id": "d245456b-be5e-4282-9db8-ac44cba2554f",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-12T18:59:23.79298Z",
+  "branch": "cstewart-hc/feat/summary-budget-discipline",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/chat/src/lib.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "891b8bebceeb",
+  "token_usage": {
+    "input_tokens": 38,
+    "cache_creation_tokens": 60319,
+    "cache_read_tokens": 1900100,
+    "output_tokens": 15464,
+    "api_call_count": 36
+  },
+  "summary": {
+    "intent": "Merge the main branch into the feature branch `feat/summary-budget-discipline` (PR #652) to resolve conflicts and push the result.",
+    "outcome": "Three merge conflicts in `crates/chat/src/lib.rs` were resolved by introducing a `compress_summary_in_history` helper function, the code compiled cleanly, and the merge commit was pushed.",
+    "learnings": {
+      "repo": [
+        "The `moltis` repo uses worktrees under `/Users/penso/.superset/worktrees/moltis/` for branch isolation.",
+        "Compaction logic lives in `crates/chat/src/compaction_run/mod.rs` and was refactored in main to use a `run_compaction` function.",
+        "`Semaphore` (tokio), `HashSet`, and `tempfile` are already in scope in `crates/chat/src/lib.rs` — no new imports were needed during conflict resolution.",
+        "The branch added `compress_summary` functionality; main added `run_compaction` refactor and new skills tests — both sets of changes needed to coexist."
+      ],
+      "code": [
+        {
+          "path": "crates/chat/src/lib.rs",
+          "finding": "A new helper `compress_summary_in_history` was introduced to deduplicate compress_summary application at two call sites that conflicted between the branch and main."
+        },
+        {
+          "path": "crates/chat/src/compaction_run/mod.rs",
+          "finding": "Main introduced `run_compaction` and `extract_summary_body` functions as part of a compaction architecture refactor."
+        }
+      ],
+      "workflow": [
+        "Resolving conflicts that involve both structural refactors (main) and new feature logic (branch) benefits from introducing a small helper to unify both call sites rather than picking one side.",
+        "Always compile after conflict resolution before committing — the compilation check caught correctness before push."
+      ]
+    },
+    "friction": [
+      "Multiple reads of the same large file were needed to gather enough context around each conflict region, indicating the file is long and conflicts were spread across it.",
+      "The compaction module structure required several Glob/Grep iterations to locate (`compaction_run.rs` vs `compaction_run/mod.rs`)."
+    ],
+    "open_items": []
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-12T18:59:07.560248Z",
+    "agent_lines": 2759,
+    "human_added": 16456,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 19215,
+    "agent_percentage": 14.35857403070518
+  }
+}
