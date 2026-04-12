@@ -1,0 +1,414 @@
+Implement the following plan:
+
+# Plan: Add Nostr DM Channel Support
+
+**Issue:** [moltis-org/moltis#668](https://github.com/moltis-org/moltis/issues/668)
+
+## Context
+
+Moltis supports six messaging channels (Telegram, Discord, Slack, MS Teams, WhatsApp, Matrix) but none are decentralized or censorship-resistant. Users who rely on Nostr have no native path to connect. The openclaw project (TypeScript) already ships a production Nostr channel (~8K LOC) with NIP-01/NIP-04 support, relay health tracking, circuit breakers, OTP/allowlist access control, and profile management. This plan ports the concept to Rust using `nostr-sdk` v0.44 (tokio-native, NIP-04 + NIP-44 built-in).
+
+## Scope — What "comparable with other channels" means
+
+To reach parity with the minimum bar from the channel integration checklist:
+
+| Capability | Status | Notes |
+|---|---|---|
+| Inbound DMs | Must-have | NIP-04 encrypted DMs (kind:4), NIP-44 when sender supports it |
+| Outbound text replies | Must-have | Encrypted reply to sender pubkey |
+| Streaming responses | Must-have | Edit-in-place not possible on Nostr; stream internally, send final |
+| DM policy + allowlist | Must-have | `open`, `allowlist`, `pairing`, `disabled` — by pubkey |
+| OTP approval flow | Must-have | Unknown senders get a pairing code DM |
+| Typed config + redacted export | Must-have | `NostrAccountConfig` struct |
+| Web UI add/edit flows | Must-have | Settings page + advanced JSON editor |
+| Config template + docs | Must-have | Same PR |
+| Relay health + reconnect | Must-have | `nostr-sdk` Client handles reconnect; add circuit-breaker metrics |
+| NIP-01 profile (kind:0) | Nice-to-have | Publish bot profile metadata on start |
+| NIP-65 relay list | Nice-to-have | Future — advertise preferred relays |
+| Media attachments | Nice-to-have | Future — NIP-94 file metadata |
+| Reactions (NIP-25) | Nice-to-have | Future |
+
+## Architecture
+
+### Crate: `crates/nostr/`
+
+```
+crates/nostr/
+├── Cargo.toml
+└── src/
+    ├── lib.rs            # Re-exports NostrPlugin
+    ├── plugin.rs         # ChannelPlugin trait impl, account lifecycle
+    ├── config.rs         # NostrAccountConfig, RedactedConfig, defaults
+    ├── bus.rs            # Relay subscription loop, inbound event pipeline
+    ├── outbound.rs       # ChannelOutbound impl (encrypt + publish DM)
+    ├── access.rs         # Allowlist + OTP gating (reuse moltis_channels::gating)
+    ├── keys.rs           # Key parsing (nsec/hex), validation, pubkey derivation
+    ├── seen.rs           # LRU dedup tracker for event IDs (prevent replay)
+    ├── error.rs          # NostrError with is_retryable() classification
+    └── profile.rs        # NIP-01 profile publish (kind:0)
+```
+
+### Key dependency
+
+```toml
+# workspace Cargo.toml
+nostr-sdk = "0.44"
+
+# crates/nostr/Cargo.toml
+[dependencies]
+nostr-sdk = { workspace = true }
+async-trait = { workspace = true }
+moltis-channels = { workspace = true }
+moltis-common = { workspace = true }
+moltis-config = { workspace = true }
+secrecy = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+[features]
+default = []
+metrics = ["dep:moltis-metrics"]
+tracing = []
+```
+
+### Feature flag: `nostr` in `crates/gateway/Cargo.toml` and `crates/cli/Cargo.toml`
+
+Gated like Matrix/WhatsApp — enabled by default in CLI.
+
+## Implementation Steps
+
+### Step 1: Scaffold crate + ChannelType variant
+
+**Files to modify:**
+- `Cargo.toml` (root) — add `moltis-nostr` to workspace members + dependencies
+- `crates/nostr/Cargo.toml` — new
+- `crates/channels/src/plugin.rs` — add `Nostr` variant to `ChannelType` enum
+  - `as_str() → "nostr"`
+  - `display_name() → "Nostr"`
+  - `secret_fields() → &["secret_key"]`
+  - `classify_chat()` → always `Some("dm")` (Nostr DMs are always 1:1)
+  - `descriptor()` with capabilities:
+    ```rust
+    ChannelCapabilities {
+        inbound_mode: InboundMode::GatewayLoop, // persistent relay subscription
+        supports_outbound: true,
+        supports_streaming: false, // no edit-in-place on Nostr
+        supports_interactive: false,
+        supports_threads: false,
+        supports_voice_ingest: false,
+        supports_pairing: false,
+        supports_otp: true,
+        supports_reactions: false,
+        supports_location: false,
+    }
+    ```
+  - Update `FromStr`, `ALL`, serde aliases
+
+### Step 2: Config (`config.rs`, `keys.rs`)
+
+```rust
+pub struct NostrAccountConfig {
+    pub secret_key: Secret<String>,     // nsec1... or 64-char hex
+    pub relays: Vec<String>,            // wss:// URLs, defaults to damus+nos.lol
+    pub dm_policy: DmPolicy,            // open | allowlist | pairing | disabled
+    pub allowed_pubkeys: Vec<String>,   // npub1... or hex
+    pub enabled: bool,
+    pub profile: Option<NostrProfile>,  // NIP-01 metadata to publish
+}
+
+pub struct NostrProfile {
+    pub name: Option<String>,
+    pub display_name: Option<String>,
+    pub about: Option<String>,
+    pub picture: Option<String>,        // HTTPS URL
+    pub nip05: Option<String>,
+}
+```
+
+Key validation in `keys.rs`:
+- Accept `nsec1...` (bech32) or 64-char hex
+- Derive public key from secret key
+- Normalize pubkeys in allowlist (npub1 → hex)
+
+**Files to modify:**
+- `crates/config/src/schema.rs` — add `nostr` to `ChannelsConfig`
+- `crates/config/src/validate.rs` — add to `build_schema_map()` channels field
+- `crates/config/src/template.rs` — add commented `[channels.nostr]` example
+
+### Step 3: Event bus / subscription loop (`bus.rs`)
+
+Core inbound pipeline (mirrors openclaw's `nostr-bus.ts`):
+
+```
+1. nostr-sdk Client subscribes: Filter { kinds: [4], p: [bot_pubkey], since }
+2. Event received →
+3. Dedup check (LRU seen tracker by event ID)
+4. Skip self-messages (event.pubkey == bot_pubkey)
+5. Skip stale events (created_at < since)
+6. Verify event signature (nostr-sdk does this, but belt-and-suspenders)
+7. Authorize sender (allowlist / OTP check) — BEFORE decrypt
+8. Decrypt content (NIP-04 or NIP-44 based on event structure)
+9. Size validation on plaintext
+10. Dispatch to gateway via ChannelEventSink::dispatch_to_chat()
+```
+
+The bus runs as a `tokio::spawn` task per account. Cancellation via `CancellationToken`.
+
+### Step 4: Outbound (`outbound.rs`)
+
+Implement `ChannelOutbound`:
+- `send_text(account_id, to_pubkey, text, reply_to)`:
+  - Look up sender's secret key
+  - Encrypt with NIP-04 (broad compat) or NIP-44
+  - Build kind:4 event with p-tag
+  - Publish via `client.send_event()`
+- Error classification: relay failures → retryable; key/encrypt errors → not retryable
+
+### Step 5: Access control (`access.rs`)
+
+Reuse `moltis_channels::gating::{DmPolicy, check_dm_access}` patterns:
+- `allowlist` — only allowed pubkeys
+- `pairing` — unknown senders get an OTP code via DM, approved in web UI
+- `open` — anyone can DM
+- `disabled` — ignore all inbound
+
+Implement `ChannelOtpProvider` for the OTP flow.
+
+### Step 6: Plugin lifecycle (`plugin.rs`)
+
+```rust
+impl ChannelPlugin for NostrPlugin {
+    async fn start_account(id, config) → start Client, connect relays, spawn bus loop
+    async fn stop_account(id)           → cancel bus loop, disconnect
+    async fn has_account(id) → bool
+    async fn account_ids() → Vec<String>
+    fn channel_type() → ChannelType::Nostr
+    fn outbound() → NostrOutbound
+    fn status() → NostrStatus (probe relays)
+    fn as_otp_provider() → Some(self)
+}
+```
+
+### Step 7: Seen tracker (`seen.rs`)
+
+LRU cache of event IDs to prevent replay on relay reconnect:
+- Capacity: 100K entries
+- TTL: 1 hour
+- Persisted to `data_dir()/nostr_seen.json` with debounced writes
+
+### Step 8: Gateway registration
+
+**Files to modify:**
+- `crates/gateway/Cargo.toml` — add `moltis-nostr` optional dep + `nostr` feature
+- `crates/gateway/src/server.rs` — register NostrPlugin under `#[cfg(feature = "nostr")]`
+- `crates/cli/Cargo.toml` — add `nostr` to default features
+
+### Step 9: Web UI
+
+**Files to modify:**
+- `crates/web/src/assets/js/page-channels.js` — add Nostr add/edit flow
+  - Fields: secret key (password input), relays (comma-separated), DM policy dropdown, allowed pubkeys textarea
+  - Show derived npub as read-only after key entry
+- `crates/web/src/assets/js/locales/en/channels.js` — Nostr labels
+- `crates/web/src/assets/js/channel-utils.js` — validation for nsec/hex format
+
+### Step 10: Config template + docs
+
+- `crates/config/src/template.rs` — add `[channels.nostr]` section
+- `docs/src/channels/nostr.md` — new page
+- `docs/src/channels.md` — add Nostr to channel list
+- `docs/src/SUMMARY.md` — add entry
+
+### Step 11: Tests
+
+- **Unit tests** in `crates/nostr/src/`:
+  - `keys.rs` — nsec/hex parsing, pubkey derivation, validation edge cases
+  - `config.rs` — defaults, redacted output, merge semantics
+  - `access.rs` — allowlist matching, DM policy enforcement
+  - `seen.rs` — LRU eviction, TTL expiry, dedup correctness
+  - `bus.rs` — event pipeline filtering (stale, self, wrong-kind)
+- **Contract tests** — run `moltis_channels::contract` test suite against NostrPlugin
+- **E2E tests** — Playwright specs for web UI add/edit flow (`crates/web/ui/e2e/specs/channels-nostr.spec.js`)
+
+## NIP-04 vs NIP-44 Decision
+
+Start with **NIP-04** (kind:4) for broad compatibility — it's what most Nostr clients use today for DMs. Add NIP-44 decryption support for inbound (detect by content format) so the bot can receive NIP-44 encrypted messages. Outbound defaults to NIP-04 for now with a config option to prefer NIP-44.
+
+NIP-17 (gift-wrapped DMs) is a future enhancement — it requires more complex event handling and is less widely supported.
+
+## Verification
+
+1. `cargo check -p moltis-nostr` — compiles
+2. `cargo test -p moltis-nostr` — unit tests pass
+3. `just lint` — clippy clean
+4. `just format-check` — fmt clean
+5. `just test` — full test suite passes
+6. Playwright: `npx playwright test e2e/specs/channels-nostr.spec.js`
+7. Manual QA: configure a test nsec, connect to relays, send DM from another Nostr client, verify response
+
+
+If you need specific details from before exiting plan mode (like exact code snippets, error messages, or content you generated), read the full transcript at: /Users/penso/.claude/projects/-Users-penso--superset-worktrees-moltis-helix-epoch/a23bb858-94ee-4775-8ee1-245b9eafa130.jsonl
+
+---
+
+proceed with the follow ups
+
+---
+
+Anything missing?
+
+---
+
+Proceed with those, and should I create test IDs for nostr for real tests like we do with some llm providers?
+
+---
+
+I added the env key but different names:
+
+export NOSTR_TEST_BOT_KEY="REDACTED"
+export NOSTR_TEST_BOT_PUB="REDACTED"
+export NOSTR_TEST_SENDER_KEY="REDACTED"
+export NOSTR_TEST_SENDER_PUB="REDACTED"
+
+---
+
+give me the `gh` commands to add them as secret for the CI jobs.
+
+---
+
+commit push create a PR
+
+---
+
+Fix and resolve PR comments
+
+---
+
+Add nostr as a channel in website/
+
+---
+
+proceed
+
+---
+
+Fix and resolve all PR comments./
+
+---
+
+Are you sure about the nostr icon? https://github.com/nostr-protocol has https://avatars.githubusercontent.com/u/103332273?s=200&v=4
+
+---
+
+229 -        &plaintext[..MAX_MESSAGE_BYTES]
+      229 +        let mut end = MAX_MESSAGE_BYTES;
+      230 +        while !plaintext.is_char_boundary(end) {
+      231 +            end -= 1;
+      232 +        }
+      233 +        &plaintext[..end]
+
+This seems unecessary, you already have utf8 safe truncation methods somewhere in the code.
+
+---
+
+commit and push all changes
+
+---
+
+Fix and resolve all PR comments.
+
+---
+
+merge main in this branch commit and push
+
+---
+
+add commit and push all changes
+
+---
+
+<task-notification>
+<task-id>bfx73jbnd</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-penso--superset-worktrees-moltis-helix-epoch/a23bb858-94ee-4775-8ee1-245b9eafa130/tasks/bfx73jbnd.output</output-file>
+<status>completed</status>
+<summary>Background command "Commit and push lockfile sync" completed (exit code 0)</summary>
+</task-notification>
+Read the output file to retrieve the result: /private/tmp/claude-501/-Users-penso--superset-worktrees-moltis-helix-epoch/a23bb858-94ee-4775-8ee1-245b9eafa130/tasks/bfx73jbnd.output
+
+---
+
+cargo +nightly-2025-11-30 fmt --all -- --check
+crates/web/src/assets/js/page-channels.js format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✖ File content differs from formatting output
+
+    1937 1937 │                         config.secret_key = editCredential.value || cfg.secret_key || "";
+    1938 1938 │                         var relaysVal = form.querySelector("[data-field=relays]")?.value || "";
+    1939      │ - → → → config.relays·=·relaysVal.split(",").map((r)·=>·r.trim()).filter(Boolean);
+         1939 │ + → → → config.relays·=·relaysVal
+         1940 │ + → → → → .split(",")
+         1941 │ + → → → → .map((r)·=>·r.trim())
+         1942 │ + → → → → .filter(Boolean);
+    1940 1943 │                 } else if (isMatrix) {
+    1941 1944 │                         config.homeserver = form.querySelector("[data-field=homeserver]")?.value || cfg.homeserver || "";
+
+
+Checked 134 files in 248ms. No fixes applied.
+Found 1 error.
+🌈 zizmor v1.22.0
+ci ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✖ Some errors were emitted while running checks.
+
+
+ INFO audit: zizmor: 🌈 completed ./.github/actions/sign-artifacts/action.yml
+Checking .deb filename pattern...
+  ok: .deb filename: no revision suffix (matches cargo-deb output)
+Checking .rpm filename pattern...
+  ok: .rpm filename: has -1 revision (matches cargo-generate-rpm output)
+Checking .pkg.tar.zst (Arch) filename pattern...
+  ok: .pkg.tar.zst filename: has -1 revision (matches release workflow)
+Checking AppImage filename pattern...
+  ok: AppImage filename: matches release workflow pattern
+Checking binary tarball filename pattern...
+  ok: binary tarball: matches release workflow pattern
+Checking release_tag() logic...
+  ok: release_tag('20260327.05') = '20260327.05' (date-based, bare)
+  ok: release_tag('0.1.3') = 'v0.1.3' (semver, v-prefixed)
+Checking architecture mappings...
+  ok: deb arch: x86_64 → amd64
+  ok: deb arch: aarch64 → arm64
+Cross-validating against release.yml...
+  ok: release.yml: no --deb-revision flag (consistent with install.sh)
+  ok: release.yml: uses --deb-version for .deb naming
+  ok: release.yml: AppImage naming matches install.sh
+Checking install.sh sync...
+  ok: install.sh and website/install.sh are identical
+
+All 15 install package name checks passed
+[local/biome] failed in 1s
+i18n parity OK: 3 locales, 18 namespaces.
+installation docs avoid versionless GitHub asset URLs
+[local/install-names] passed in 2s
+[local/i18n] passed in 2s
+[local/install-docs] passed in 2s
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/ci.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/codspeed.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/docs.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/e2e.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/homebrew.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/provider-integration.yml
+[local/fmt] passed in 7s
+[local/fmt] total 7s
+[local/biome] total 2s
+[local/i18n] total 3s
+[local/install-names] total 3s
+[local/install-docs] total 3s
+One or more parallel local checks failed.
+~/.s/w/m/helix-epoch helix-epoch ❯  INFO audit: zizmor: 🌈 completed ./.github/workflows/release.yml
+No findings to report. Good job! (15 ignored, 48 suppressed)
+[local/zizmor] passed in 8s
+~/.s/w/m/helix-epoch helix-epoch ❯

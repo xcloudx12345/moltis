@@ -1,0 +1,118 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "f86a3222c437",
+  "session_id": "f81add4e-16c0-495a-b6c9-529e47e76baf",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-12T13:30:39.199024Z",
+  "branch": "helix-epoch",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/web/src/assets/js/page-channels.js"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "3d1b55940684",
+  "token_usage": {
+    "input_tokens": 4440,
+    "cache_creation_tokens": 386477,
+    "cache_read_tokens": 112236919,
+    "output_tokens": 134947,
+    "api_call_count": 483
+  },
+  "summary": {
+    "intent": "Add a Nostr DM channel to Moltis, bringing it to parity with existing channels (Telegram, Discord, Slack, MS Teams, WhatsApp, Matrix) with NIP-04/NIP-44 encrypted DMs, relay management, OTP access control, web UI, docs, and CI integration.",
+    "outcome": "Fully implemented the moltis-nostr crate with plugin lifecycle, config, inbound bus, outbound, access control, seen-event dedup, NIP-01 profile publishing, metrics instrumentation, NIP-44 fallback decryption, integration tests, web UI add/edit/onboarding flows, documentation, and E2E Playwright tests across 6 commits; PR #674 created, review comments resolved, merged on top of main.",
+    "learnings": {
+      "repo": [
+        "ChannelType enum is #[non_exhaustive] so new variants don't require updating every match arm — wildcard arms in gateway/channel.rs and chat/lib.rs handle unknowns automatically",
+        "ChannelsConfig uses #[serde(flatten)] for an `extra` map; new channels should be added as named fields (matching telegram/discord/slack/msteams/whatsapp pattern) rather than going through extra",
+        "Feature flag chain: crates/cli (default features) → crates/httpd → crates/gateway (optional dep + feature) → crates/nostr; same pattern as matrix/whatsapp",
+        "Contract tests in crates/channels/src/contract.rs are designed for TestPlugin and require an empty {} config to start — not suitable for real channel plugins that need valid credentials",
+        "ALL constant in plugin.rs has a companion test asserting the count matches the enum discriminant count — must be updated when adding variants",
+        "moltis_channels::message_log::MessageLog is the correct import path; ChannelOtpProvider is re-exported at moltis_channels root",
+        "OtpState::new() requires a cooldown_secs argument",
+        "nostr-sdk 0.44 nip04 and nip44 features are NOT in default features — must be explicitly enabled in workspace Cargo.toml",
+        "nostr-sdk prelude imports nip44::{self, *} which brings nip44 functions into scope directly, causing ambiguity with nip04::decrypt — use fully qualified ::nostr_sdk::nips::nip44::decrypt",
+        "nostr-sdk Client::notifications() returns a broadcast::Receiver that only sees messages sent AFTER creation — must subscribe before connect() to avoid missing EOSE/events",
+        "nostr-sdk subscribe() takes a single Filter, not Vec\u003cFilter\u003e; disconnect() returns () not Result",
+        "Metadata::picture() takes a Url type, not String — must parse with Url::parse()",
+        "taplo fmt reorders TOML keys alphabetically — will touch unrelated Cargo.toml files (msteams, secret-store, webhooks)",
+        "biome formatter requires chained method calls to be split across lines when they exceed line length — .split().map().filter() pattern on one line fails fmt check",
+        "The website/index.*.html files (all 10 locales) already had Nostr references pre-added — only the SVG icon was missing",
+        "The worktree uses unrelated git histories between helix-epoch and main (main is a single squashed commit) — merge requires cherry-pick strategy, not git merge/rebase"
+      ],
+      "code": [
+        {
+          "path": "crates/channels/src/plugin.rs",
+          "finding": "ALL constant needs updating alongside the enum; companion test asserts count == discriminant count"
+        },
+        {
+          "path": "crates/nostr/src/bus.rs",
+          "line": 229,
+          "end_line": 232,
+          "finding": "UTF-8 safe truncation: use str::floor_char_boundary(MAX_MESSAGE_BYTES) instead of manual while loop or naive slice"
+        },
+        {
+          "path": "crates/nostr/src/state.rs",
+          "finding": "SharedConfig = Arc\u003cRwLock\u003cNostrAccountConfig\u003e\u003e must be shared between AccountState and the bus loop to avoid config drift on live updates"
+        },
+        {
+          "path": "crates/nostr/src/plugin.rs",
+          "finding": "update_account_config must detect [REDACTED] sentinel in secret_key field and preserve existing key to prevent corruption"
+        },
+        {
+          "path": "crates/nostr/src/bus.rs",
+          "finding": "RwLockReadGuard must be dropped before any .await point — extract dm_policy and other values into local variables first"
+        },
+        {
+          "path": "crates/config/src/schema.rs",
+          "finding": "named_fields() method and Default impl must stay in sync with struct fields; adding a named channel field without updating named_fields() breaks schema validation"
+        },
+        {
+          "path": "crates/web/src/assets/js/page-channels.js",
+          "line": 1939,
+          "end_line": 1942,
+          "finding": "biome requires chained .split().map().filter() to be broken across multiple lines"
+        },
+        {
+          "path": "crates/web/src/assets/js/onboarding-view.js",
+          "finding": "New channels need to be added to both ChannelTypeSelector options AND the ChannelStep form routing AND channelDisplayLabel()"
+        }
+      ],
+      "workflow": [
+        "nostr-sdk API discovery requires grepping the vendored source in ~/.cargo/registry — cargo doc is faster but not always available offline",
+        "When nostr-sdk prelude glob causes ambiguity with std types (time, Instant), use explicit crate-qualified paths rather than fighting the glob",
+        "Integration tests for network-dependent features should create the broadcast::Receiver before calling connect() to avoid race conditions",
+        "taplo fmt should be run after cargo fmt to avoid spurious TOML diffs in CI",
+        "When a worktree branch has unrelated history from origin/main (single squash commit), use git log to identify the Nostr-specific commits then cherry-pick onto a fresh branch from main rather than merging"
+      ]
+    },
+    "friction": [
+      "nostr-sdk v0.44 nip04/nip44 features not in defaults — silent compile failure until feature flags were added",
+      "nostr-sdk prelude glob imports nip44 symbols directly causing ambiguity with nip04 — required fully qualified paths",
+      "nostr-sdk Client::notifications() broadcast receiver misses events if created after connect() — took multiple test failures to diagnose the timing issue",
+      "The worktree had an unrelated git history vs origin/main (single squash commit) making git merge produce 70+ conflicts — required cherry-pick strategy",
+      "biome formatter line-length rules for chained method calls not caught during development, only surfaced in CI",
+      "Metadata::picture() type mismatch (Url vs String) only caught at compile time after writing profile.rs",
+      "OtpState::new() signature mismatch only caught at compile time — required reading Telegram's otp.rs for the correct call"
+    ],
+    "open_items": [
+      "NIP-17 gift-wrapped DMs (more private, less widely supported) — explicitly deferred as future enhancement",
+      "NIP-65 relay list advertisement — deferred as future enhancement",
+      "Media attachments via NIP-94 — deferred as future enhancement",
+      "Reactions via NIP-25 — deferred as future enhancement",
+      "Metrics feature currently activates moltis-nostr even when nostr feature is off in non-default builds — dep?/feature syntax added but should be verified in minimal-feature CI builds",
+      "NOSTR_TEST_BOT_KEY and NOSTR_TEST_SENDER_KEY secrets need to be added to GitHub CI secrets manually (gh secret set commands provided but not executed)",
+      "Integration test for DM round-trip depends on relay propagation timing (30s timeout) — may be flaky on congested relays",
+      "Seen-event tracker (seen.rs) debounced persistence to nostr_seen.json is implemented but the data_dir() path binding to the gateway's configured data directory was not verified end-to-end"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-12T13:29:47.587467Z",
+    "agent_lines": 0,
+    "human_added": 3,
+    "human_modified": 1,
+    "human_removed": 0,
+    "total_committed": 3,
+    "agent_percentage": 0
+  }
+}
