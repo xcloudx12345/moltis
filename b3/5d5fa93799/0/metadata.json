@@ -1,0 +1,67 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "b35d5fa93799",
+  "session_id": "a19414f3-6176-45a5-a923-13d1b9e61758",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-12T12:53:00.901234Z",
+  "branch": "curious-bill",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/config/src/template.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "963eb6906749",
+  "checkpoint_transcript_start": 861,
+  "transcript_lines_at_start": 861,
+  "token_usage": {
+    "input_tokens": 21,
+    "cache_creation_tokens": 12088,
+    "cache_read_tokens": 3082548,
+    "output_tokens": 4224,
+    "api_call_count": 19
+  },
+  "summary": {
+    "intent": "Verify completeness of a layered tool policy implementation (discussion #641) and fix any missing pieces like config template documentation.",
+    "outcome": "Identified three gaps (sender_id in channel_binding_from_runtime_context, missing config template examples, missing docs), determined one was pre-existing/out-of-scope, and updated config template with commented examples for per-provider and per-channel tool policy fields.",
+    "learnings": {
+      "repo": [
+        "CLAUDE.md requires updating config template and docs when adding user-facing config fields",
+        "Policy resolution has 6 layers: global, per-provider, per-agent-preset, per-channel-group, per-sender",
+        "sender_id flows through params[\"channel\"][\"sender_id\"] (serialized ChannelMessageMeta) for policy resolution, not through channel_binding_from_runtime_context",
+        "channel_binding_from_runtime_context is used for hook context, not policy — a separate code path from build_policy_context"
+      ],
+      "code": [
+        {
+          "path": "crates/chat/src/lib.rs",
+          "line": 1427,
+          "end_line": 1427,
+          "finding": "sender_id hardcoded to None in channel_binding_from_runtime_context — pre-existing gap affecting hooks (related to discussion #640), not introduced by this change"
+        },
+        {
+          "path": "crates/config/src/template.rs",
+          "finding": "Config template updated with commented examples for per-provider policy and per-channel group/sender tool policy overrides"
+        }
+      ],
+      "workflow": [
+        "After implementing a feature, grep for struct fields initialized to None/default to catch unpopulated fields",
+        "Distinguish between pre-existing gaps vs. regressions introduced — pre-existing issues can be noted without blocking the current PR"
+      ]
+    },
+    "friction": [
+      "sender_id gap in channel_binding_from_runtime_context was initially flagged as missing but required tracing two separate code paths to confirm it was pre-existing and out of scope"
+    ],
+    "open_items": [
+      "sender_id not populated in channel_binding_from_runtime_context for hook context — tracked as related to discussion #640",
+      "No dedicated tool-policy documentation page exists; existing docs only cover agent preset scope — a full page would be valuable but was deferred as out of scope for this PR"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-12T12:52:42.501315Z",
+    "agent_lines": 21,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 21,
+    "agent_percentage": 100
+  }
+}
