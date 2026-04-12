@@ -1,0 +1,168 @@
+I had this error:
+
+test webhooks::tests::sealed_vault_rejects_plaintext_secret_updates ... ok
+
+  failures:
+
+  ---- methods::services::tests::memory_config_get_reports_typed_memory_fields stdout ----
+
+  thread 'methods::services::tests::memory_config_get_reports_typed_memory_fields' (203545233) panicked at crates/gateway/src/methods/
+  services.rs:5269:9:
+  assertion `left == right` failed
+    left: String("prompt-only")
+   right: "search-only"
+  note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+  failures:
+      methods::services::tests::memory_config_get_reports_typed_memory_fields
+
+  test result: FAILED. 333 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.44s
+
+  error: test failed, to rerun pass `-p moltis-gateway --lib`
+  error: process didn't exit successfully: `/Users/penso/.rustup/toolchains/nightly-2025-11-30-aarch64-apple-darwin/bin/cargo test --tests --manifest-
+  path /Users/penso/tmp/molt/moltis/Cargo.toml --target-dir /Users/penso/tmp/molt/moltis/target/llvm-cov-target --workspace` (exit status: 101)
+  [local/coverage] failed in 146s
+  ~/t/m/moltis main [⇣] ❯
+
+I've made changes to fix it, can you confirm that's the right way?
+
+---
+
+commit and push all
+
+---
+
+~/t/m/moltis main ❯ ./scripts/local-validate.sh
+Detected macOS without nvcc; forcing non-CUDA local validation commands (no --all-features).
+Override with LOCAL_VALIDATE_LINT_CMD / LOCAL_VALIDATE_TEST_CMD / LOCAL_VALIDATE_BUILD_CMD / LOCAL_VALIDATE_COVERAGE_CMD if needed.
+Local-only validation (07cc1a3) — no statuses will be published
+Removing cached llama build dir: target/debug/build/llama-cpp-sys-2-2ec01168f3e9a0d5
+Removing cached llama build dir: target/debug/build/llama-cpp-sys-2-83cfa8bd1d21466a
+Removing cached llama build dir: target/debug/build/llama-cpp-sys-2-873236a1dfb48105
+Removing cached llama build dir: target/debug/build/llama-cpp-sys-2-88d62219ecb6f677
+Removing cached llama build dir: target/debug/build/llama-cpp-sys-2-89650ba01892ff36
+Removing cached llama build dir: target/debug/build/llama-cpp-sys-2-89ae5ace65b5f856
+Removing cached llama build dir: target/debug/build/llama-cpp-sys-2-8d7824360c551599
+Removing cached llama build dir: target/debug/build/llama-cpp-sys-2-ec8009d4b719ab43
+Removing cached llama build dir: target/debug/build/llama-cpp-sys-2-f74545218f48e070
+Removing cached llama build dir: target/debug/build/llama-cpp-sys-2-faf5aa17a13034c4
+Removing cached llama build dir: target/release/build/llama-cpp-sys-2-ce1312e0f0e81354
+cargo +nightly-2025-11-30 fmt --all -- --check
+installation docs avoid versionless GitHub asset URLs
+[local/install-docs] passed in 0s
+Checking .deb filename pattern...
+  ok: .deb filename: no revision suffix (matches cargo-deb output)
+Checking .rpm filename pattern...
+  ok: .rpm filename: has -1 revision (matches cargo-generate-rpm output)
+Checking .pkg.tar.zst (Arch) filename pattern...
+  ok: .pkg.tar.zst filename: has -1 revision (matches release workflow)
+Checking AppImage filename pattern...
+  ok: AppImage filename: matches release workflow pattern
+Checking binary tarball filename pattern...
+🌈 zizmor v1.22.0
+  ok: binary tarball: matches release workflow pattern
+Checking release_tag() logic...
+  ok: release_tag('20260327.05') = '20260327.05' (date-based, bare)
+  ok: release_tag('0.1.3') = 'v0.1.3' (semver, v-prefixed)
+Checking architecture mappings...
+  ok: deb arch: x86_64 → amd64
+  ok: deb arch: aarch64 → arm64
+Cross-validating against release.yml...
+i18n parity OK: 3 locales, 18 namespaces.
+  ok: release.yml: no --deb-revision flag (consistent with install.sh)
+  ok: release.yml: uses --deb-version for .deb naming
+  ok: release.yml: AppImage naming matches install.sh
+Checking install.sh sync...
+[local/i18n] passed in 0s
+  ok: install.sh and website/install.sh are identical
+
+All 15 install package name checks passed
+[local/install-names] passed in 0s
+crates/web/src/assets/js/locales/en/providers.js format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✖ File content differs from formatting output
+
+    116 116 │           testSuccess: "Connection successful.",
+    117 117 │           testFailed: "Connection test failed.",
+    118     │ - → testProviderConfirm:·"This·will·send·a·test·message·to·one·model·from·{{name}},·which·may·use·tokens·or·trigger·model·loading·on·local·servers.·Continue?",
+        118 │ + → testProviderConfirm:
+        119 │ + → → "This·will·send·a·test·message·to·one·model·from·{{name}},·which·may·use·tokens·or·trigger·model·loading·on·local·servers.·Continue?",
+    119 120 │           preferred: "Preferred",
+    120 121 │           showAllModels: "Show {{count}} more models\u2026",
+
+
+crates/web/src/assets/js/locales/fr/providers.js format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✖ File content differs from formatting output
+
+    116 116 │           testSuccess: "Connexion r\u00e9ussie.",
+    117 117 │           testFailed: "Le test de connexion a \u00e9chou\u00e9.",
+    118     │ - → testProviderConfirm:·"Ceci·enverra·un·message·de·test·\u00e0·un·mod\u00e8le·de·{{name}},·ce·qui·peut·consommer·des·tokens·ou·d\u00e9clencher·le·chargement·d\u2019un·mod\u00e8le·sur·les·serveurs·locaux.·Continuer\u00a0?",
+        118 │ + → testProviderConfirm:
+        119 │ + → → "Ceci·enverra·un·message·de·test·\u00e0·un·mod\u00e8le·de·{{name}},·ce·qui·peut·consommer·des·tokens·ou·d\u00e9clencher·le·chargement·d\u2019un·mod\u00e8le·sur·les·serveurs·locaux.·Continuer\u00a0?",
+    119 120 │           preferred: "Pr\u00e9f\u00e9r\u00e9",
+    120 121 │           showAllModels: "Afficher {{count}} mod\u00e8les suppl\u00e9mentaires\u2026",
+
+
+crates/web/src/assets/js/page-providers.js format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✖ File content differs from formatting output
+
+    314 314 │                           </div>
+    315 315 │                           <div class="flex gap-2 shrink-0">
+    316     │ - → → → → ${group.models.length·>·0·?·html`<button
+        316 │ + → → → → ${
+        317 │ + → → → → → group.models.length·>·0
+        318 │ + → → → → → → ?·html`<button
+    317 319 │                                           class="provider-btn provider-btn-secondary provider-btn-sm"
+    318 320 │                                           disabled=${isTesting}
+    319 321 │                                           onClick=${onTestProvider}
+    320     │ - → → → → >${isTesting·?·t("providers:testing")·:·t("providers:test")}</button>`·:·null}
+        322 │ + → → → → >${isTesting·?·t("providers:testing")·:·t("providers:test")}</button>`
+        323 │ + → → → → → → :·null
+        324 │ + → → → → }
+    321 325 │                                   ${group.models.length > 0 ? html`<button class="provider-btn provider-btn-secondary provider-btn-sm" onClick=${onSelectModels}>${t("providers:preferredModels.button")}</button>` : null}
+    322 326 │                                   <button
+    ······· │
+    329 333 │                           </div>
+    330 334 │                   </div>
+    331     │ - → → ${providerTestResult·?·html`<div·class="mt-1·text-xs·${providerTestResult.ok·?·"text-[var(--success,#22c55e)]"·:·"text-[var(--danger,#ef4444)]"}">
+        335 │ + → → ${
+        336 │ + → → → providerTestResult
+        337 │ + → → → → ?·html`<div·class="mt-1·text-xs·${providerTestResult.ok·?·"text-[var(--success,#22c55e)]"·:·"text-[var(--danger,#ef4444)]"}">
+    332 338 │                           ${providerTestResult.ok ? t("providers:testSuccess") : providerTestResult.error}
+    333     │ - → → </div>`·:·null}
+        339 │ + → → </div>`
+        340 │ + → → → → :·null
+        341 │ + → → }
+    334 342 │                   <div class="mt-2 border-b border-[var(--border)]"></div>
+    335 343 │                   ${
+
+
+Checked 134 files in 96ms. No fixes applied.
+Found 3 errors.
+ci ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✖ Some errors were emitted while running checks.
+
+
+[local/biome] failed in 0s
+ INFO audit: zizmor: 🌈 completed ./.github/actions/sign-artifacts/action.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/ci.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/codspeed.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/docs.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/e2e.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/homebrew.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/provider-integration.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/release.yml
+No findings to report. Good job! (28 suppressed)
+[local/zizmor] passed in 0s
+[local/fmt] passed in 2s
+[local/fmt] total 2s
+[local/biome] total 0s
+[local/i18n] total 0s
+[local/install-names] total 0s
+[local/install-docs] total 0s
+One or more parallel local checks failed.
+~/t/m/moltis main ❯

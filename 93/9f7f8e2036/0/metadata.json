@@ -1,0 +1,78 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "939f7f8e2036",
+  "session_id": "cbf34e75-e308-41a4-b3c1-71769c0bbaff",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-12T13:19:37.030358Z",
+  "branch": "main",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/src/assets/js/locales/en/providers.js",
+    "crates/web/src/assets/js/locales/fr/providers.js",
+    "crates/web/src/assets/js/page-providers.js"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "328368fa3357",
+  "checkpoint_transcript_start": 55,
+  "transcript_lines_at_start": 55,
+  "token_usage": {
+    "input_tokens": 7,
+    "cache_creation_tokens": 39838,
+    "cache_read_tokens": 146839,
+    "output_tokens": 579,
+    "api_call_count": 5
+  },
+  "summary": {
+    "intent": "Push a commit to main and validate it passes local CI checks.",
+    "outcome": "Commit 07cc1a3b was pushed, but biome formatting checks failed on 3 JS files; a follow-up commit was made to fix the formatting.",
+    "learnings": {
+      "repo": [
+        "The project uses biome for JS formatting with strict line-length rules — long string literals in locale files and ternary expressions in template literals must be broken across multiple lines.",
+        "local-validate.sh runs parallel checks (biome, fmt, i18n, install-names, install-docs, zizmor) and reports per-check pass/fail with timing.",
+        "On macOS without nvcc, local-validate.sh forces non-CUDA validation and skips --all-features; override via LOCAL_VALIDATE_* env vars.",
+        "llama-cpp-sys-2 build dirs are cleaned from both debug and release targets at the start of each local validation run."
+      ],
+      "code": [
+        {
+          "path": "crates/web/src/assets/js/locales/en/providers.js",
+          "line": 118,
+          "end_line": 119,
+          "finding": "testProviderConfirm string was too long for biome's line limit; must be split with key on its own line and value indented on the next."
+        },
+        {
+          "path": "crates/web/src/assets/js/locales/fr/providers.js",
+          "line": 118,
+          "end_line": 119,
+          "finding": "Same testProviderConfirm line-length issue as the en locale."
+        },
+        {
+          "path": "crates/web/src/assets/js/page-providers.js",
+          "line": 316,
+          "end_line": 334,
+          "finding": "Inline ternary expressions inside tagged template literals (html`...`) must be expanded: condition on its own line, branches indented, closing brace on its own line."
+        }
+      ],
+      "workflow": [
+        "Running local-validate.sh after pushing (rather than before) caused a second fix commit; running it pre-push would catch formatting issues earlier.",
+        "Biome auto-fix (biome format --write) resolves formatting errors cleanly without touching unrelated code."
+      ]
+    },
+    "friction": [
+      "Biome formatting failures were only discovered after the commit was already pushed, requiring a second cleanup commit on main.",
+      "Multiple stale llama-cpp-sys-2 build directories accumulated in both debug and release targets, adding noise to validation output."
+    ],
+    "open_items": [
+      "Consider adding a pre-push git hook or pre-commit biome check to catch formatting issues before they land on main.",
+      "Biome reported pre-existing complexity lint warnings (not treated as errors) — these were intentionally left unfixed and may warrant a future cleanup pass."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-12T13:19:20.924256Z",
+    "agent_lines": 16,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 16,
+    "agent_percentage": 100
+  }
+}
