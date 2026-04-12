@@ -1,0 +1,95 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "0eac0e1e8c47",
+  "session_id": "f81add4e-16c0-495a-b6c9-529e47e76baf",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-12T11:00:04.373805Z",
+  "branch": "helix-epoch",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "Cargo.toml",
+    "crates/gateway/Cargo.toml",
+    "crates/nostr/src/bus.rs",
+    "crates/nostr/src/outbound.rs",
+    "crates/nostr/src/plugin.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "f31fc607ee6b",
+  "token_usage": {
+    "input_tokens": 4259,
+    "cache_creation_tokens": 280732,
+    "cache_read_tokens": 60868520,
+    "output_tokens": 100349,
+    "api_call_count": 331
+  },
+  "summary": {
+    "intent": "Implement a Nostr DM channel for the Moltis messaging platform, porting the concept from an existing TypeScript implementation (openclaw) to Rust using nostr-sdk v0.44, with full parity to existing channels.",
+    "outcome": "Complete Nostr channel implementation delivered across 3 commits: a new `crates/nostr/` crate (~1700 LOC), web UI add/edit/onboarding flows, E2E tests, documentation, metrics instrumentation, NIP-44 decryption support, and an integration test scaffold — all passing cleanly with 23 unit tests and clippy/fmt clean.",
+    "learnings": {
+      "repo": [
+        "ChannelType enum uses #[non_exhaustive] so new variants don't break exhaustive matches in gateway/chat crates that use wildcard arms",
+        "channels.offered default list in schema.rs has corresponding test assertions that must be updated when the default changes",
+        "Matrix was going through serde `#[flatten]` extra map rather than a named field in ChannelsConfig — unlike telegram/discord/slack/whatsapp/msteams",
+        "Contract tests in crates/channels/src/contract.rs are designed for TestPlugin only, not real channel plugins requiring valid credentials",
+        "Gateway Cargo.toml uses `dep?/feature` syntax for optional deps in feature lists to avoid pulling in optional crates when the parent feature is enabled alone",
+        "moltis_metrics definitions live in crates/metrics/src/definitions.rs with per-channel namespaces; new channels add their own module there",
+        "The onboarding flow in onboarding-view.js has both a ChannelTypeSelector (channel picker) and a ChannelStep (form routing) that both need updating for new channels",
+        "biome is used for JS linting/formatting; must be run after any JS edits"
+      ],
+      "code": [
+        {
+          "path": "crates/channels/src/plugin.rs",
+          "finding": "ALL constant and variant count test must be updated together when adding a new ChannelType variant"
+        },
+        {
+          "path": "crates/config/src/schema.rs",
+          "finding": "named_fields() and Default impl for ChannelsConfig must both be updated when adding a named channel field; the all_channel_configs() method iterates both named fields and the serde flatten extra map"
+        },
+        {
+          "path": "crates/gateway/Cargo.toml",
+          "finding": "Pattern for optional channel deps: add as optional dep, create named feature, add to default features, use dep?/feature syntax in metrics feature to avoid implicit enablement"
+        },
+        {
+          "path": "crates/nostr/src/bus.rs",
+          "finding": "nostr_sdk::prelude::* imports nip44::{self, *} which brings nip44 functions directly into scope, causing ambiguity with nip04 functions of the same name; use nostr_sdk::nips::nip44::decrypt fully qualified"
+        }
+      ],
+      "workflow": [
+        "nostr-sdk v0.44 has nip04 and nip44 as non-default features that must be explicitly enabled in workspace Cargo.toml",
+        "nostr-sdk's nip44::encrypt takes an extra Version parameter vs nip04::encrypt",
+        "SecretKey::to_bech32() and PublicKey::to_bech32() return Result\u003cString, Infallible\u003e not String — must call .unwrap() or handle",
+        "Client::subscribe() takes a single Filter not Vec\u003cFilter\u003e; Client::disconnect() returns () not Result",
+        "client.notifications() creates a temporary that must be bound to a variable before iterating to avoid borrow issues",
+        "taplo fmt reorders TOML keys alphabetically — running it globally touches unrelated crates' Cargo.toml files"
+      ]
+    },
+    "friction": [
+      "nostr-sdk nip04/nip44 features not enabled by default — caused initial compilation failures that required iterative discovery",
+      "nostr_sdk::prelude::* glob import caused nip44 'unnecessary qualification' lint and name ambiguity with nip04 functions of the same name — resolved by using fully qualified nips module paths",
+      "Client::subscribe() API mismatch (single Filter vs Vec\u003cFilter\u003e) and disconnect() return type required checking actual crate source",
+      "Metadata::picture() takes a Url type not String — required rewrite of profile.rs",
+      "taplo fmt touched unrelated crates' Cargo.toml files (msteams, secret-store, webhooks) as collateral formatting",
+      "Promoting matrix to a named ChannelsConfig field was an unnecessary side-effect that had to be reverted in a follow-up commit",
+      "OtpState::new() takes a cooldown_secs argument that wasn't initially passed — found only at compile time"
+    ],
+    "open_items": [
+      "NIP-17 (gift-wrapped DMs) support — more complex event handling, less widely supported currently",
+      "NIP-65 relay list advertisement — future enhancement to advertise preferred relays",
+      "NIP-94 media attachment support",
+      "NIP-25 reactions support",
+      "Real integration tests require NOSTR_TEST_SECRET_KEY and NOSTR_TEST_SENDER_KEY secrets in CI — user needs to generate a dedicated test nsec keypair",
+      "Metrics counters/histograms wired but no Prometheus scrape validation or dashboard — same state as other channels at initial ship",
+      "NIP-44 outbound defaults to NIP-04 for compatibility; config option to prefer NIP-44 outbound not yet implemented",
+      "Seen tracker (seen.rs) does not yet persist to disk — debounced writes to data_dir()/nostr_seen.json were planned but not implemented"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-12T10:59:25.641425Z",
+    "agent_lines": 0,
+    "human_added": 291,
+    "human_modified": 10,
+    "human_removed": 0,
+    "total_committed": 291,
+    "agent_percentage": 0
+  }
+}

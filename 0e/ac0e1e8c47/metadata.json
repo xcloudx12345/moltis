@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "0eac0e1e8c47",
+  "strategy": "manual-commit",
+  "branch": "helix-epoch",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "Cargo.toml",
+    "crates/gateway/Cargo.toml",
+    "crates/nostr/src/bus.rs",
+    "crates/nostr/src/outbound.rs",
+    "crates/nostr/src/plugin.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0e/ac0e1e8c47/0/metadata.json",
+      "transcript": "/0e/ac0e1e8c47/0/full.jsonl",
+      "context": "/0e/ac0e1e8c47/0/context.md",
+      "content_hash": "/0e/ac0e1e8c47/0/content_hash.txt",
+      "prompt": "/0e/ac0e1e8c47/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 4259,
+    "cache_creation_tokens": 280732,
+    "cache_read_tokens": 60868520,
+    "output_tokens": 100349,
+    "api_call_count": 331
+  }
+}
