@@ -1,0 +1,127 @@
+can you use the feedback from https://github.com/moltis-org/moltis/discussions/680 to use in website/ as another feedback? It's a good one I think.
+
+---
+
+can you make feedbacks horizontally scrollable so I can add more without taking much height
+
+---
+
+commit and push
+
+---
+
+find the largest rust code files in moltis, give me the 10 biggest files.
+
+---
+
+What's the usual max size per rust file we should enforce, and then split those files per domain? I'd like to enforce a strict rule, including a CI job or clippy/fmt rule.
+
+---
+
+yes proceed, 1,500 is good for now but out of curiosity, how many files are over 1k lines?
+
+---
+
+I added prompts in .gitignore so why do I see files in prompts committed to git? Can you check if any has private keys and tokens? I feel like it does , like the NOSTR PR
+
+---
+
+remove them from git now it's fine, push it
+
+---
+
+I still see files:
+
+~/t/m/moltis main [!] ❯ ls -l prompts
+total 1144
+-rw-r--r--    1 penso  staff   1665 Jan 31 06:01 2026-01-30-plan-move-providers-to-a-dedicated-nav-page.md
+-rw-r--r--    1 penso  staff   3167 Jan 31 01:44 2026-01-30-plan-multi-page-ui-with-cron-management.md
+-rw-r--r--    1 penso  staff   9494 Jan 31 01:43 2026-01-30-plan-projects-feature-for-moltis.md
+-rw-r--r--@   1 penso  staff    901 Feb  1 08:24 2026-02-01-fix-ci-failures.md
+-rw-r--r--@   1 penso  staff   8745 Feb  5 18:50 2026-02-05-pi-inspired-features-implementation-plan.md
+-rw-r--r--@   1 penso  staff   3505 Feb  6 18:12 2026-02-06-plan-red-favicon-branch-title-for-non-main-branches.md
+-rw-r--r--@   1 penso  staff   7278 Feb  7 20:36 2026-02-07-plan-typed-chatmessage-to-replace-serde-json-value-in-llm-pr.md
+-rw-r--r--@   1 penso  staff   3647 Feb 10 07:21 2026-02-09-plan-consolidate-release-uploads-into-a-single-job.md
+-rw-r--r--@   1 penso  staff  10596 Feb 10 07:44 2026-02-09-reactive-store-migration-plan.md
+-rw-r--r--@   1 penso  staff   6008 Feb 10 08:28 2026-02-10-entity-versioning-for-sessions.md
+-rw-r--r--@   1 penso  staff   3431 Feb 10 18:33 2026-02-10-fix-sandbox-warning-showing-on-macos-despite-apple-container.md
+-rw-r--r--@   1 penso  staff   4984 Feb 10 09:42 2026-02-10-plan-consolidate-navigation-into-settings.md
+-rw-r--r--@   1 penso  staff   1633 Feb 11 06:20 2026-02-10-skip-delete-confirmation-for-unmodified-forked-sessions.md
+-rw-r--r--@   1 penso  staff   8628 Feb 10 23:29 2026-02-10-unify-auth-into-a-single-gate.md
+-rw-r--r--@   1 penso  staff   2003 Feb 11 08:45 2026-02-11-auto-detect-webauthn-rp-id-from-paas-environment-variables.md
+-rw-r--r--@   1 penso  staff   6966 Feb 11 09:08 2026-02-11-fix-websocket-not-reconnecting-after-remote-onboarding-auth.md
+-rw-r--r--@   1 penso  staff   2408 Feb 12 04:05 2026-02-11-plan-auto-create-soul-md-on-first-run.md
+-rw-r--r--@   1 penso  staff   7005 Feb 11 16:56 2026-02-11-plan-central-routes-rust-askama-gon-config-editor-comments.md
+-rw-r--r--@   1 penso  staff   4431 Feb 12 04:28 2026-02-11-plan-disconnect-all-ws-clients-on-credential-change.md
+-rw-r--r--@   1 penso  staff   2228 Feb 12 03:58 2026-02-11-plan-fix-onboarding-ws-401-on-proxy-deployments-qmd-log-leve.md
+-rw-r--r--@   1 penso  staff   6575 Feb 11 09:52 2026-02-11-port-three-features-from-ironclaw.md
+-rw-r--r--@   1 penso  staff   7900 Feb 11 09:17 2026-02-11-security-analysis-openclaw-sender-spoofing-vulnerability-ghs.md
+-rw-r--r--@   1 penso  staff   4932 Feb 13 05:20 2026-02-12-plan-replace-model-tuples-with-discoveredmodel-struct-sort-b.md
+-rw-r--r--@   1 penso  staff   5485 Feb 14 02:19 2026-02-13-dry-voice-identity-and-channel-rpc-logic.md
+-rw-r--r--@   1 penso  staff   4103 Feb 13 17:38 2026-02-13-plan-multi-select-model-picker-in-onboarding.md
+-rw-r--r--@   1 penso  staff   3686 Feb 13 16:51 2026-02-13-plan-show-created-at-dates-probe-preferred-models-after-save.md
+-rw-r--r--@   1 penso  staff   3652 Feb 14 07:27 2026-02-14-plan-add-memory-save-tool.md
+-rw-r--r--@   1 penso  staff   4345 Feb 14 14:43 2026-02-14-plan-dry-memory-writing-with-a-memorywriter-trait.md
+-rw-r--r--@   1 penso  staff   2942 Feb 15 01:55 2026-02-14-plan-strip-think-tags-from-openai-compatible-provider-respon.md
+-rw-r--r--@   1 penso  staff   1360 Feb 16 03:30 2026-02-15-fix-hook-commands-with-relative-paths-fail-issue-104.md
+-rw-r--r--@   1 penso  staff   1817 Feb 16 01:08 2026-02-15-fix-is-sandboxed-should-return-false-when-no-container-runti.md
+-rw-r--r--@   1 penso  staff   2600 Feb 15 23:18 2026-02-15-fix-minimax-m2-5-doesn-t-call-memory-save-when-asked-to-reme.md
+-rw-r--r--@   1 penso  staff   3339 Feb 16 01:18 2026-02-15-plan-auto-inject-low-memory-chromium-flags.md
+-rw-r--r--@   1 penso  staff   3573 Feb 15 23:11 2026-02-15-plan-browser-tool-falls-back-to-host-when-no-container-runti.md
+-rw-r--r--@   1 penso  staff   5741 Feb 16 02:08 2026-02-15-plan-generic-openai-compatible-provider-support.md
+-rw-r--r--@   1 penso  staff   3698 Feb 19 06:28 2026-02-18-fix-browser-stops-responding-after-5-turns-172.md
+-rw-r--r--@   1 penso  staff   4277 Feb 19 06:23 2026-02-18-fix-cron-job-creation-ui-bugs-181.md
+-rw-r--r--@   1 penso  staff   2503 Feb 19 06:22 2026-02-18-fix-double-output-on-telegram-voice-messages-173.md
+-rw-r--r--@   1 penso  staff   2817 Feb 19 06:20 2026-02-18-fix-strip-internal-metadata-from-mcp-tool-call-arguments-182.md
+-rw-r--r--@   1 penso  staff   8423 Feb 19 06:24 2026-02-18-memory-optimization-plan-for-lightweight-devices.md
+-rw-r--r--@   1 penso  staff   5377 Feb 19 06:31 2026-02-18-plan-persistent-browser-profiles-issue-162.md
+-rw-r--r--@   1 penso  staff   6647 Feb 19 18:43 2026-02-19-heartbeat-wake-openclaw-style-event-driven-heartbeat.md
+-rw-r--r--@   1 penso  staff   7880 Feb 19 18:24 2026-02-19-plan-destructive-command-guard-a-b.md
+-rw-r--r--@   1 penso  staff   3768 Feb 19 18:18 2026-02-19-plan-save-telegram-voice-audio-in-session-for-web-ui-playbac.md
+-rw-r--r--@   1 penso  staff   7189 Feb 20 02:51 2026-02-19-plan-static-file-caching-for-public-share-pages.md
+-rw-r--r--@   1 penso  staff   5037 Feb 20 17:35 2026-02-20-plan-cron-job-channel-delivery.md
+-rw-r--r--@   1 penso  staff   3379 Feb 22 04:45 2026-02-21-plan-consolidate-creature-vibe-into-single-theme-field.md
+-rw-r--r--@   1 penso  staff   7224 Feb 22 02:33 2026-02-21-plan-readme-md-overhaul-comparison-page.md
+-rw-r--r--@   1 penso  staff   1983 Feb 21 16:52 2026-02-21-plan-ship-dcg-guard-hook-by-default.md
+-rw-r--r--@   1 penso  staff  10694 Feb 22 04:30 2026-02-21-plan-split-web-ui-from-gateway-crate.md
+-rw-r--r--@   1 penso  staff   6800 Feb 22 19:37 2026-02-22-plan-extract-moltis-providers-from-moltis-agents.md
+-rw-r--r--@   1 penso  staff   4492 Feb 22 16:23 2026-02-22-plan-extract-non-core-modules-from-gateway-crate.md
+-rw-r--r--@   1 penso  staff   7847 Feb 22 16:29 2026-02-22-plan-halve-the-gateway-crate-48k-26k.md
+-rw-r--r--@   1 penso  staff   2792 Feb 24 04:22 2026-02-23-plan-browsable-searchable-skills-list-in-repo-cards.md
+-rw-r--r--@   1 penso  staff   6986 Feb 28 13:04 2026-02-28-import-workspace-personality-files-from-openclaw.md
+-rw-r--r--@   1 penso  staff   2821 Feb 28 19:19 2026-02-28-plan-add-ios-app-ci-job-on-main.md
+-rw-r--r--@   1 penso  staff   6789 Mar  1 06:36 2026-02-28-plan-add-shiki-syntax-highlighting-to-web-ui.md
+-rw-r--r--@   1 penso  staff   5970 Feb 28 22:16 2026-02-28-plan-language-aware-text-splitter-rrf-search-from-aichat.md
+-rw-r--r--@   1 penso  staff   4254 Feb 28 16:57 2026-02-28-plan-make-google-gemini-a-first-class-provider.md
+-rw-r--r--@   1 penso  staff   9038 Mar  1 04:31 2026-02-28-plan-tree-sitter-code-splitter-rrf-search.md
+-rw-r--r--@   1 penso  staff  14703 Feb 28 12:34 2026-02-28-plan-universal-tool-support-for-all-models.md
+-rw-r--r--@   1 penso  staff   3004 Mar  3 05:19 2026-03-02-fix-local-llm-temp-parameter-incompatible-with-mlx-lm-0-20.md
+-rw-r--r--@   1 penso  staff   2845 Mar  3 05:22 2026-03-02-fix-redirect-loop-when-onboarded-but-auth-not-set-up-issue-3.md
+-rw-r--r--@   1 penso  staff   3825 Mar  3 06:41 2026-03-02-plan-parallelize-provider-model-discovery-at-startup.md
+-rw-r--r--@   1 penso  staff   8836 Mar  3 05:42 2026-03-02-reduce-rss-memory-aot-wasm-pre-compilation-shiki-cdn.md
+-rw-r--r--@   1 penso  staff   7319 Mar 14 19:17 2026-03-14-split-sandbox-rs-8-102-lines-into-sandbox-module-directory.md
+-rw-r--r--@   1 penso  staff   7447 Mar 23 23:12 2026-03-23-plan-stabilize-system-prompt-for-local-llm-kv-cache.md
+-rw-r--r--@   1 penso  staff  24195 Feb 22 01:43 eager-gathering-fiddle-agent-aeba7ff.md
+-rw-r--r--@   1 penso  staff   1507 Feb  7 04:45 session-2026-02-06-onboarding-auth.md
+-rw-r--r--@   1 penso  staff    787 Feb  7 05:49 session-2026-02-06-release-homebrew-ordering.md
+-rw-r--r--@   1 penso  staff   2197 Feb  8 18:23 session-2026-02-08-runtime-host-sandbox-prompt.md
+-rw-r--r--@   1 penso  staff   1830 Feb 10 19:10 session-2026-02-10-logs-level-filter-detection.md
+-rw-r--r--@   1 penso  staff   1366 Feb 17 16:15 session-2026-02-17-calc-tool.md
+-rw-r--r--@   1 penso  staff   1224 Feb 17 20:31 session-2026-02-17-web-search-runtime-env.md
+-rw-r--r--@   1 penso  staff   1407 Mar  1 02:36 session-2026-03-01-git-cliff-changelog-workflow.md
+-rw-r--r--@   1 penso  staff    760 Mar 23 15:12 session-2026-03-11-docker-in-docker-host-data-dir.md
+-rw-r--r--@   1 penso  staff   1840 Mar 30 10:10 session-2026-03-28-managed-ssh.md
+-rw-r--r--@   1 penso  staff    776 Mar 30 10:10 session-2026-03-28-remote-exec-doctor.md
+-rw-r--r--@   1 penso  staff   1501 Mar 30 10:10 session-2026-03-28-skills-bundles-and-ssh-ux.md
+-rw-r--r--@   1 penso  staff   1394 Mar 30 10:10 session-2026-03-29-tools-settings-overview.md
+-rw-r--r--@   1 penso  staff   3568 Apr  5 22:50 session-2026-04-05-e2e-ci-hardening.md
+-rw-r--r--@   1 penso  staff   1598 Apr  6 15:45 session-2026-04-06-main-ci-e2e-senders-race.md
+-rw-r--r--@   1 penso  staff   1095 Apr  6 00:30 session-2026-04-06-swift-bridge-httpd-ci.md
+-rw-r--r--@   1 penso  staff   1388 Apr  8 11:31 session-2026-04-08-minimax-compatibility.md
+-rw-r--r--@   1 penso  staff   1815 Apr 11 14:05 session-2026-04-10-hook-channel-provenance.md
+-rw-r--r--@   1 penso  staff    911 Apr 10 23:48 session-2026-04-10-telegram-voice-fallback.md
+-rw-r--r--@   1 penso  staff   1586 Apr 12 21:25 session-2026-04-12-container-native-file-ops.md
+-rw-r--r--@   1 penso  staff   1096 Apr 12 21:25 session-2026-04-12-native-sandbox-file-ops.md
+-rw-r--r--@   1 penso  staff   1230 Apr 12 21:25 session-2026-04-12-oci-runtime-tests-and-list-cap.md
+-rw-r--r--@   1 penso  staff   1531 Apr 12 21:25 session-2026-04-12-sandbox-ci-and-glob-ux.md
+drwxr-xr-x  268 penso  staff   8576 Apr 12 20:31 sessions/
