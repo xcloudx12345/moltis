@@ -1,0 +1,77 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "e1e7960139f9",
+  "session_id": "d245456b-be5e-4282-9db8-ac44cba2554f",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-12T19:33:56.302068Z",
+  "branch": "cstewart-hc/feat/summary-budget-discipline",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/chat/src/lib.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "2b42988996c6",
+  "checkpoint_transcript_start": 190,
+  "transcript_lines_at_start": 190,
+  "token_usage": {
+    "input_tokens": 27,
+    "cache_creation_tokens": 23605,
+    "cache_read_tokens": 1961254,
+    "output_tokens": 10519,
+    "api_call_count": 24
+  },
+  "summary": {
+    "intent": "Merge a feature branch (summary-budget-discipline) into main, then run a Greptile review loop on PR #652 to fix any code quality issues before finalizing.",
+    "outcome": "Merge completed with 3 conflict resolutions, Greptile review triggered and completed with success, all 3 inline comments addressed (off-by-one clarity, omission notice undercount, blank line stripping), 19 tests passing, fixes committed and pushed.",
+    "learnings": {
+      "repo": [
+        "compress_summary_in_history() is a post-processing step applied to compacted history that finds summary-prefixed messages ([Conversation Summary] / [Conversation Compacted]) and compresses only the body, preserving head/tail structure for modes like recency_preserving.",
+        "Merge conflicts between this branch and main were isolated to crates/chat/src/lib.rs in three areas: compaction logging, run_compaction refactor, and tests.",
+        "Greptile threads are auto-resolved after fixes are pushed — no manual resolution needed."
+      ],
+      "code": [
+        {
+          "path": "crates/chat/src/lib.rs",
+          "line": 993,
+          "end_line": 997,
+          "finding": "Off-by-one in summary compression already fixed via .saturating_sub(1) in commit 8fd89861; clarity improvement applied."
+        },
+        {
+          "path": "crates/chat/src/lib.rs",
+          "line": 1039,
+          "end_line": 1058,
+          "finding": "Pre-computed char_budget uses make_notice(all_dropped_count) before the header drop loop runs, so if headers are also dropped the notice grows and causes a tiny budget overshoot. Fixed by recomputing budget inside the header loop."
+        },
+        {
+          "path": "crates/chat/src/lib.rs",
+          "line": 1043,
+          "end_line": 1043,
+          "finding": "Blank lines in summary bodies each consume one character slot. Stripping them saves budget; HashSet dedup already handled duplicate blanks but did not eliminate them."
+        }
+      ],
+      "workflow": [
+        "Greptile review must be manually triggered via API after a push; it does not auto-trigger on every push.",
+        "Polling Greptile check status with jq can fail on unexpected response shapes; a Python fallback is more robust.",
+        "Running cargo test scoped to the relevant test module (compress_summary) is faster than a full test suite run for iterative fix verification."
+      ]
+    },
+    "friction": [
+      "Greptile polling script produced jq parse errors requiring a stop and restart with a Python-based fallback.",
+      "Greptile review body was empty after completion, requiring a separate fetch of inline comments to get actionable feedback.",
+      "Confidence score was not easily surfaced — required an additional API call to the check run details."
+    ],
+    "open_items": [
+      "The omission notice undercount fix (recomputing budget inside header drop loop) is a correctness fix for a tiny edge case — worth verifying under adversarial inputs with very long headers.",
+      "New Greptile review after the fix commit was triggered but results not shown in transcript — follow-up may be needed to confirm no new issues were introduced."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-12T19:33:35.324745Z",
+    "agent_lines": 38,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 38,
+    "agent_percentage": 100
+  }
+}
