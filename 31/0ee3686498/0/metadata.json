@@ -1,0 +1,101 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "310ee3686498",
+  "session_id": "a32f3caf-c67d-4014-90f0-822248e174e9",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-12T20:10:00.454492Z",
+  "branch": "quiver-fact",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/auth/src/credential_store.rs",
+    "crates/httpd/src/auth_routes.rs",
+    "crates/httpd/src/server.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "fe4672559222",
+  "token_usage": {
+    "input_tokens": 421,
+    "cache_creation_tokens": 266455,
+    "cache_read_tokens": 62144198,
+    "output_tokens": 91115,
+    "api_call_count": 395
+  },
+  "summary": {
+    "intent": "Implement a series of security hardening measures for the Moltis web application, starting from GitHub issue #681 (disable terminal option) and expanding to comprehensive remote access security improvements including brute-force protection, account lockout, API key scope enforcement, and audit logging.",
+    "outcome": "All three security work batches were completed and pushed to PR #682: terminal disable feature with env var override, LoginGuard with IP banning and account lockout, and a 9-issue hardening pass (setup code expiry/brute-force guard, API key scope enforcement, HSTS/CSP headers, session limits, HMAC-SHA256 API key hashing, 12-char password minimum, and auth audit log). A second-pass review then fixed WebSocket bearer token scope propagation, password change brute-force guard, timing side channel in verify_password, API key audit logging, higher-entropy setup codes, and TLS startup warning.",
+    "learnings": {
+      "repo": [
+        "Config is structured as MoltisConfig → ServerConfig (top-level [server]) and tools.web / tools.X for feature-specific config; terminal_enabled belongs under [server], not [web]",
+        "Frontend receives server state via a 'gon' pattern (JSON injected into HTML), similar to how voice_enabled and graphql_enabled are gated",
+        "The codebase uses a beads issue tracker (not GitHub Issues directly) for task management with claim/close workflow before committing",
+        "API key scopes are stored in the DB but were not enforced anywhere — the scope fields existed but check_auth discarded them",
+        "WebSocket RPC already had per-method scope enforcement via authorize_method/MethodContext::client_scopes, but bearer token auth via HTTP headers bypassed scope extraction",
+        "Two separate copies of websocket_header_authenticated exist: one in httpd/src/server.rs (for RPC WS) and one in web/src/terminal.rs (for terminal WS) — terminal version is all-or-nothing so bool is sufficient",
+        "unsafe code (set_var/remove_var) is denied by a project-wide lint, so env var testing requires integration tests or workarounds",
+        "hmac is already a workspace dependency but was not in the auth crate's Cargo.toml",
+        "Migration files live in crates/gateway/migrations/ with timestamp-prefixed filenames",
+        "The startup banner/TLS warning is in crates/httpd/src/server.rs, not in the gateway crate where TLS config lives"
+      ],
+      "code": [
+        {
+          "path": "crates/httpd/src/ws.rs",
+          "line": 144,
+          "end_line": 183,
+          "finding": "WS handler tracks api_key_scopes from the JSON handshake params but was not propagating scopes from HTTP header bearer token auth — header_identity needed to be returned from websocket_header_authenticated instead of a bool"
+        },
+        {
+          "path": "crates/httpd/src/auth_middleware.rs",
+          "line": 156,
+          "end_line": 190,
+          "finding": "AuthIdentity was constructed without a scopes field in multiple places; all constructors needed updating when the field was added"
+        },
+        {
+          "path": "crates/auth/src/credential_store.rs",
+          "finding": "verify_password returned early without doing Argon2 work when no password was set, creating a ~0ms vs ~100ms timing side channel; fixed with a dummy hash constant"
+        },
+        {
+          "path": "crates/httpd/src/tools_routes.rs",
+          "finding": "require_config_access only took \u0026AppState; to enforce API key scopes on config_save/restart, needed to add identity parameter extracted via axum::Extension\u003cAuthIdentity\u003e"
+        },
+        {
+          "path": "crates/gateway/src/state.rs",
+          "finding": "GatewayInner needed a setup_code_created_at: Instant field to track setup code age for 30-minute expiry"
+        },
+        {
+          "path": "crates/httpd/src/login_guard.rs",
+          "finding": "IpRecord needed a last_failure_at: Instant field to allow cleanup of stale failure counters that had no ban — without it, single-failure IPs accumulated forever (memory leak)"
+        }
+      ],
+      "workflow": [
+        "Run clippy after every compilation — collapsible-if warnings were consistently caught and required fixing before commit",
+        "Background Bash tasks (run_in_background) are useful for long compilation/test runs; the notification system allows continuing other work",
+        "When axum extractors don't compose well across different State types (AuthState vs AppState), use axum::Extension\u003cT\u003e to read middleware-inserted request extensions from handlers",
+        "Test passwords need updating when changing validation minimums — integration tests use hardcoded passwords that may fall below new thresholds",
+        "The unsafe set_var/remove_var approach for env var tests is blocked by project lints; env var-dependent logic should be tested via integration tests instead"
+      ]
+    },
+    "friction": [
+      "axum extractor incompatibility between AuthState and AppState required multiple approach pivots to implement scope enforcement on config routes — Extension\u003cAuthIdentity\u003e was the eventual solution after RequireAdmin extractor failed due to FromRef bounds",
+      "Two separate websocket_header_authenticated copies caused confusion about which needed updating for scope propagation",
+      "cleanup() test in LoginGuard failed because IpRecord with consecutive_failures \u003e 0 but no ban was retained (correct behavior) — required adding last_failure_at field and stale-entry expiry logic",
+      "CUDA crates cause clippy/test failures on macOS; all test runs required --exclude flags for CUDA-dependent crates",
+      "unsafe set_var/remove_var denied by project lint, preventing direct env var unit tests for MOLTIS_TERMINAL_DISABLED"
+    ],
+    "open_items": [
+      "Setup code entropy improvement (6 digits → 8 alphanumeric) increases search space but with 30 attempts per lockout window still only ~1:30,000 odds — consider further hardening for truly public deployments",
+      "Legacy API keys use plain SHA-256 (no salt) and continue to work via fallback in verify_api_key — migration path to force re-generation of old keys not implemented",
+      "Read-only config endpoints (config_get, config_validate, config_template) do not enforce operator.admin scope — only write endpoints are scope-gated",
+      "No audit log entries for passkey registration/removal events, only login success/failure",
+      "No per-user failed attempt counter for distributed brute-force (only IP-based) — account lockout only triggers from 3 distinct IPs, not from total attempt volume"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-12T20:09:13.855631Z",
+    "agent_lines": 0,
+    "human_added": 77,
+    "human_modified": 16,
+    "human_removed": 0,
+    "total_committed": 77,
+    "agent_percentage": 0
+  }
+}
