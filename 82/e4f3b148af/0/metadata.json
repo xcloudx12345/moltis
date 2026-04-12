@@ -1,0 +1,77 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "82e4f3b148af",
+  "session_id": "0320cd90-509a-4916-8b0b-9d383f27cb89",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-12T21:21:43.943995Z",
+  "branch": "truthful-season",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/config/src/loader.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "0587da3edb6e",
+  "token_usage": {
+    "input_tokens": 73,
+    "cache_creation_tokens": 129614,
+    "cache_read_tokens": 5806150,
+    "output_tokens": 47639,
+    "api_call_count": 69
+  },
+  "summary": {
+    "intent": "Investigate and fix GitHub issue #684 where the moltis web UI scrambles the ordering of sections in moltis.toml when saving settings.",
+    "outcome": "Root cause identified as toml_edit doc_position metadata being copied during clone() when inserting new sub-tables; fixed by stripping positions on insert, with regression tests added and PR created.",
+    "learnings": {
+      "repo": [
+        "Config save path: save_config_to_path() serializes with toml::to_string_pretty then merges into the existing document via merge_toml_preserving_comments()",
+        "There is a separate save_raw_config() path (used by provider-setup) that bypasses the merge entirely and writes directly",
+        "The web UI settings save goes through tools_routes.rs in crates/httpd/src/tools_routes.rs",
+        "Config schema uses skip_serializing_if attributes which can cause sections to be omitted from serialized output, potentially dropping sections during merge",
+        "227 tests in the config crate (226 after test cleanup)"
+      ],
+      "code": [
+        {
+          "path": "crates/config/src/loader.rs",
+          "finding": "merge_toml_tables was doing updated_item.clone() which copies doc_position metadata from the serialized document, causing toml_edit to scatter new sub-tables to wrong positions. Fixed by stripping positions via clone_item_without_positions()."
+        },
+        {
+          "path": "crates/config/src/loader.rs",
+          "finding": "Added clone_item_without_positions() and clone_table_without_positions() helpers that deep-clone items but create fresh Table objects with doc_position = None, letting toml_edit auto-position them correctly."
+        },
+        {
+          "path": "crates/httpd/src/tools_routes.rs",
+          "finding": "Web UI config save endpoint calls save_raw_config via this route handler"
+        },
+        {
+          "path": "crates/provider-setup/src/lib.rs",
+          "finding": "Uses save_raw_config which bypasses merge logic entirely"
+        }
+      ],
+      "workflow": [
+        "toml_edit preserves document structure via doc_position metadata on Table items; cloning items between documents copies these positions and causes rendering artifacts",
+        "When doc_position is None on a toml_edit Table, the library auto-positions the table after its parent section — the correct behavior for new insertions",
+        "Key.decor() and Key.decor_mut() are deprecated in the toml_edit version used; use leaf_decor()/leaf_decor_mut() instead",
+        "CUDA build failures can cause clippy to fail on unrelated crates; run clippy scoped to the target crate to isolate issues"
+      ]
+    },
+    "friction": [
+      "toml_edit position metadata behavior is non-obvious and not well-documented; required writing multiple exploratory tests to diagnose",
+      "CUDA toolkit absence causes clippy failures that obscure real lint issues when running workspace-wide",
+      "Key API deprecations (decor/decor_mut) required a follow-up fix after clippy on the specific crate"
+    ],
+    "open_items": [
+      "save_raw_config() in provider-setup bypasses merge entirely — if it ever saves partial configs it could also scramble ordering, but was not investigated",
+      "Sections with all-None fields are dropped by toml::to_string_pretty due to skip_serializing_if — this could cause those sections to be removed during merge roundtrip; not fully characterized",
+      "No test coverage for the save_raw_config code path with respect to ordering"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-12T21:21:23.389579Z",
+    "agent_lines": 165,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 165,
+    "agent_percentage": 100
+  }
+}
