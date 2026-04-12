@@ -1,0 +1,97 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "f97283e4475f",
+  "session_id": "789fc7c6-abfb-4fd0-a5a9-4ea67d341811",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-12T16:46:40.78046Z",
+  "branch": "dorian-pepperberry",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/discord/src/handler.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "884c4279a1d8",
+  "token_usage": {
+    "input_tokens": 235,
+    "cache_creation_tokens": 208826,
+    "cache_read_tokens": 33848374,
+    "output_tokens": 55545,
+    "api_call_count": 219
+  },
+  "summary": {
+    "intent": "Review all security issues on the dorian-pepperberry branch and fix them, culminating in a design that restricts privileged channel commands (/approve, /deny) to users explicitly on the DM allowlist.",
+    "outcome": "All four security issues were fixed and pushed: /attach scoped to same-account sessions, /approve and /deny restricted to allowlisted senders (checked centrally in the gateway), approval notifications truncated to 80 chars, and MS Teams updated to use resolve_model/resolve_agent_id. 1762 tests passing.",
+    "learnings": {
+      "repo": [
+        "The DM allowlist (channel account config's allowlist()) is the single source of truth for who is an authorized operator — Moltis is a personal assistant, not a multi-user bot, so allowlist = owner.",
+        "ChannelRegistry.account_config(account_id) returns Option\u003cBox\u003cdyn ChannelConfigView\u003e\u003e which exposes allowlist() for sender authorization checks.",
+        "session_metadata.list_account_sessions(channel_type, account_id) scopes session listing to the same channel+account; the broader list() was the root cause of the /attach hijacking risk.",
+        "gating::is_allowed() returns true for empty allowlists (open policy), so approval auth needs an explicit non-empty allowlist check rather than reusing is_allowed().",
+        "All channels except MS Teams were already using resolve_model/resolve_agent_id via ChannelConfigView; MS Teams was hardcoding model and None for agent_id.",
+        "Slack DM channels start with 'D', making channel_id.starts_with('D') a valid but heuristic DM detection.",
+        "CUDA crate excluded from clippy/build on macOS — this is expected per CLAUDE.md, not a real error.",
+        "dispatch_command trait is defined in crates/channels/src/plugin.rs and implemented in 6+ channel crates plus a gateway implementation; changes to it require touching 11+ files."
+      ],
+      "code": [
+        {
+          "path": "crates/gateway/src/channel_events.rs",
+          "line": 1461,
+          "end_line": 1600,
+          "finding": "/attach command had no authorization check — used session_metadata.list() instead of list_account_sessions(), exposing all sessions to any channel user"
+        },
+        {
+          "path": "crates/gateway/src/channel_events.rs",
+          "line": 1527,
+          "end_line": 1601,
+          "finding": "/approve and /deny had no sender authorization; fix added is_sender_on_allowlist() helper checking sender_id against channel account's DM allowlist via channel_registry"
+        },
+        {
+          "path": "crates/gateway/src/approval.rs",
+          "line": 136,
+          "end_line": 140,
+          "finding": "Approval notifications broadcast full command string to channel; fixed with truncate_command_preview() capped at 80 chars using Cow\u003c'_, str\u003e"
+        },
+        {
+          "path": "crates/msteams/src/plugin.rs",
+          "line": 474,
+          "end_line": 474,
+          "finding": "MS Teams hardcoded agent_id: None instead of config.resolve_agent_id(); also used config.model.clone() instead of config.resolve_model()"
+        },
+        {
+          "path": "crates/channels/src/plugin.rs",
+          "finding": "dispatch_command trait is the extension point for all channel command handling; authorization should NOT be added here as a parameter — centralize in the gateway instead"
+        }
+      ],
+      "workflow": [
+        "Centralizing authorization in the gateway (not the trait) keeps channel implementations simple and prevents future channels from needing to reason about authorization logic.",
+        "The SenderAuth enum approach was tried and reverted — encoding auth context as a trait parameter pushes policy decisions to each channel implementor, which is error-prone and was the wrong abstraction level.",
+        "Using Cow\u003c'_, str\u003e for string helpers that may or may not allocate matches project idioms (noted during approval truncation).",
+        "Running cargo fmt and cargo clippy after all edits before committing is part of the project workflow.",
+        "Subagents were used to parallelize reverting SenderAuth from many call sites, which worked but required verifying compilation after."
+      ]
+    },
+    "friction": [
+      "The SenderAuth enum was added, then the design evolved and it had to be fully reverted across 11 files — significant churn from premature implementation before the design was settled.",
+      "Multiple rounds of design iteration on the authorization model (DM-only → SenderAuth enum → allowlist-based) required repeated large refactors.",
+      "Telegram has many dispatch_command call sites spread across handle_message_direct and handle_callback_query, requiring many individual edits.",
+      "Determining DM context per-channel required different heuristics for each: Slack uses channel_id prefix, Discord uses guild_id.is_none(), Telegram uses ChatKind::Private, Matrix uses ChatType enum — no unified abstraction existed.",
+      "A test for truncate_command_preview failed on first run because the secret was within the 80-char limit — required adjusting test data."
+    ],
+    "open_items": [
+      "Channel command allowlist config (per-channel config field specifying which commands non-allowlisted users can run from group chats) was explicitly deferred as a follow-up issue — touches config schema, validation, templates, and docs.",
+      "Approval/deny commands could potentially be scoped to the session creator rather than (or in addition to) the allowlist, for finer-grained control in multi-user scenarios.",
+      "The Slack DM detection heuristic (channel_id.starts_with('D')) is fragile — a proper channel_type field from Slack's API would be more reliable.",
+      "MS Teams DM detection uses !is_group which should be verified against all MS Teams conversation types (personal, groupChat, channel).",
+      "Empty allowlist behavior for approval auth (deny all) differs from empty allowlist behavior for chat gating (allow all) — this asymmetry could be surprising and may need documentation or a dedicated config flag."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-12T16:46:03.765581Z",
+    "agent_lines": 0,
+    "human_added": 911,
+    "human_modified": 3,
+    "human_removed": 0,
+    "total_committed": 911,
+    "agent_percentage": 0
+  }
+}
