@@ -1,0 +1,68 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "aad3c66e15a4",
+  "session_id": "cbf34e75-e308-41a4-b3c1-71769c0bbaff",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-12T12:13:11.736848Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/gateway/src/lib.rs",
+    "crates/gateway/src/local_llm_setup.rs",
+    "crates/gateway/src/methods/services.rs",
+    "crates/gateway/src/server.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "5769abeb6436",
+  "token_usage": {
+    "input_tokens": 11,
+    "cache_creation_tokens": 34644,
+    "cache_read_tokens": 194538,
+    "output_tokens": 1832,
+    "api_call_count": 7
+  },
+  "summary": {
+    "intent": "Fix a flaky test failure caused by concurrent config mutation in gateway tests, then commit and push the fix.",
+    "outcome": "Consolidated three independent per-module mutexes into a single shared crate-level lock, fixing the race condition. Changes committed and pushed.",
+    "learnings": {
+      "repo": [
+        "Config-mutating tests in the gateway crate previously used per-module static Mutex\u003c()\u003e locks in services.rs, local_llm_setup.rs, and server.rs — these were independent and did not prevent cross-module concurrent access.",
+        "A shared config_override_test_lock() function was added to crates/gateway/src/lib.rs to serialize all config-mutating tests across the entire gateway crate.",
+        "The project has a 'never .unwrap() in production' guideline; the new shared lock uses .unwrap_or_else(|e| e.into_inner()) for poison recovery instead of .unwrap()."
+      ],
+      "code": [
+        {
+          "path": "crates/gateway/src/methods/services.rs",
+          "line": 5269,
+          "end_line": 5269,
+          "finding": "Failing assertion: payload[\"style\"] returned 'prompt-only' instead of 'search-only' due to a concurrent test mutating shared config — classic test isolation race condition."
+        },
+        {
+          "path": "crates/gateway/src/lib.rs",
+          "finding": "New config_override_test_lock() function added here as the single shared mutex for all config-mutating tests in the crate."
+        }
+      ],
+      "workflow": [
+        "Per-module static locks are insufficient for cross-module test isolation — a crate-level shared lock is needed when multiple modules mutate shared global state.",
+        "The flaky test manifested as a wrong value rather than a deadlock or panic, making the root cause (concurrent mutation) non-obvious without inspecting the lock scopes."
+      ]
+    },
+    "friction": [
+      "Test failure was intermittent/race-condition-based, which makes it harder to reproduce reliably and confirm the fix without explicit test runs.",
+      "The assistant offered to run the test to confirm the fix but the user skipped straight to commit/push without verification."
+    ],
+    "open_items": [
+      "The fix was not verified by re-running the failing test before committing — should confirm memory_config_get_reports_typed_memory_fields passes consistently.",
+      "Other crates in the workspace may have the same per-module static lock anti-pattern and could have similar latent race conditions."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-12T12:12:58.602927Z",
+    "agent_lines": 0,
+    "human_added": 0,
+    "human_modified": 12,
+    "human_removed": 17,
+    "total_committed": 0,
+    "agent_percentage": 0
+  }
+}
