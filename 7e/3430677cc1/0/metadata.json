@@ -1,0 +1,74 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "7e3430677cc1",
+  "session_id": "a19414f3-6176-45a5-a923-13d1b9e61758",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-12T12:58:45.172359Z",
+  "branch": "curious-bill",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/chat/src/lib.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "9526414d0184",
+  "checkpoint_transcript_start": 972,
+  "transcript_lines_at_start": 972,
+  "token_usage": {
+    "input_tokens": 23,
+    "cache_creation_tokens": 12861,
+    "cache_read_tokens": 3639117,
+    "output_tokens": 6995,
+    "api_call_count": 21
+  },
+  "summary": {
+    "intent": "Fix the `sender_id: None` bug in `channel_binding_from_runtime_context` so that hook payloads carry the correct sender_id, enabling layer 4 group/sender tool policy to work end-to-end.",
+    "outcome": "Added `channel_sender_id` to `PromptHostRuntimeContext`, populated it from `params[\"channel\"][\"sender_id\"]` in `apply_request_runtime_context`, and threaded it through `channel_binding_from_runtime_context` and `build_policy_context`. Tests updated and committed.",
+    "learnings": {
+      "repo": [
+        "sender_id in policy resolution reads from `params[\"channel\"][\"sender_id\"]` (the serialized ChannelMessageMeta), not from the runtime context host — these are two separate code paths.",
+        "`channel_binding_from_runtime_context` is only called from `build_tool_context`, which is called from `run_with_tools` — a single call site made the refactor straightforward.",
+        "The cleanest way to thread new per-request data to downstream consumers is to add a field to `PromptHostRuntimeContext` and populate it in `apply_request_runtime_context`, rather than changing function signatures throughout the call chain.",
+        "The old sandbox policy layer (layer 6) was previously removed because `SandboxConfig` has no `tools_policy` field — it is not wired into the layered policy system yet.",
+        "A dedicated `docs/src/tool-policy.md` documenting the full layered system does not yet exist."
+      ],
+      "code": [
+        {
+          "path": "crates/agents/src/prompt.rs",
+          "finding": "`PromptHostRuntimeContext` was extended with a `channel_sender_id` field to carry sender_id from the request params down to tool context builders."
+        },
+        {
+          "path": "crates/chat/src/lib.rs",
+          "finding": "`apply_request_runtime_context` now populates `channel_sender_id` from `params[\"channel\"][\"sender_id\"]`. `channel_binding_from_runtime_context` and `build_policy_context` were updated to consume it."
+        },
+        {
+          "path": "crates/chat/src/lib.rs",
+          "line": 7347,
+          "finding": "`build_tool_context` is called from `run_with_tools` at line 7347; params are not directly available there, which is why threading via `PromptHostRuntimeContext` was the chosen approach."
+        }
+      ],
+      "workflow": [
+        "Parallel agents (docs page + sandbox policy) were launched for independent tasks while a small, targeted code change was handled inline — good parallelism pattern for compound follow-up work.",
+        "Checking all call sites with Grep before refactoring a function signature avoids surprise breakage; a single call site confirmed the low blast radius here.",
+        "Issue numbers were claimed/created in GitHub before starting work to keep tracking tidy across parallel workstreams."
+      ]
+    },
+    "friction": [
+      "sender_id was not threaded through the runtime context at all, requiring a multi-file change (prompt.rs + lib.rs) rather than a one-line fix.",
+      "params are not available at the `run_with_tools` / `build_tool_context` level, forcing an indirect approach via `PromptHostRuntimeContext` rather than passing params directly."
+    ],
+    "open_items": [
+      "Write a dedicated `docs/src/tool-policy.md` page documenting the full layered tool policy system (tracked as a new issue).",
+      "Add `tools_policy` field to `SandboxConfig` to re-enable sandbox as layer 6 in the policy stack (tracked as a new issue).",
+      "Upstream issue #640 — hook payload `sender_id` population has broader implications beyond this fix."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-12T12:58:18.724918Z",
+    "agent_lines": 0,
+    "human_added": 18,
+    "human_modified": 6,
+    "human_removed": 0,
+    "total_committed": 18,
+    "agent_percentage": 0
+  }
+}

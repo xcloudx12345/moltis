@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "7e3430677cc1",
+  "strategy": "manual-commit",
+  "branch": "curious-bill",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/chat/src/lib.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/7e/3430677cc1/0/metadata.json",
+      "transcript": "/7e/3430677cc1/0/full.jsonl",
+      "context": "/7e/3430677cc1/0/context.md",
+      "content_hash": "/7e/3430677cc1/0/content_hash.txt",
+      "prompt": "/7e/3430677cc1/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 23,
+    "cache_creation_tokens": 12861,
+    "cache_read_tokens": 3639117,
+    "output_tokens": 6995,
+    "api_call_count": 21
+  }
+}
