@@ -1,0 +1,115 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "5171495cf753",
+  "session_id": "f81add4e-16c0-495a-b6c9-529e47e76baf",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-12T17:21:54.306308Z",
+  "branch": "helix-epoch",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/nostr/src/outbound.rs",
+    "crates/nostr/src/plugin.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "e7c9d46384c9",
+  "token_usage": {
+    "input_tokens": 4601,
+    "cache_creation_tokens": 924352,
+    "cache_read_tokens": 172261277,
+    "output_tokens": 166798,
+    "api_call_count": 624
+  },
+  "summary": {
+    "intent": "Implement a Nostr DM channel for Moltis with full parity to existing channels (Telegram, Discord, etc.), including backend crate, web UI, onboarding, docs, metrics, NIP-44 support, and integration tests.",
+    "outcome": "Delivered a complete moltis-nostr crate (~2200 LOC, 23 unit tests, 5 integration tests) with all channel checklist items satisfied, including a subsequent round of PR review fixes covering OTP flow correctness, config sharing, and a tokio RwLock panic in e2e tests.",
+    "learnings": {
+      "repo": [
+        "ChannelType enum uses #[non_exhaustive] so new variants don't require touching exhaustive matches elsewhere in the gateway/chat crates",
+        "Channel account maps must use std::sync::RwLock, not tokio::sync::RwLock — Telegram and Matrix both follow this pattern; tokio::sync::RwLock::blocking_read() panics inside a tokio runtime",
+        "The matrix channel was going through serde #[flatten] extra field, not a named ChannelsConfig field — adding it as a named field is a safe but unintended side-effect",
+        "OTP flow: notification receiver must be created BEFORE client.connect() to avoid missing messages; nostr-sdk Event notifications deduplicate so RelayPoolNotification::Message must be used for reliable DM receipt",
+        "Biome (not rustfmt) handles JS formatting — CI runs cargo +nightly fmt AND biome check; chained method calls must be split across lines per biome rules",
+        "Integration tests use #[ignore] and are run separately with env vars; pattern matches provider integration tests in crates/providers/tests/",
+        "channels.offered default list drives the web UI connect buttons — nostr must be added there to appear in the picker",
+        "OTP verification must happen BEFORE the access gate in the event pipeline; otherwise the code DM is rejected as unauthorized before it can be checked"
+      ],
+      "code": [
+        {
+          "path": "crates/nostr/src/plugin.rs",
+          "line": 231,
+          "end_line": 231,
+          "finding": "tokio::sync::RwLock::blocking_read() panics when called from within a tokio runtime; account maps must use std::sync::RwLock throughout"
+        },
+        {
+          "path": "crates/nostr/src/bus.rs",
+          "line": 65,
+          "end_line": 65,
+          "finding": "client.notifications() broadcast receiver must be bound before connect() — creating it after misses messages already dispatched"
+        },
+        {
+          "path": "crates/nostr/src/bus.rs",
+          "line": 182,
+          "end_line": 196,
+          "finding": "Nested if-let inside match arm triggers clippy::collapsible_match — must be collapsed into match arm guard using \u0026\u0026 syntax"
+        },
+        {
+          "path": "crates/nostr/src/outbound.rs",
+          "line": 1,
+          "end_line": 50,
+          "finding": "nostr_sdk::prelude::* imports both nip04 and nip44 decrypt functions creating a name collision; must use fully qualified nostr_sdk::nips::nip04::decrypt path"
+        },
+        {
+          "path": "crates/config/src/schema.rs",
+          "line": 1437,
+          "end_line": 1445,
+          "finding": "ChannelsConfig named_fields() and Default impl must both be updated when adding a new named channel field"
+        },
+        {
+          "path": "crates/nostr/src/seen.rs",
+          "line": 1,
+          "end_line": 30,
+          "finding": "clippy::len_without_is_empty fires if a struct has len() but no is_empty() — must add is_empty() method"
+        },
+        {
+          "path": "crates/gateway/Cargo.toml",
+          "line": 1,
+          "end_line": 50,
+          "finding": "Optional dep feature activation in Cargo requires dep?/feature syntax (weak dependency) to avoid pulling in an optional dep when only the feature flag is enabled without the dep itself"
+        }
+      ],
+      "workflow": [
+        "nostr-sdk v0.44: nip04 and nip44 features are NOT in default — must be explicitly enabled; subscribe() takes single Filter not Vec\u003cFilter\u003e; disconnect() returns () not Result; to_bech32() returns Result\u003cString, Infallible\u003e",
+        "std::sync::RwLockReadGuard is !Send — cannot hold it across .await; must extract values into owned locals before any await point",
+        "For truly unrelated git histories (squashed main + feature branch), cherry-pick individual commits onto a new branch from origin/main rather than attempting --allow-unrelated-histories merge which produces 70+ conflicts",
+        "Greptile review loop: trigger review, poll for completion, fetch comment bodies, fix, re-trigger — repeat until 0 comments"
+      ]
+    },
+    "friction": [
+      "nostr-sdk v0.44 API surface required multiple compilation rounds to discover: NIP-04 not in default features, subscribe() takes Filter not Vec, disconnect() is infallible, to_bech32() returns Result\u003c_, Infallible\u003e",
+      "nostr_sdk::prelude::* wildcard import creates silent name collision between nip04::decrypt and nip44::decrypt — compiler error message was misleading (unnecessary qualification) rather than ambiguity",
+      "tokio::sync::RwLock panic in e2e tests only surfaced after full e2e run, not during cargo test — root cause (blocking_read inside runtime) required reading Telegram/Matrix source to identify the correct pattern",
+      "DM round-trip integration test required three attempts to get working: wrong env var names, notifications receiver created after connect(), Event dedup requiring Message variant instead",
+      "Merging main with unrelated histories (squashed single commit vs full branch history) produced 70+ conflicts — required abort and cherry-pick strategy",
+      "OTP verification was silently broken (access gate ran before OTP check) — only caught by automated PR review, not unit tests"
+    ],
+    "open_items": [
+      "NIP-44 outbound preference (config option to prefer NIP-44 over NIP-04 for sending) — currently always sends NIP-04",
+      "NIP-17 gift-wrapped DMs — future enhancement, requires more complex event handling, less widely supported",
+      "NIP-65 relay list advertisement — future, advertise preferred relays",
+      "NIP-94 media attachments — future",
+      "NIP-25 reactions — future",
+      "Metrics feature has counters/gauges defined but no dashboards or alerting configured",
+      "Contract test suite (moltis_channels::contract) not run against NostrPlugin — requires valid credentials to start so can't use TestPlugin pattern directly",
+      "seen.rs LRU persistence to data_dir()/nostr_seen.json with debounced writes — currently in-memory only, state lost on restart"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-12T17:21:00.713495Z",
+    "agent_lines": 0,
+    "human_added": 35,
+    "human_modified": 26,
+    "human_removed": 0,
+    "total_committed": 35,
+    "agent_percentage": 0
+  }
+}
