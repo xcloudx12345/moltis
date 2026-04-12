@@ -4317,6 +4317,7 @@ capabilities that control what features are available.</p>
 <tr><td>Microsoft Teams</td><td>Webhook</td><td>Yes</td><td>Streaming, interactive messages, threads, reactions</td></tr>
 <tr><td>WhatsApp</td><td>Gateway (WebSocket)</td><td>No</td><td>Streaming, voice ingest, OTP, pairing, location</td></tr>
 <tr><td>Slack</td><td>Socket Mode</td><td>No</td><td>Streaming, interactive messages, threads, reactions</td></tr>
+<tr><td>Nostr</td><td>Gateway (relay subscription)</td><td>No</td><td>OTP, encrypted DMs (NIP-04)</td></tr>
 </tbody></table>
 </div>
 <h2 id="inbound-modes"><a class="header" href="#inbound-modes">Inbound Modes</a></h2>
@@ -6509,6 +6510,137 @@ arrive before the message ID buffer is rebuilt</li>
 │   ├── sled_store.rs    # Persistent Signal Protocol store
 │   └── memory_store.rs  # In-memory store (tests/fallback)
 </code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="nostr"><a class="header" href="#nostr">Nostr</a></h1>
+<p>Moltis can receive and send encrypted direct messages over
+<a href="https://nostr.com">Nostr</a>, the decentralized social protocol. The integration
+uses <a href="https://github.com/nostr-protocol/nips/blob/master/04.md">NIP-04</a>
+encrypted DMs (kind:4) and connects to relays via <code>nostr-sdk</code> — no public URL
+or server infrastructure is required.</p>
+<h2 id="how-it-works-10"><a class="header" href="#how-it-works-10">How It Works</a></h2>
+<pre><code>┌──────────────────────────────────────────────────────┐
+│              Nostr Relay Network                      │
+│   (relay.damus.io, nos.lol, relay.nostr.band, ...)   │
+└──────────────────┬───────────────────────────────────┘
+                   │  WebSocket subscription (kind:4)
+                   ▼
+┌──────────────────────────────────────────────────────┐
+│                moltis-nostr crate                     │
+│  ┌────────────┐  ┌────────────┐  ┌────────────────┐  │
+│  │    Bus     │  │  Outbound  │  │     Plugin     │  │
+│  │ (inbound)  │  │ (replies)  │  │  (lifecycle)   │  │
+│  └────────────┘  └────────────┘  └────────────────┘  │
+└──────────────────┬───────────────────────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────────────────────┐
+│                 Moltis Gateway                        │
+│         (chat dispatch, tools, memory)                │
+└──────────────────────────────────────────────────────┘
+</code></pre>
+<p>The bot connects <strong>outward</strong> to Nostr relays via WebSocket. No port forwarding,
+public domain, or TLS certificate is needed. Messages are end-to-end encrypted
+between the sender and the bot using NIP-04.</p>
+<h2 id="prerequisites-6"><a class="header" href="#prerequisites-6">Prerequisites</a></h2>
+<p>Before configuring Moltis, you need a Nostr secret key:</p>
+<ol>
+<li>Generate a new key pair using any Nostr client (e.g.
+<a href="https://damus.io">Damus</a>, <a href="https://github.com/vitorpamplona/amethyst">Amethyst</a>,
+or a key generation tool)</li>
+<li>Copy the secret key — either the <code>nsec1...</code> bech32 format or the 64-character
+hex format</li>
+<li>Note the corresponding public key (<code>npub1...</code>) to share with users who want to
+message the bot</li>
+</ol>
+<div id="admonition-warning" class="admonition admonish-warning" role="note" aria-labelledby="admonition-warning-title">
+<div class="admonition-title">
+<div id="admonition-warning-title">
+<p>Warning</p>
+</div>
+<a class="admonition-anchor-link" href="nostr.html#admonition-warning"></a>
+</div>
+<div>
+<p>The secret key is highly sensitive — it controls the bot’s Nostr identity.
+Never commit it to version control. Moltis stores it with <code>secrecy::Secret</code> and
+redacts it from logs, but your <code>moltis.toml</code> file is plain text on disk.
+Consider using <a href="vault.html">Vault</a> for encryption at rest.</p>
+</div>
+</div>
+<h2 id="configuration-15"><a class="header" href="#configuration-15">Configuration</a></h2>
+<p>Add a <code>[channels.nostr.&lt;account-id&gt;]</code> section to your <code>moltis.toml</code>:</p>
+<pre><code class="language-toml">[channels.nostr.my-bot]
+secret_key = "nsec1..."
+relays = ["wss://relay.damus.io", "wss://relay.nostr.band", "wss://nos.lol"]
+dm_policy = "allowlist"
+allowed_pubkeys = ["npub1abc...", "npub1def..."]
+</code></pre>
+<p>Make sure <code>"nostr"</code> is included in <code>channels.offered</code> (it is by default):</p>
+<pre><code class="language-toml">[channels]
+offered = ["telegram", "discord", "slack", "matrix", "nostr"]
+</code></pre>
+<h3 id="configuration-fields-5"><a class="header" href="#configuration-fields-5">Configuration Fields</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>secret_key</code></td><td><strong>yes</strong></td><td>—</td><td>Nostr secret key (<code>nsec1...</code> bech32 or 64-char hex)</td></tr>
+<tr><td><code>relays</code></td><td>no</td><td><code>["wss://relay.damus.io", "wss://relay.nostr.band", "wss://nos.lol"]</code></td><td>Relay WebSocket URLs to connect to</td></tr>
+<tr><td><code>dm_policy</code></td><td>no</td><td><code>"allowlist"</code></td><td>Who can DM the bot: <code>"open"</code>, <code>"allowlist"</code>, or <code>"disabled"</code></td></tr>
+<tr><td><code>allowed_pubkeys</code></td><td>no</td><td><code>[]</code></td><td>Public keys allowed to DM (<code>npub1...</code> or hex, when <code>dm_policy = "allowlist"</code>)</td></tr>
+<tr><td><code>enabled</code></td><td>no</td><td><code>true</code></td><td>Whether this account is active</td></tr>
+<tr><td><code>model</code></td><td>no</td><td>—</td><td>Override the default model for this channel</td></tr>
+<tr><td><code>model_provider</code></td><td>no</td><td>—</td><td>Provider for the overridden model</td></tr>
+<tr><td><code>otp_self_approval</code></td><td>no</td><td><code>true</code></td><td>Allow non-allowlisted senders to self-approve via OTP code</td></tr>
+<tr><td><code>otp_cooldown_secs</code></td><td>no</td><td><code>300</code></td><td>Cooldown after 3 failed OTP attempts</td></tr>
+<tr><td><code>profile.name</code></td><td>no</td><td>—</td><td>NIP-01 profile display name</td></tr>
+<tr><td><code>profile.display_name</code></td><td>no</td><td>—</td><td>NIP-01 longer display name</td></tr>
+<tr><td><code>profile.about</code></td><td>no</td><td>—</td><td>NIP-01 bio / about text</td></tr>
+<tr><td><code>profile.picture</code></td><td>no</td><td>—</td><td>NIP-01 avatar URL (HTTPS)</td></tr>
+<tr><td><code>profile.nip05</code></td><td>no</td><td>—</td><td>NIP-05 identifier (e.g. <code>bot@example.com</code>)</td></tr>
+</tbody></table>
+</div>
+<h3 id="full-example-6"><a class="header" href="#full-example-6">Full Example</a></h3>
+<pre><code class="language-toml">[channels.nostr.my-bot]
+secret_key = "nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqspcgef"
+relays = [
+  "wss://relay.damus.io",
+  "wss://relay.nostr.band",
+  "wss://nos.lol",
+]
+dm_policy = "allowlist"
+allowed_pubkeys = [
+  "npub1abc123...",
+]
+model = "anthropic/claude-sonnet-4-20250514"
+model_provider = "anthropic"
+otp_self_approval = true
+otp_cooldown_secs = 300
+
+[channels.nostr.my-bot.profile]
+name = "Moltis Bot"
+about = "AI assistant on Nostr"
+nip05 = "bot@example.com"
+</code></pre>
+<h2 id="access-control-7"><a class="header" href="#access-control-7">Access Control</a></h2>
+<h3 id="dm-policy-6"><a class="header" href="#dm-policy-6">DM Policy</a></h3>
+<ul>
+<li><strong><code>allowlist</code></strong> (default) — Only public keys in <code>allowed_pubkeys</code> can message
+the bot. Unknown senders receive an OTP challenge if <code>otp_self_approval</code> is
+enabled, or are silently ignored.</li>
+<li><strong><code>open</code></strong> — Anyone can DM the bot.</li>
+<li><strong><code>disabled</code></strong> — All inbound DMs are ignored.</li>
+</ul>
+<h3 id="otp-self-approval-5"><a class="header" href="#otp-self-approval-5">OTP Self-Approval</a></h3>
+<p>When <code>otp_self_approval</code> is enabled and a non-allowlisted sender messages the
+bot, the sender appears in the Senders tab of the web UI where they can be
+approved or denied. This works the same as OTP for Telegram and Matrix.</p>
+<h2 id="nip-04-encryption"><a class="header" href="#nip-04-encryption">NIP-04 Encryption</a></h2>
+<p>All messages between the bot and users are encrypted using
+<a href="https://github.com/nostr-protocol/nips/blob/master/04.md">NIP-04</a> (kind:4
+events). The bot can also decrypt inbound NIP-04 messages from any client that
+supports this standard.</p>
+<p>NIP-44 and NIP-17 (gift-wrapped DMs) are planned for future releases.</p>
+<h2 id="relay-health"><a class="header" href="#relay-health">Relay Health</a></h2>
+<p>The bot maintains persistent WebSocket connections to all configured relays.
+The health probe reports the number of connected relays (e.g. “2/3 relays
+connected”). If all relays disconnect, the bot will automatically attempt to
+reconnect via <code>nostr-sdk</code>’s built-in reconnection logic.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="browser-automation"><a class="header" href="#browser-automation">Browser Automation</a></h1>
 <p>Moltis provides full browser automation via Chrome DevTools Protocol (CDP),
 enabling agents to interact with JavaScript-heavy websites, fill forms,
@@ -6544,7 +6676,7 @@ faster and more lightweight.</p>
 <li><strong>BrowserPool</strong> (<code>crates/browser/src/pool.rs</code>) - Chrome instance management</li>
 <li><strong>Snapshot</strong> (<code>crates/browser/src/snapshot.rs</code>) - DOM element extraction</li>
 </ul>
-<h2 id="configuration-15"><a class="header" href="#configuration-15">Configuration</a></h2>
+<h2 id="configuration-16"><a class="header" href="#configuration-16">Configuration</a></h2>
 <p>Browser automation is <strong>enabled by default</strong>. To customize, add to your <code>moltis.toml</code>:</p>
 <pre><code class="language-toml">[tools.browser]
 enabled = true              # Enable browser support
@@ -6938,7 +7070,7 @@ agent gains a <code>caldav</code> tool that can list calendars, query events, an
 update, or delete entries on your behalf.</p>
 <p>The feature is compiled in by default (the <code>caldav</code> cargo feature) and can be
 disabled at build time with <code>--no-default-features</code>.</p>
-<h2 id="configuration-16"><a class="header" href="#configuration-16">Configuration</a></h2>
+<h2 id="configuration-17"><a class="header" href="#configuration-17">Configuration</a></h2>
 <p>Add a <code>[caldav]</code> section to your <code>moltis.toml</code> (usually <code>~/.moltis/moltis.toml</code>):</p>
 <pre><code class="language-toml">[caldav]
 enabled = true
@@ -7002,7 +7134,7 @@ Passwords are stored in <code>moltis.toml</code> and redacted in logs, but the f
 is plain text on disk. Consider using <a href="vault.html">Vault</a> for encryption at rest.</p>
 </div>
 </div>
-<h2 id="how-it-works-10"><a class="header" href="#how-it-works-10">How it works</a></h2>
+<h2 id="how-it-works-11"><a class="header" href="#how-it-works-11">How it works</a></h2>
 <p>When Moltis starts and CalDAV is enabled with at least one account, a <code>caldav</code>
 tool is registered in the agent tool registry. The agent can then call it during
 conversations to interact with your calendars.</p>
@@ -7549,7 +7681,7 @@ behaviour).</p>
 <tr><td>Status</td><td>shipped</td><td>shipped</td><td>shipped</td><td>shipped</td></tr>
 </tbody></table>
 </div>
-<h2 id="configuration-17"><a class="header" href="#configuration-17">Configuration</a></h2>
+<h2 id="configuration-18"><a class="header" href="#configuration-18">Configuration</a></h2>
 <p>All compaction settings live under <code>[chat.compaction]</code> in <code>moltis.toml</code>:</p>
 <pre><code class="language-toml">[chat.compaction]
 mode = "deterministic"              # "deterministic" | "recency_preserving" | "structured" | "llm_replace"
@@ -7788,7 +7920,7 @@ agents in response. Each webhook delivery becomes a persistent chat session
 that can be inspected and continued from the web UI.</p>
 <p>Use webhooks to trigger agents from GitHub PRs, GitLab merge requests, Stripe
 payments, PagerDuty incidents, or any service that can POST JSON to a URL.</p>
-<h2 id="how-it-works-11"><a class="header" href="#how-it-works-11">How It Works</a></h2>
+<h2 id="how-it-works-12"><a class="header" href="#how-it-works-12">How It Works</a></h2>
 <pre><code>External Service (GitHub, Stripe, …)
         │
         ▼  POST /api/webhooks/ingest/{public_id}
@@ -8372,7 +8504,7 @@ any supplementary files written alongside <code>SKILL.md</code>.</p>
 </ul>
 <p>You can remove any subscription by clicking the <strong>Remove</strong> button. This works from any device - useful for revoking access to old devices.</p>
 <p>Subscription changes are broadcast in real-time via WebSocket, so all connected clients see updates immediately.</p>
-<h3 id="how-it-works-12"><a class="header" href="#how-it-works-12">How It Works</a></h3>
+<h3 id="how-it-works-13"><a class="header" href="#how-it-works-13">How It Works</a></h3>
 <p>Moltis uses the Web Push API with VAPID (Voluntary Application Server Identification) keys:</p>
 <ol>
 <li><strong>VAPID Keys</strong>: On first run, the server generates a P-256 ECDSA key pair</li>
@@ -8422,7 +8554,7 @@ any supplementary files written alongside <code>SKILL.md</code>.</p>
 }
 </code></pre>
 <p>Clicking a notification will open or focus the app and navigate to the relevant chat.</p>
-<h2 id="configuration-18"><a class="header" href="#configuration-18">Configuration</a></h2>
+<h2 id="configuration-19"><a class="header" href="#configuration-19">Configuration</a></h2>
 <h3 id="feature-flag-3"><a class="header" href="#feature-flag-3">Feature Flag</a></h3>
 <p>Push notifications are controlled by the <code>push-notifications</code> feature flag, which is enabled by default. To disable:</p>
 <pre><code class="language-toml"># In your Cargo.toml or when building
@@ -8921,7 +9053,7 @@ JSON object <code>{"kind":"created","sessionKey":"..."}</code> dispatched to
 device that connects to your gateway and executes commands on your behalf.
 This lets the AI agent run shell commands on a Linux server, query a Raspberry
 Pi, or leverage a GPU machine — all from a single chat session.</p>
-<h2 id="how-it-works-13"><a class="header" href="#how-it-works-13">How It Works</a></h2>
+<h2 id="how-it-works-14"><a class="header" href="#how-it-works-14">How It Works</a></h2>
 <pre><code>┌──────────────┐    WebSocket     ┌─────────────────┐
 │  Your laptop │◄────────────────►│  Moltis gateway  │
 │  (browser)   │                  │  (moltis)        │
@@ -9737,7 +9869,7 @@ drift re-trust, dependency install guards, kill switch, audit log), see
 <p>By default, Moltis requires explicit user approval before executing potentially
 dangerous commands. This “human-in-the-loop” design ensures the AI cannot take
 destructive actions without consent.</p>
-<h3 id="how-it-works-14"><a class="header" href="#how-it-works-14">How It Works</a></h3>
+<h3 id="how-it-works-15"><a class="header" href="#how-it-works-15">How It Works</a></h3>
 <p>When the agent wants to run a command:</p>
 <ol>
 <li>The command is analyzed against approval policies</li>
@@ -10371,7 +10503,7 @@ YubiKey-resident GPG key:</p>
 <li>Creates <code>.asc</code> detached GPG signatures for each artifact</li>
 <li>Uploads the <code>.asc</code> files to the GitHub release</li>
 </ol>
-<h3 id="prerequisites-6"><a class="header" href="#prerequisites-6">Prerequisites</a></h3>
+<h3 id="prerequisites-7"><a class="header" href="#prerequisites-7">Prerequisites</a></h3>
 <ul>
 <li><a href="https://cli.github.com/">GitHub CLI</a> (<code>gh</code>) authenticated</li>
 <li>GPG with your signing key available (YubiKey inserted)</li>
@@ -10808,7 +10940,7 @@ fly secrets set MOLTIS_PASSWORD="your-password"
 # Create persistent storage
 fly volumes create moltis_data --region iad --size 1
 </code></pre>
-<h3 id="how-it-works-15"><a class="header" href="#how-it-works-15">How it works</a></h3>
+<h3 id="how-it-works-16"><a class="header" href="#how-it-works-16">How it works</a></h3>
 <ul>
 <li><strong>Image</strong>: pulled from <code>ghcr.io/moltis-org/moltis:latest</code></li>
 <li><strong>Port</strong>: internal 8080, Fly terminates TLS and routes HTTPS traffic</li>
@@ -11392,7 +11524,7 @@ startup in the correct dependency order.</p>
     │   └── 20240205100004_init.sql   # files, chunks, embedding_cache, FTS
     └── src/lib.rs                     # run_migrations() (separate memory.db)
 </code></pre>
-<h2 id="how-it-works-16"><a class="header" href="#how-it-works-16">How It Works</a></h2>
+<h2 id="how-it-works-17"><a class="header" href="#how-it-works-17">How It Works</a></h2>
 <h3 id="migration-ownership"><a class="header" href="#migration-ownership">Migration Ownership</a></h3>
 <p>Each crate is autonomous and owns its schema:</p>
 <div class="table-wrapper"><table><thead><tr><th>Crate</th><th>Database</th><th>Tables</th><th>Migration File</th></tr></thead><tbody>
@@ -11849,7 +11981,7 @@ fn main() {
 
     // Now spans will add labels to metrics
 }</code></pre></pre>
-<h3 id="how-it-works-17"><a class="header" href="#how-it-works-17">How It Works</a></h3>
+<h3 id="how-it-works-18"><a class="header" href="#how-it-works-18">How It Works</a></h3>
 <p>When tracing is enabled, span fields are automatically added as metric labels:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -11934,7 +12066,7 @@ pub mod my_feature {
 
 counter!(my_feature::OPERATIONS_TOTAL).increment(1);
 <span class="boring">}</span></code></pre></pre>
-<h2 id="configuration-19"><a class="header" href="#configuration-19">Configuration</a></h2>
+<h2 id="configuration-20"><a class="header" href="#configuration-20">Configuration</a></h2>
 <p>Metrics configuration in <code>moltis.toml</code>:</p>
 <pre><code class="language-toml">[metrics]
 enabled = true              # Enable metrics collection (default: true)
@@ -12033,11 +12165,11 @@ tools grouped by origin.</p>
 With many MCP servers this can burn 15,000+ tokens per turn. <strong>Lazy mode</strong>
 replaces all tool schemas with a single <code>tool_search</code> meta-tool that the model
 uses to discover and activate tools on demand.</p>
-<h3 id="configuration-20"><a class="header" href="#configuration-20">Configuration</a></h3>
+<h3 id="configuration-21"><a class="header" href="#configuration-21">Configuration</a></h3>
 <pre><code class="language-toml">[tools]
 registry_mode = "lazy"   # default: "full"
 </code></pre>
-<h3 id="how-it-works-18"><a class="header" href="#how-it-works-18">How it works</a></h3>
+<h3 id="how-it-works-19"><a class="header" href="#how-it-works-19">How it works</a></h3>
 <ol>
 <li>The model receives only <code>tool_search</code> in its tool list.</li>
 <li><code>tool_search(query="memory")</code> returns name + description pairs (max 15), no schemas.</li>
