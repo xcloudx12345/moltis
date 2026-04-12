@@ -1,0 +1,94 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "9a1d97bb8bda",
+  "session_id": "f81add4e-16c0-495a-b6c9-529e47e76baf",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-12T10:35:37.731897Z",
+  "branch": "helix-epoch",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/config/src/schema.rs",
+    "crates/config/src/validate.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "c097fd2a11b9",
+  "token_usage": {
+    "input_tokens": 4191,
+    "cache_creation_tokens": 246151,
+    "cache_read_tokens": 42719167,
+    "output_tokens": 83843,
+    "api_call_count": 265
+  },
+  "summary": {
+    "intent": "Implement a Nostr DM channel for the Moltis messaging platform, adding NIP-04 encrypted direct message support with relay management, access control, and web UI configuration.",
+    "outcome": "Full Nostr channel implementation delivered across ~25 files and ~2,200 LOC: new `crates/nostr/` crate with 23 passing unit tests, gateway registration, config schema, web UI add/edit/onboarding flows, E2E Playwright tests, and documentation.",
+    "learnings": {
+      "repo": [
+        "Channel plugins follow a strict pattern: `ChannelPlugin` trait in `crates/channels/src/plugin.rs`, optional dep in gateway/httpd/cli with feature flags, named field in `ChannelsConfig` in `crates/config/src/schema.rs`, entry in `build_schema_map()` in `validate.rs`, and registration block under `#[cfg(feature = \"...\")]` in `crates/gateway/src/server.rs`.",
+        "`ChannelType::ALL` is used in a test that asserts the count of variants — adding a new variant requires updating the count in the channels crate test.",
+        "`moltis_channels::message_log::MessageLog` is not re-exported at the crate root; must import from the full module path.",
+        "`ChannelOtpProvider` and `OtpState` live in `moltis_channels::plugin` and are re-exported at crate root.",
+        "The onboarding flow (`onboarding-view.js`) has a separate `ChannelTypeSelector` and `ChannelStep` routing that must be updated independently from `page-channels.js` — easy to miss.",
+        "`channelDisplayLabel()` in `onboarding-view.js` maps channel type strings to display names and needs updating for new channel types.",
+        "Web JS uses biome for linting/formatting; run `biome check --write` from the web/ui directory after JS changes.",
+        "Config `ChannelsConfig` uses `#[serde(flatten)]` for unknown channel types via `extra: BTreeMap`; only explicitly named fields (telegram, whatsapp, etc.) get dedicated struct fields — matrix was NOT a named field before this PR.",
+        "The `channels.offered` default list in `schema.rs` controls which channels appear in the web UI picker; new channels must be added there."
+      ],
+      "code": [
+        {
+          "path": "crates/channels/src/plugin.rs",
+          "finding": "ChannelType::ALL constant and a test asserting its length both need updating when adding new variants."
+        },
+        {
+          "path": "crates/config/src/schema.rs",
+          "finding": "ChannelsConfig has named fields for each channel type plus a serde(flatten) extra map. Adding a named field for matrix was reverted as an unintended side effect."
+        },
+        {
+          "path": "crates/gateway/src/channel.rs",
+          "line": 68,
+          "finding": "Uses wildcard arm in ChannelType match, so adding new variants does not require changes here."
+        },
+        {
+          "path": "crates/nostr/src/bus.rs",
+          "finding": "nostr-sdk v0.44 client.notifications() returns a receiver that must be bound to a variable before use in a while-let loop to avoid temporary drop issues."
+        },
+        {
+          "path": "crates/nostr/src/plugin.rs",
+          "finding": "client.disconnect() returns () not Result in nostr-sdk v0.44; must not use ? operator on it."
+        }
+      ],
+      "workflow": [
+        "nostr-sdk v0.44 does not enable `nip04` in default features — must explicitly add `features = [\"nip04\"]` in workspace dependency.",
+        "nostr-sdk's `ToBech32` trait (for `to_bech32()`) returns `Result\u003cString, Infallible\u003e` not `String` — callers must `.unwrap()` or use `.expect()`.",
+        "nostr-sdk v0.44 `client.subscribe()` takes a single `Filter`, not `Vec\u003cFilter\u003e`.",
+        "nostr-sdk `Metadata::picture()` takes a `Url` type, not `String` — must parse the URL first.",
+        "taplo fmt reorders TOML keys alphabetically across the workspace; cosmetic-only changes appear in unrelated crates' Cargo.toml files after running it."
+      ]
+    },
+    "friction": [
+      "nostr-sdk v0.44 API surface required multiple compile-fix-recompile cycles to discover correct method signatures (subscribe, disconnect, notifications, Metadata::picture, ToBech32 return types).",
+      "The `nip04` feature not being in nostr-sdk defaults was a non-obvious blocker that only surfaced at compile time.",
+      "Adding `matrix` as a named field in ChannelsConfig was an unintended side effect that required a follow-up revert commit.",
+      "The onboarding flow in `onboarding-view.js` is a separate concern from `page-channels.js` and was initially missed, requiring a third commit."
+    ],
+    "open_items": [
+      "NIP-44 outbound encryption: currently defaults to NIP-04 for broad compatibility; config option to prefer NIP-44 is deferred.",
+      "NIP-17 gift-wrapped DMs: deferred — requires more complex event handling and has limited client support.",
+      "NIP-65 relay list advertisement: deferred future enhancement.",
+      "NIP-94 media attachments: deferred future enhancement.",
+      "NIP-25 reactions: deferred future enhancement.",
+      "Seen-tracker persistence to disk (`data_dir()/nostr_seen.json` with debounced writes) is stubbed but not implemented — currently in-memory only.",
+      "Circuit-breaker metrics for relay health are not yet wired to the moltis-metrics crate (the `metrics` feature in nostr/Cargo.toml is defined but not populated).",
+      "Contract test suite (`moltis_channels::contract`) not run against NostrPlugin — the contract test design requires a startable account with empty config, which conflicts with Nostr requiring a valid secret key."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-12T10:34:59.686465Z",
+    "agent_lines": 1,
+    "human_added": 572,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 573,
+    "agent_percentage": 0.17452006980802792
+  }
+}
