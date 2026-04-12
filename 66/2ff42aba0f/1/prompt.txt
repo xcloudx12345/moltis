@@ -1,0 +1,547 @@
+~/t/m/moltis main ❯ ./scripts/local-validate.sh
+Detected macOS without nvcc; forcing non-CUDA local validation commands (no --all-features).
+Override with LOCAL_VALIDATE_LINT_CMD / LOCAL_VALIDATE_TEST_CMD / LOCAL_VALIDATE_BUILD_CMD / LOCAL_VALIDATE_COVERAGE_CMD if needed.
+Local-only validation (3098e54) — no statuses will be published
+Removing cached llama build dir: target/debug/build/llama-cpp-sys-2-2ec01168f3e9a0d5
+Removing cached llama build dir: target/debug/build/llama-cpp-sys-2-83cfa8bd1d21466a
+Removing cached llama build dir: target/debug/build/llama-cpp-sys-2-88d62219ecb6f677
+Removing cached llama build dir: target/debug/build/llama-cpp-sys-2-ec8009d4b719ab43
+Removing cached llama build dir: target/release/build/llama-cpp-sys-2-ce1312e0f0e81354
+Checking .deb filename pattern...
+  ok: .deb filename: no revision suffix (matches cargo-deb output)
+Checking .rpm filename pattern...
+  ok: .rpm filename: has -1 revision (matches cargo-generate-rpm output)
+Checking .pkg.tar.zst (Arch) filename pattern...
+installation docs avoid versionless GitHub asset URLs
+[local/install-docs] passed in 0s
+  ok: .pkg.tar.zst filename: has -1 revision (matches release workflow)
+Checking AppImage filename pattern...
+  ok: AppImage filename: matches release workflow pattern
+Checking binary tarball filename pattern...
+  ok: binary tarball: matches release workflow pattern
+Checking release_tag() logic...
+./scripts/check-file-size.sh: line 56: declare: -A: invalid option
+declare: usage: declare [-afFirtx] [-p] [name[=value] ...]
+  ok: release_tag('20260327.05') = '20260327.05' (date-based, bare)
+  ok: release_tag('0.1.3') = 'v0.1.3' (semver, v-prefixed)
+Checking architecture mappings...
+[local/file-size] failed in 0s
+  ok: deb arch: x86_64 → amd64
+  ok: deb arch: aarch64 → arm64
+Cross-validating against release.yml...
+  ok: release.yml: no --deb-revision flag (consistent with install.sh)
+  ok: release.yml: uses --deb-version for .deb naming
+i18n parity OK: 3 locales, 18 namespaces.
+  ok: release.yml: AppImage naming matches install.sh
+Checking install.sh sync...
+cargo +nightly-2025-11-30 fmt --all -- --check
+  ok: install.sh and website/install.sh are identical
+
+All 15 install package name checks passed
+[local/i18n] passed in 0s
+[local/install-names] passed in 0s
+🌈 zizmor v1.22.0
+Checked 134 files in 92ms. No fixes applied.
+[local/biome] passed in 0s
+ INFO audit: zizmor: 🌈 completed ./.github/actions/sign-artifacts/action.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/ci.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/codspeed.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/docs.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/e2e.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/homebrew.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/provider-integration.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/release.yml
+No findings to report. Good job! (28 suppressed)
+[local/zizmor] passed in 1s
+Diff in /Users/penso/tmp/molt/moltis/crates/chat/src/lib.rs:1050:
+         let mut budget = SUMMARY_MAX_CHARS.saturating_sub(make_notice(base_dropped).len() + 1);
+         let mut kept = 0usize;
+         for line in &headers {
+-            let needed = line.len() + if kept == 0 { 0 } else { 1 };
++            let needed = line.len()
++                + if kept == 0 {
++                    0
++                } else {
++                    1
++                };
+             if needed > budget || kept + 1 >= SUMMARY_MAX_LINES {
+                 header_drop_count += 1;
+             } else {
+Diff in /Users/penso/tmp/molt/moltis/crates/chat/src/lib.rs:1065:
+     let mut char_budget = SUMMARY_MAX_CHARS.saturating_sub(notice.len() + 1);
+     let mut result: Vec<String> = Vec::new();
+     for line in &headers {
+-        let needed = line.len() + if result.is_empty() { 0 } else { 1 };
++        let needed = line.len()
++            + if result.is_empty() {
++                0
++            } else {
++                1
++            };
+         if needed > char_budget || result.len() + 1 >= SUMMARY_MAX_LINES {
+             continue;
+         }
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1482:
+ #[cfg(feature = "vault")]
+ #[allow(clippy::unwrap_used, clippy::expect_used)]
+ mod vault_unseal_tests {
+-    use super::*;
+-    use async_trait::async_trait;
+-    use moltis_channels::{
+-        ChannelRegistry,
+-        store::{ChannelStore, StoredChannel},
++    use {
++        super::*,
++        async_trait::async_trait,
++        moltis_channels::{
++            ChannelRegistry,
++            config_view::ChannelConfigView,
++            plugin::{ChannelOutbound, ChannelPlugin, ChannelStreamOutbound, StreamEvent},
++            store::{ChannelStore, StoredChannel},
++        },
+     };
+-    use moltis_channels::plugin::{
+-        ChannelOutbound, ChannelPlugin, ChannelStreamOutbound, StreamEvent,
++
++    use {
++        moltis_channels::plugin::ChannelStatus, moltis_common::types::ReplyPayload,
++        std::sync::Mutex, tokio::sync::RwLock,
+     };
+-    use moltis_channels::config_view::ChannelConfigView;
+
+-    use moltis_channels::plugin::ChannelStatus;
+-    use moltis_common::types::ReplyPayload;
+-    use std::sync::Mutex;
+-    use tokio::sync::RwLock;
+-
+     /// Helper to build a minimal AuthState with the given services.
+-    async fn build_auth_state(
+-        services: moltis_gateway::services::GatewayServices,
+-    ) -> AuthState {
++    async fn build_auth_state(services: moltis_gateway::services::GatewayServices) -> AuthState {
+         let pool = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
+         let auth_config = moltis_config::AuthConfig::default();
+         let cred_store = Arc::new(
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1509:
+                 .await
+                 .unwrap(),
+         );
+-        let gateway_state = GatewayState::new(
+-            moltis_gateway::auth::resolve_auth(None, None),
+-            services,
+-        );
++        let gateway_state =
++            GatewayState::new(moltis_gateway::auth::resolve_auth(None, None), services);
+         AuthState {
+             credential_store: cred_store,
+             webauthn_registry: None,
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1587:
+         ) -> moltis_channels::Result<()> {
+             Ok(())
+         }
++
+         async fn send_media(
+             &self,
+             _: &str,
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1649:
+         fn id(&self) -> &str {
+             &self.id
+         }
++
+         fn name(&self) -> &str {
+             &self.id
+         }
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1655:
++
+         async fn start_account(
+             &mut self,
+             account_id: &str,
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1666:
+                 .push((account_id.to_string(), config));
+             Ok(())
+         }
++
+         async fn stop_account(&mut self, _account_id: &str) -> moltis_channels::Result<()> {
+             Ok(())
+         }
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1672:
++
+         fn outbound(&self) -> Option<&dyn ChannelOutbound> {
+             None
+         }
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1675:
++
+         fn status(&self) -> Option<&dyn ChannelStatus> {
+             None
+         }
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1678:
++
+         fn has_account(&self, _account_id: &str) -> bool {
+             false
+         }
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1681:
++
+         fn account_ids(&self) -> Vec<String> {
+             Vec::new()
+         }
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1684:
++
+         fn account_config(&self, _account_id: &str) -> Option<Box<dyn ChannelConfigView>> {
+             None
+         }
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1687:
++
+         fn update_account_config(
+             &self,
+             _account_id: &str,
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1691:
+         ) -> moltis_channels::Result<()> {
+             Ok(())
+         }
++
+         fn shared_outbound(&self) -> Arc<dyn ChannelOutbound> {
+             Arc::new(NullOutbound)
+         }
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1697:
++
+         fn shared_stream_outbound(&self) -> Arc<dyn ChannelStreamOutbound> {
+             Arc::new(NullStreamOutbound)
+         }
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1712:
+     #[tokio::test]
+     async fn returns_early_when_channel_store_is_none() {
+         let registry = Arc::new(ChannelRegistry::new());
+-        let services = moltis_gateway::services::GatewayServices::noop()
+-            .with_channel_registry(registry);
++        let services =
++            moltis_gateway::services::GatewayServices::noop().with_channel_registry(registry);
+         // No channel_store set — should return without panicking
+         let state = build_auth_state(services).await;
+         start_stored_channels_on_vault_unseal(&state).await;
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1745:
+     #[tokio::test]
+     async fn skips_channels_with_unsupported_type() {
+         let registry = Arc::new(ChannelRegistry::new());
+-        let store: Arc<dyn ChannelStore> = Arc::new(MockChannelStore::new(vec![
+-            StoredChannel {
+-                account_id: "acct1".to_string(),
+-                channel_type: "unknown_type".to_string(),
+-                config: serde_json::json!({}),
+-                created_at: 0,
+-                updated_at: 0,
+-            },
+-        ]));
++        let store: Arc<dyn ChannelStore> = Arc::new(MockChannelStore::new(vec![StoredChannel {
++            account_id: "acct1".to_string(),
++            channel_type: "unknown_type".to_string(),
++            config: serde_json::json!({}),
++            created_at: 0,
++            updated_at: 0,
++        }]));
+         let services = moltis_gateway::services::GatewayServices::noop()
+             .with_channel_registry(registry)
+             .with_channel_store(store);
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1784:
+             .unwrap();
+
+         let registry = Arc::new(registry);
+-        let store: Arc<dyn ChannelStore> = Arc::new(MockChannelStore::new(vec![
+-            StoredChannel {
+-                account_id: "acct1".to_string(),
+-                channel_type: "telegram".to_string(),
+-                config: serde_json::json!({"token": "new"}),
+-                created_at: 0,
+-                updated_at: 0,
+-            },
+-        ]));
++        let store: Arc<dyn ChannelStore> = Arc::new(MockChannelStore::new(vec![StoredChannel {
++            account_id: "acct1".to_string(),
++            channel_type: "telegram".to_string(),
++            config: serde_json::json!({"token": "new"}),
++            created_at: 0,
++            updated_at: 0,
++        }]));
+         let services = moltis_gateway::services::GatewayServices::noop()
+             .with_channel_registry(registry)
+             .with_channel_store(store);
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1804:
+         // called again (resolve_channel_type returned Some, so it was skipped).
+         // Only the pre-start call should be recorded.
+         let calls = started.lock().unwrap();
+-        assert_eq!(calls.len(), 1, "should not re-start already running account");
++        assert_eq!(
++            calls.len(),
++            1,
++            "should not re-start already running account"
++        );
+         assert_eq!(calls[0].0, "acct1");
+     }
+
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1814:
+         let started_accounts = Arc::clone(&plugin.started_accounts);
+
+         let mut registry = ChannelRegistry::new();
+-        registry
+-            .register(Arc::new(RwLock::new(plugin)))
+-            .await;
++        registry.register(Arc::new(RwLock::new(plugin))).await;
+
+         let registry = Arc::new(registry);
+         let store: Arc<dyn ChannelStore> = Arc::new(MockChannelStore::new(vec![
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1856:
+         let started_accounts = Arc::clone(&plugin.started_accounts);
+
+         let mut registry = ChannelRegistry::new();
+-        registry
+-            .register(Arc::new(RwLock::new(plugin)))
+-            .await;
++        registry.register(Arc::new(RwLock::new(plugin))).await;
+
+         let registry = Arc::new(registry);
+-        let store: Arc<dyn ChannelStore> = Arc::new(MockChannelStore::new(vec![
+-            StoredChannel {
+-                account_id: "bot1".to_string(),
+-                channel_type: "telegram".to_string(),
+-                config: serde_json::json!({"token": "bad"}),
+-                created_at: 0,
+-                updated_at: 0,
+-            },
+-        ]));
++        let store: Arc<dyn ChannelStore> = Arc::new(MockChannelStore::new(vec![StoredChannel {
++            account_id: "bot1".to_string(),
++            channel_type: "telegram".to_string(),
++            config: serde_json::json!({"token": "bad"}),
++            created_at: 0,
++            updated_at: 0,
++        }]));
+         let services = moltis_gateway::services::GatewayServices::noop()
+             .with_channel_registry(registry)
+             .with_channel_store(store);
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1880:
+
+         // The plugin should have attempted the start (and recorded it before failing)
+         let calls = started_accounts.lock().unwrap();
+-        assert_eq!(calls.len(), 0, "failing plugin should not record successful starts");
++        assert_eq!(
++            calls.len(),
++            0,
++            "failing plugin should not record successful starts"
++        );
+     }
+
+     #[tokio::test]
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1889:
+         let started_accounts = Arc::clone(&plugin.started_accounts);
+
+         let mut registry = ChannelRegistry::new();
+-        registry
+-            .register(Arc::new(RwLock::new(plugin)))
+-            .await;
++        registry.register(Arc::new(RwLock::new(plugin))).await;
+
+         let registry = Arc::new(registry);
+         let store: Arc<dyn ChannelStore> = Arc::new(MockChannelStore::new(vec![
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1936:
+         fn id(&self) -> &str {
+             self.inner.id()
+         }
++
+         fn name(&self) -> &str {
+             self.inner.name()
+         }
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1942:
++
+         async fn start_account(
+             &mut self,
+             account_id: &str,
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1950:
+                 .push((account_id.to_string(), config.clone()));
+             self.inner.start_account(account_id, config).await
+         }
++
+         async fn stop_account(&mut self, account_id: &str) -> moltis_channels::Result<()> {
+             self.inner.stop_account(account_id).await
+         }
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1956:
++
+         fn outbound(&self) -> Option<&dyn ChannelOutbound> {
+             self.inner.outbound()
+         }
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1959:
++
+         fn status(&self) -> Option<&dyn ChannelStatus> {
+             self.inner.status()
+         }
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1962:
++
+         fn has_account(&self, account_id: &str) -> bool {
+             self.inner.has_account(account_id)
+         }
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1965:
++
+         fn account_ids(&self) -> Vec<String> {
+             self.inner.account_ids()
+         }
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1968:
++
+         fn account_config(&self, account_id: &str) -> Option<Box<dyn ChannelConfigView>> {
+             self.inner.account_config(account_id)
+         }
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1971:
++
+         fn update_account_config(
+             &self,
+             account_id: &str,
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1975:
+         ) -> moltis_channels::Result<()> {
+             self.inner.update_account_config(account_id, config)
+         }
++
+         fn shared_outbound(&self) -> Arc<dyn ChannelOutbound> {
+             self.inner.shared_outbound()
+         }
+Diff in /Users/penso/tmp/molt/moltis/crates/httpd/src/auth_routes.rs:1981:
++
+         fn shared_stream_outbound(&self) -> Arc<dyn ChannelStreamOutbound> {
+             self.inner.shared_stream_outbound()
+         }
+error: Recipe `format-check` failed on line 14 with exit code 1
+[local/fmt] failed in 2s
+[local/fmt] total 2s
+[local/biome] total 1s
+[local/i18n] total 0s
+[local/install-names] total 0s
+[local/install-docs] total 0s
+[local/file-size] total 0s
+One or more parallel local checks failed.
+~/t/m/moltis main ❯
+
+---
+
+Checking pulldown-cmark v0.12.2
+error[E0063]: missing field `agent_id` in initializer of `moltis_channels::ChannelMessageMeta`
+   --> crates/nostr/src/bus.rs:282:16
+    |
+282 |     let meta = moltis_channels::ChannelMessageMeta {
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ missing `agent_id`
+
+    Checking moltis-whatsapp v0.1.0 (/Users/penso/tmp/molt/moltis/crates/whatsapp)
+    Checking matrix-sdk-base v0.16.0
+    Checking moltis-qmd v0.1.0 (/Users/penso/tmp/molt/moltis/crates/qmd)
+    Checking moltis-msteams v0.1.0 (/Users/penso/tmp/molt/moltis/crates/msteams)
+    Checking moltis-caldav v0.1.0 (/Users/penso/tmp/molt/moltis/crates/caldav)
+For more information about this error, try `rustc --explain E0063`.
+error: could not compile `moltis-nostr` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+      Timing report saved to /Users/penso/tmp/molt/moltis/target/cargo-timings/cargo-timing-20260412T203051.6474Z.html
+[local/lint] failed in 79s
+~/t/m/moltis main [!] ❯
+
+---
+
+Checking benchmarks v0.1.0 (/Users/penso/tmp/molt/moltis/crates/benchmarks)
+error[E0050]: method `broadcast_request` has 3 parameters but the declaration in trait `exec::ApprovalBroadcaster::broadcast_request` has 4
+  --> crates/tools/src/fs/contract_tests.rs:37:32
+   |
+37 |       async fn broadcast_request(&self, _request_id: &str, _command: &str) -> crate::Result<()> {
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected 4 parameters, found 3
+   |
+  ::: crates/tools/src/exec.rs:46:9
+   |
+46 | /         &self,
+47 | |         request_id: &str,
+48 | |         command: &str,
+49 | |         session_key: Option<&str>,
+   | |_________________________________- trait requires 4 parameters
+
+error[E0061]: this method takes 2 arguments but 1 argument was supplied
+   --> crates/tools/src/fs/shared.rs:456:36
+    |
+456 |     let (request_id, rx) = manager.create_request(request).await;
+    |                                    ^^^^^^^^^^^^^^--------- argument #2 of type `std::option::Option<&str>` is missing
+    |
+note: method defined here
+   --> crates/tools/src/approval.rs:365:18
+    |
+365 |     pub async fn create_request(
+    |                  ^^^^^^^^^^^^^^
+...
+368 |         session_key: Option<&str>,
+    |         -------------------------
+help: provide the argument
+    |
+456 |     let (request_id, rx) = manager.create_request(request, /* std::option::Option<&str> */).await;
+    |                                                          +++++++++++++++++++++++++++++++++
+
+error[E0061]: this method takes 3 arguments but 2 arguments were supplied
+   --> crates/tools/src/fs/shared.rs:459:41
+    |
+459 |         && let Err(error) = broadcaster.broadcast_request(&request_id, request).await
+    |                                         ^^^^^^^^^^^^^^^^^---------------------- argument #3 of type `std::option::Option<&str>` is missing
+    |
+note: method defined here
+   --> crates/tools/src/exec.rs:45:14
+    |
+ 45 |     async fn broadcast_request(
+    |              ^^^^^^^^^^^^^^^^^
+...
+ 49 |         session_key: Option<&str>,
+    |         -----------
+help: provide the argument
+    |
+459 |         && let Err(error) = broadcaster.broadcast_request(&request_id, request, /* std::option::Option<&str> */).await
+    |                                                                               +++++++++++++++++++++++++++++++++
+
+For more information about this error, try `rustc --explain E0061`.
+error: could not compile `moltis-tools` (lib) due to 2 previous errors
+warning: build failed, waiting for other jobs to finish...
+Some errors have detailed explanations: E0050, E0061.
+For more information about an error, try `rustc --explain E0050`.
+error: could not compile `moltis-tools` (lib test) due to 3 previous errors
+      Timing report saved to /Users/penso/tmp/molt/moltis/target/cargo-timings/cargo-timing-20260412T203936.825935Z.html
+[local/lint] failed in 92s
+~/t/m/moltis main [!] ❯
+
+---
+
+INFO audit: zizmor: 🌈 completed ./.github/workflows/provider-integration.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/release.yml
+No findings to report. Good job! (28 suppressed)
+[local/zizmor] passed in 1s
+Diff in /Users/penso/tmp/molt/moltis/crates/tools/src/fs/contract_tests.rs:34:
+
+ #[async_trait]
+ impl ApprovalBroadcaster for TestBroadcaster {
+-    async fn broadcast_request(&self, _request_id: &str, _command: &str, _session_key: Option<&str>) -> crate::Result<()> {
++    async fn broadcast_request(
++        &self,
++        _request_id: &str,
++        _command: &str,
++        _session_key: Option<&str>,
++    ) -> crate::Result<()> {
+         self.called.store(true, Ordering::SeqCst);
+         Ok(())
+     }
+Diff in /Users/penso/tmp/molt/moltis/crates/tools/src/fs/shared.rs:456:
+     let (request_id, rx) = manager.create_request(request, None).await;
+
+     if let Some(broadcaster) = broadcaster
+-        && let Err(error) = broadcaster.broadcast_request(&request_id, request, None).await
++        && let Err(error) = broadcaster
++            .broadcast_request(&request_id, request, None)
++            .await
+     {
+         warn!(%error, request, "failed to broadcast fs approval request");
+     }
+error: Recipe `format-check` failed on line 14 with exit code 1
+[local/fmt] failed in 2s
+[local/fmt] total 2s
+[local/biome] total 0s
+[local/i18n] total 0s
+[local/install-names] total 0s
+[local/install-docs] total 0s
+All Rust files within 1500-line limit (42 allowlisted).
+[local/file-size] passed in 9s
+[local/file-size] total 9s
+One or more parallel local checks failed.
+~/t/m/moltis main [!] ❯

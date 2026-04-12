@@ -3,10 +3,13 @@
   "checkpoint_id": "662ff42aba0f",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 3,
+  "checkpoints_count": 7,
   "files_touched": [
     "crates/chat/src/lib.rs",
-    "crates/httpd/src/auth_routes.rs"
+    "crates/httpd/src/auth_routes.rs",
+    "crates/nostr/src/bus.rs",
+    "crates/tools/src/fs/contract_tests.rs",
+    "crates/tools/src/fs/shared.rs"
   ],
   "sessions": [
     {
@@ -15,13 +18,20 @@
       "context": "/66/2ff42aba0f/0/context.md",
       "content_hash": "/66/2ff42aba0f/0/content_hash.txt",
       "prompt": "/66/2ff42aba0f/0/prompt.txt"
+    },
+    {
+      "metadata": "/66/2ff42aba0f/1/metadata.json",
+      "transcript": "/66/2ff42aba0f/1/full.jsonl",
+      "context": "/66/2ff42aba0f/1/context.md",
+      "content_hash": "/66/2ff42aba0f/1/content_hash.txt",
+      "prompt": "/66/2ff42aba0f/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 30,
-    "cache_creation_tokens": 20532,
-    "cache_read_tokens": 1589255,
-    "output_tokens": 4417,
-    "api_call_count": 24
+    "input_tokens": 64,
+    "cache_creation_tokens": 72313,
+    "cache_read_tokens": 2674564,
+    "output_tokens": 10702,
+    "api_call_count": 50
   }
 }
