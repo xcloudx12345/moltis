@@ -1,0 +1,111 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "1f0a8e2d2a6a",
+  "session_id": "f81add4e-16c0-495a-b6c9-529e47e76baf",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-12T13:28:49.130613Z",
+  "branch": "helix-epoch",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "Cargo.lock"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "78c93de3092b",
+  "token_usage": {
+    "input_tokens": 4427,
+    "cache_creation_tokens": 383076,
+    "cache_read_tokens": 108725943,
+    "output_tokens": 133959,
+    "api_call_count": 474
+  },
+  "summary": {
+    "intent": "Add a Nostr DM channel to the Moltis multi-channel messaging platform, reaching parity with existing channels (Telegram, Discord, Slack, MS Teams, WhatsApp, Matrix) including backend crate, web UI, onboarding, docs, metrics, NIP-44 support, and integration tests.",
+    "outcome": "Full Nostr channel implementation merged via PR #674: new `moltis-nostr` crate (~1700 LOC), web UI add/edit/onboarding flows, 23 unit tests + 5 integration tests with real relay round-trip, metrics instrumentation, NIP-44 fallback decryption, documentation, and website icon.",
+    "learnings": {
+      "repo": [
+        "ChannelType enum is `#[non_exhaustive]` so new variants don't break wildcard match arms in gateway/chat crates",
+        "Channel plugins are gated by feature flags chained: cli → httpd → gateway → crate; all enabled by default",
+        "Config `ChannelsConfig` uses `#[serde(flatten)]` extra map for channels not yet promoted to named fields; named fields take priority over flatten during deserialization",
+        "The `moltis_channels::contract` test suite uses a `TestPlugin` stub, not real channel plugins that require credentials — real plugins need per-channel unit tests instead",
+        "The web UI channel forms use Preact/HTM with no build step; `biome check --write` is the linter/formatter",
+        "Integration test `notifications()` broadcast receiver must be obtained BEFORE `connect()` to avoid missing early relay messages",
+        "nostr-sdk v0.44: `nip04` and `nip44` features are not in `default` and must be explicitly enabled; `Filter::pubkey()` filters on `#p` tag (recipient), not event author",
+        "nostr-sdk prelude does `use nip44::{self, *}` so both `nip44` module and its functions are in scope simultaneously, causing qualifier lint confusion",
+        "Website locale files (10 languages) were already fully updated with Nostr references — only the SVG icon was missing",
+        "The worktree (`/superset/worktrees/`) uses an orphan/squashed history for `main` with only 1 commit, making `git merge main` produce 70+ unrelated-history conflicts; cherry-pick onto origin/main is the correct strategy"
+      ],
+      "code": [
+        {
+          "path": "crates/nostr/src/bus.rs",
+          "line": 229,
+          "end_line": 229,
+          "finding": "String truncation at MAX_MESSAGE_BYTES must use `str::floor_char_boundary()` to avoid panic at non-UTF-8 char boundaries"
+        },
+        {
+          "path": "crates/nostr/src/bus.rs",
+          "line": 65,
+          "end_line": 65,
+          "finding": "client.notifications() returns a broadcast::Receiver that must be bound to a variable before use in an async loop to avoid temporary drop"
+        },
+        {
+          "path": "crates/nostr/src/plugin.rs",
+          "line": 158,
+          "end_line": 158,
+          "finding": "OtpState::new() requires a cooldown_secs argument, not a zero-arg constructor"
+        },
+        {
+          "path": "crates/nostr/src/state.rs",
+          "line": 1,
+          "end_line": 40,
+          "finding": "Config must be Arc\u003cRwLock\u003cNostrAccountConfig\u003e\u003e shared between AccountState and the bus loop to avoid stale clones on config update"
+        },
+        {
+          "path": "crates/nostr/src/access.rs",
+          "line": 1,
+          "end_line": 60,
+          "finding": "Allowlist pubkeys should be pre-parsed into Vec\u003cPublicKey\u003e in AccountState and refreshed on config update, not re-parsed on every inbound DM"
+        },
+        {
+          "path": "crates/channels/src/plugin.rs",
+          "line": 1,
+          "end_line": 30,
+          "finding": "ALL constant and descriptor() match must both be updated when adding a new ChannelType variant; a test checks ALL.len() == enum discriminant count"
+        }
+      ],
+      "workflow": [
+        "nostr-sdk optional features (`nip04`, `nip44`) must be explicitly listed in workspace Cargo.toml dependency features array",
+        "Use `dep?/feature` syntax in Cargo feature deps when the dependency itself is optional, to avoid unintentionally enabling it",
+        "When a worktree has unrelated history to origin/main, use cherry-pick strategy: identify commit range with `git log --oneline`, create branch from origin/main, cherry-pick the range",
+        "Biome lint must be run on JS files after every edit; run from the web/ui directory",
+        "Integration tests that use relay pub/sub must obtain the notification receiver before connecting and subscribing to avoid race conditions"
+      ]
+    },
+    "friction": [
+      "nostr-sdk NIP-04/NIP-44 features not in default required discovery via cargo metadata inspection",
+      "nostr prelude glob `use nip44::{self, *}` causes spurious 'unnecessary qualification' clippy lint for `nip44::decrypt` — required using fully-qualified `nostr_sdk::nips::nip04::decrypt` style path",
+      "DM round-trip integration test failed initially because notifications() receiver was created after connect(), missing early relay messages",
+      "Merging origin/main into the worktree branch caused 70+ conflicts due to unrelated histories (squashed main vs full history branch); required abort and cherry-pick strategy",
+      "Matrix was accidentally promoted from extra/flatten map to named field in ChannelsConfig as a side effect; required a separate revert commit",
+      "client.disconnect() does not return a Result in nostr-sdk v0.44 but code was written assuming it did"
+    ],
+    "open_items": [
+      "NIP-17 gift-wrapped DMs: more complex event handling, less widely supported — deferred to future PR",
+      "NIP-65 relay list advertisement (kind:10002) — deferred",
+      "NIP-94 media attachments — deferred",
+      "NIP-25 reactions — deferred",
+      "Metrics feature: counters/histograms wired but no Grafana dashboard or alerting thresholds configured yet",
+      "Integration tests require NOSTR_TEST_BOT_KEY and NOSTR_TEST_SENDER_KEY GitHub secrets to be set for CI to run them non-ignored",
+      "CI workflow file not yet updated to run `cargo test -p moltis-nostr --test nostr_integration -- --ignored` with the new secrets",
+      "Outbound NIP-44 preference config option exists in design but NIP-04 is hardcoded for outbound; NIP-44 only used for inbound fallback"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-12T13:27:54.566859Z",
+    "agent_lines": 256,
+    "human_added": 5545,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 5801,
+    "agent_percentage": 4.413032235821411
+  }
+}
