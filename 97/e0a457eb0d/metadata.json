@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "97e0a457eb0d",
+  "strategy": "manual-commit",
+  "branch": "dorian-pepperberry",
+  "checkpoints_count": 5,
+  "files_touched": [
+    "crates/channels/src/plugin.rs",
+    "crates/gateway/src/approval.rs",
+    "crates/gateway/src/channel_events.rs",
+    "crates/msteams/src/plugin.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/97/e0a457eb0d/0/metadata.json",
+      "transcript": "/97/e0a457eb0d/0/full.jsonl",
+      "context": "/97/e0a457eb0d/0/context.md",
+      "content_hash": "/97/e0a457eb0d/0/content_hash.txt",
+      "prompt": "/97/e0a457eb0d/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 233,
+    "cache_creation_tokens": 208281,
+    "cache_read_tokens": 33413118,
+    "output_tokens": 55432,
+    "api_call_count": 217
+  }
+}
