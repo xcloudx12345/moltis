@@ -1,0 +1,268 @@
+Look at https://github.com/moltis-org/moltis/discussions/641 and if that's true and your thinking about it
+
+---
+
+Create beads issues, but maybe we could implement it right now and add missing pieces to his needs are fulfilled.
+
+---
+
+anything missing?
+
+---
+
+proceed with follow ups
+
+---
+
+<task-notification>
+<task-id>af30c87f0d7fdea0e</task-id>
+<tool-use-id>toolu_013QfDfJj8T3euwSdD11VR4G</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-penso--superset-worktrees-moltis-curious-bill/a19414f3-6176-45a5-a923-13d1b9e61758/tasks/af30c87f0d7fdea0e.output</output-file>
+<status>completed</status>
+<summary>Agent "Write tool-policy docs page" completed</summary>
+<result>The build succeeds with no errors (only a minor version mismatch warning for the admonish preprocessor, which is pre-existing).
+
+Here is a summary of what was done:
+
+**Created** `/Users/penso/.superset/worktrees/moltis/curious-bill/docs/src/tool-policy.md` documenting the 5-layer tool policy system with:
+- Layer overview table showing config paths and scope
+- Merge semantics (deny accumulates, allow replaces, empty allow = permit all)
+- Glob pattern syntax
+- Named profiles (minimal, coding, full)
+- Dedicated section for each layer (1-5) with TOML examples
+- Practical examples covering all requested use cases: restricting a provider, restricting group chats, trusting a specific sender, agent preset with limited tools, and using profiles
+- Debugging section showing the tracing output for each layer
+
+**Updated** `/Users/penso/.superset/worktrees/moltis/curious-bill/docs/src/SUMMARY.md` to add "Tool Policy" in the Architecture section, between "Tool Registry" and "Agent Presets".</result>
+<usage><total_tokens>39093</total_tokens><tool_uses>15</tool_uses><duration_ms>113049</duration_ms></usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-501/-Users-penso--superset-worktrees-moltis-curious-bill/a19414f3-6176-45a5-a923-13d1b9e61758/tasks/af30c87f0d7fdea0e.output
+
+---
+
+<task-notification>
+<task-id>a38c93a2cb6a5bcdf</task-id>
+<tool-use-id>toolu_01Pq87VANARVFkkoVvY79943</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-penso--superset-worktrees-moltis-curious-bill/a19414f3-6176-45a5-a923-13d1b9e61758/tasks/a38c93a2cb6a5bcdf.output</output-file>
+<status>completed</status>
+<summary>Agent "Add sandbox tools_policy field" completed</summary>
+<result>All 81 validation tests pass. Here is a summary of all changes made:
+
+**Files modified:**
+
+1. `/Users/penso/.superset/worktrees/moltis/curious-bill/crates/config/src/schema.rs` -- Added `pub tools_policy: Option<ToolPolicyConfig>` field to `SandboxConfig` with `#[serde(default, skip_serializing_if = "Option::is_none")]`, and added `tools_policy: None` to the manual `Default` impl.
+
+2. `/Users/penso/.superset/worktrees/moltis/curious-bill/crates/tools/src/policy.rs` -- Updated the doc comment on `resolve_effective_policy` to mention layer 6 (`Sandbox overrides`). Added the layer 6 block after the sender layer (layer 5) that applies `config.tools.exec.sandbox.tools_policy` when `context.sandboxed` is true. Added `test_resolve_sandbox_layer_overrides` test that verifies the sandbox layer is skipped when `sandboxed: false` and applied when `sandboxed: true`.
+
+3. `/Users/penso/.superset/worktrees/moltis/curious-bill/crates/config/src/validate.rs` -- Added `("tools_policy", tool_policy_entry())` to the `sandbox()` closure in `build_schema_map()`.
+
+4. `/Users/penso/.superset/worktrees/moltis/curious-bill/crates/config/src/template.rs` -- Added a commented example for `[tools.exec.sandbox.tools_policy]` after the `resource_limits` section. Updated the policy layer list comment to include layer 6.
+
+All compilation checks pass, nightly formatting applied, and all tests pass (14 policy tests, 81 validation tests).</result>
+<usage><total_tokens>40314</total_tokens><tool_uses>28</tool_uses><duration_ms>182213</duration_ms></usage>
+</task-notification>
+Full transcript available at: /private/tmp/claude-501/-Users-penso--superset-worktrees-moltis-curious-bill/a19414f3-6176-45a5-a923-13d1b9e61758/tasks/a38c93a2cb6a5bcdf.output
+
+---
+
+anything missing?
+
+---
+
+commit push and create a PR
+
+---
+
+Send a comment to the conversation about the PR.
+
+---
+
+~/.s/w/m/curious-bill curious-bill ❯ ./scripts/local-validate.sh 677
+Detected macOS without nvcc; forcing non-CUDA local validation commands (no --all-features).
+Override with LOCAL_VALIDATE_LINT_CMD / LOCAL_VALIDATE_TEST_CMD / LOCAL_VALIDATE_BUILD_CMD / LOCAL_VALIDATE_COVERAGE_CMD if needed.
+Validating PR #677 (8ea9684ced58596b1f4100d2026b49968af9fbf7) in moltis-org/moltis
+Publishing commit statuses to: moltis-org/moltis
+Current CI workflow: https://github.com/moltis-org/moltis/actions/runs/24307541453
+Removing cached llama build dir: target/debug/build/llama-cpp-sys-2-1a2438f3a1c690ef
+Removing cached llama build dir: target/debug/build/llama-cpp-sys-2-873236a1dfb48105
+Removing cached llama build dir: target/debug/build/llama-cpp-sys-2-91f6ed333bbd91f8
+Removing cached llama build dir: target/debug/build/llama-cpp-sys-2-f74545218f48e070
+crates/web/src/assets/js/locales/en/providers.js format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✖ File content differs from formatting output
+
+    116 116 │           testSuccess: "Connection successful.",
+    117 117 │           testFailed: "Connection test failed.",
+    118     │ - → testProviderConfirm:·"This·will·send·a·test·message·to·one·model·from·{{name}},·which·may·use·tokens·or·trigger·model·loading·on·local·servers.·Continue?",
+        118 │ + → testProviderConfirm:
+        119 │ + → → "This·will·send·a·test·message·to·one·model·from·{{name}},·which·may·use·tokens·or·trigger·model·loading·on·local·servers.·Continue?",
+    119 120 │           preferred: "Preferred",
+    120 121 │           showAllModels: "Show {{count}} more models\u2026",
+
+
+crates/web/src/assets/js/locales/fr/providers.js format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✖ File content differs from formatting output
+
+    116 116 │           testSuccess: "Connexion r\u00e9ussie.",
+    117 117 │           testFailed: "Le test de connexion a \u00e9chou\u00e9.",
+    118     │ - → testProviderConfirm:·"Ceci·enverra·un·message·de·test·\u00e0·un·mod\u00e8le·de·{{name}},·ce·qui·peut·consommer·des·tokens·ou·d\u00e9clencher·le·chargement·d\u2019un·mod\u00e8le·sur·les·serveurs·locaux.·Continuer\u00a0?",
+        118 │ + → testProviderConfirm:
+        119 │ + → → "Ceci·enverra·un·message·de·test·\u00e0·un·mod\u00e8le·de·{{name}},·ce·qui·peut·consommer·des·tokens·ou·d\u00e9clencher·le·chargement·d\u2019un·mod\u00e8le·sur·les·serveurs·locaux.·Continuer\u00a0?",
+    119 120 │           preferred: "Pr\u00e9f\u00e9r\u00e9",
+    120 121 │           showAllModels: "Afficher {{count}} mod\u00e8les suppl\u00e9mentaires\u2026",
+
+
+crates/web/src/assets/js/page-providers.js format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✖ File content differs from formatting output
+
+    314 314 │                           </div>
+    315 315 │                           <div class="flex gap-2 shrink-0">
+    316     │ - → → → → ${group.models.length·>·0·?·html`<button
+        316 │ + → → → → ${
+        317 │ + → → → → → group.models.length·>·0
+        318 │ + → → → → → → ?·html`<button
+    317 319 │                                           class="provider-btn provider-btn-secondary provider-btn-sm"
+    318 320 │                                           disabled=${isTesting}
+    319 321 │                                           onClick=${onTestProvider}
+    320     │ - → → → → >${isTesting·?·t("providers:testing")·:·t("providers:test")}</button>`·:·null}
+        322 │ + → → → → >${isTesting·?·t("providers:testing")·:·t("providers:test")}</button>`
+        323 │ + → → → → → → :·null
+        324 │ + → → → → }
+    321 325 │                                   ${group.models.length > 0 ? html`<button class="provider-btn provider-btn-secondary provider-btn-sm" onClick=${onSelectModels}>${t("providers:preferredModels.button")}</button>` : null}
+    322 326 │                                   <button
+    ······· │
+    329 333 │                           </div>
+    330 334 │                   </div>
+    331     │ - → → ${providerTestResult·?·html`<div·class="mt-1·text-xs·${providerTestResult.ok·?·"text-[var(--success,#22c55e)]"·:·"text-[var(--danger,#ef4444)]"}">
+        335 │ + → → ${
+        336 │ + → → → providerTestResult
+        337 │ + → → → → ?·html`<div·class="mt-1·text-xs·${providerTestResult.ok·?·"text-[var(--success,#22c55e)]"·:·"text-[var(--danger,#ef4444)]"}">
+    332 338 │                           ${providerTestResult.ok ? t("providers:testSuccess") : providerTestResult.error}
+    333     │ - → → </div>`·:·null}
+        339 │ + → → </div>`
+        340 │ + → → → → :·null
+        341 │ + → → }
+    334 342 │                   <div class="mt-2 border-b border-[var(--border)]"></div>
+    335 343 │                   ${
+
+
+Checked 134 files in 67ms. No fixes applied.
+Found 3 errors.
+ci ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✖ Some errors were emitted while running checks.
+
+
+i18n parity OK: 3 locales, 18 namespaces.
+cargo +nightly-2025-11-30 fmt --all -- --check
+Checking .deb filename pattern...
+  ok: .deb filename: no revision suffix (matches cargo-deb output)
+Checking .rpm filename pattern...
+  ok: .rpm filename: has -1 revision (matches cargo-generate-rpm output)
+Checking .pkg.tar.zst (Arch) filename pattern...
+  ok: .pkg.tar.zst filename: has -1 revision (matches release workflow)
+Checking AppImage filename pattern...
+  ok: AppImage filename: matches release workflow pattern
+Checking binary tarball filename pattern...
+  ok: binary tarball: matches release workflow pattern
+Checking release_tag() logic...
+  ok: release_tag('20260327.05') = '20260327.05' (date-based, bare)
+  ok: release_tag('0.1.3') = 'v0.1.3' (semver, v-prefixed)
+Checking architecture mappings...
+  ok: deb arch: x86_64 → amd64
+  ok: deb arch: aarch64 → arm64
+Cross-validating against release.yml...
+  ok: release.yml: no --deb-revision flag (consistent with install.sh)
+  ok: release.yml: uses --deb-version for .deb naming
+  ok: release.yml: AppImage naming matches install.sh
+Checking install.sh sync...
+  ok: install.sh and website/install.sh are identical
+
+All 15 install package name checks passed
+🌈 zizmor v1.22.0
+ INFO audit: zizmor: 🌈 completed ./.github/actions/sign-artifacts/action.yml
+installation docs avoid versionless GitHub asset URLs
+[local/biome] failed in 1s
+[local/i18n] passed in 1s
+[local/install-names] passed in 1s
+[local/install-docs] passed in 2s
+[local/fmt] passed in 3s
+[local/fmt] total 3s
+[local/biome] total 2s
+[local/i18n] total 2s
+[local/install-names] total 2s
+[local/install-docs] total 2s
+One or more parallel local checks failed.
+~/.s/w/m/curious-bill curious-bill ❯  INFO audit: zizmor: 🌈 completed ./.github/workflows/ci.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/codspeed.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/docs.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/e2e.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/homebrew.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/provider-integration.yml
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/release.yml
+No findings to report. Good job! (15 ignored, 48 suppressed)
+[local/zizmor] passed in 7s
+~/.s/w/m/curious-bill curious-bill ❯
+
+---
+
+commit and push all changes
+
+---
+
+Checking moltis-telegram v0.1.0 (/Users/penso/.superset/worktrees/moltis/curious-bill/crates/telegram)
+error[E0063]: missing field `channel_sender_id` in initializer of `prompt::PromptHostRuntimeContext`
+    --> crates/agents/src/prompt.rs:1269:19
+     |
+1269 |             host: PromptHostRuntimeContext {
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^ missing `channel_sender_id`
+
+    Checking wacore-appstate v0.2.0
+    Checking wacore v0.2.0
+    Checking wasmtime-wasi-io v36.0.7
+    Checking wiggle v36.0.7
+    Checking moltis-wasm-precompile v0.1.0 (/Users/penso/.superset/worktrees/moltis/curious-bill/crates/wasm-precompile)
+    Checking whatsapp-rust-tokio-transport v0.2.0
+    Checking whatsapp-rust-ureq-http-client v0.2.0
+    Checking moltis-qmd v0.1.0 (/Users/penso/.superset/worktrees/moltis/curious-bill/crates/qmd)
+    Checking whatsapp-rust v0.2.0
+    Checking wasmtime-wasi v36.0.7
+For more information about this error, try `rustc --explain E0063`.
+error: could not compile `moltis-agents` (lib test) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+      Timing report saved to /Users/penso/.superset/worktrees/moltis/curious-bill/target/cargo-timings/cargo-timing-20260412T132716.811977Z.html
+[local/lint] failed in 53s
+~/.s/w/m/curious-bill curious-bill ❯
+
+---
+
+Checking moltis-auth v0.1.0 (/Users/penso/.superset/worktrees/moltis/curious-bill/crates/auth)
+error: field assignment outside of initializer for an instance created with Default::default()
+   --> crates/tools/src/policy.rs:296:9
+    |
+296 | /         provider_entry.policy = Some(moltis_config::schema::ToolPolicyConfig {
+297 | |             allow: Vec::new(),
+298 | |             deny: vec!["exec".into()],
+299 | |             profile: None,
+300 | |         });
+    | |___________^
+    |
+note: consider initializing the variable with `moltis_config::schema::ProviderEntry { policy: Some(moltis_config::schema::ToolPolicyConfig {
+                  allow: Vec::new(),
+                  deny: vec!["exec".into()],
+                  profile: None,
+              }), ..Default::default() }` and removing relevant reassignments
+   --> crates/tools/src/policy.rs:295:9
+    |
+295 |         let mut provider_entry = moltis_config::schema::ProviderEntry::default();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default
+    = note: `-D clippy::field-reassign-with-default` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::field_reassign_with_default)]`
+
+error: could not compile `moltis-tools` (lib test) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+      Timing report saved to /Users/penso/.superset/worktrees/moltis/curious-bill/target/cargo-timings/cargo-timing-20260412T133202.510571Z.html
+[local/lint] failed in 103s

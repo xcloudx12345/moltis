@@ -1,0 +1,91 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "a268f151b4f0",
+  "session_id": "a19414f3-6176-45a5-a923-13d1b9e61758",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-12T13:37:30.232262Z",
+  "branch": "curious-bill",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/tools/src/policy.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "f59639bec9d4",
+  "token_usage": {
+    "input_tokens": 574,
+    "cache_creation_tokens": 226430,
+    "cache_read_tokens": 42519055,
+    "output_tokens": 63624,
+    "api_call_count": 263
+  },
+  "summary": {
+    "intent": "Implement the layered tool policy system described in GitHub discussion #641, which identified that `resolve_effective_policy` was dead code disconnected from both the config schema and runtime, to enable per-channel/per-sender tool gating for mixed-trust environments.",
+    "outcome": "Fully implemented a 6-layer tool policy system: wired `resolve_effective_policy` into the runtime, extended config schema with per-provider and per-channel policy fields, threaded `sender_id` through all channel handlers and runtime context, added sandbox layer, wrote documentation, and shipped as PR #677 with a comment posted to the original discussion.",
+    "learnings": {
+      "repo": [
+        "resolve_effective_policy in crates/tools/src/policy.rs was previously only called by its own unit tests — the actual runtime used a separate effective_tool_policy() reading only global config",
+        "AgentsConfig uses presets: HashMap\u003cString, AgentPreset\u003e (not an array), and AgentPreset already had tools: PresetToolPolicy before this session",
+        "ChannelMessageMeta existed but had no sender_id field; peer_id was available in all 6 channel handlers (Telegram, Slack, MSTeams, Discord, Matrix, WhatsApp) but not threaded through",
+        "PromptHostRuntimeContext already had channel_type, channel_account_id, channel_chat_id, channel_chat_type — sender_id was the only missing piece",
+        "The worktree was missing biome.json (added to main after the branch diverged), causing biome lint failures that were resolved by merging origin/main",
+        "local-validate.sh 677 is the standard PR validation script; CUDA-related build failures for llama-cpp are expected on macOS and pre-existing",
+        "Clippy is configured with -D warnings, enforcing field_reassign_with_default: must use struct initialization with ..Default::default() instead of post-construction field assignment"
+      ],
+      "code": [
+        {
+          "path": "crates/tools/src/policy.rs",
+          "line": 295,
+          "end_line": 300,
+          "finding": "Clippy field_reassign_with_default error: must use ProviderEntry { policy: Some(...), ..Default::default() } not let mut x = Default::default(); x.field = ..."
+        },
+        {
+          "path": "crates/agents/src/prompt.rs",
+          "line": 1269,
+          "end_line": 1269,
+          "finding": "Test constructs PromptHostRuntimeContext without ..Default::default(), so every new field must be explicitly added to the test initializer"
+        },
+        {
+          "path": "crates/chat/src/lib.rs",
+          "finding": "build_policy_context() had sandboxed: false hardcoded — needed to read from runtime_context.sandbox.exec_sandboxed to make layer 6 reachable"
+        },
+        {
+          "path": "crates/chat/src/lib.rs",
+          "finding": "apply_runtime_tool_filters has 4 call sites: list_tools schema path, raw_prompt non-streaming send, full_context streaming send, and run_with_tools"
+        },
+        {
+          "path": "crates/config/src/validate.rs",
+          "finding": "build_schema_map() must be updated whenever new config fields are added to schema structs, otherwise the config validator rejects them"
+        }
+      ],
+      "workflow": [
+        "Beads issues were created first, then claimed before starting work — the project uses a claim/close workflow for task tracking",
+        "Background agents (subagent_type=general-purpose) were used in parallel for independent subtasks (docs page, sandbox policy field) while the main thread handled sender_id threading",
+        "cargo fmt --all must be run before committing; the project uses nightly-2025-11-30 for formatting",
+        "local-validate.sh \u003cPR-number\u003e is the full pre-push validation script covering biome, i18n parity, cargo fmt, install name checks, zizmor, lint, and tests",
+        "GitHub Discussions comments require GraphQL API (addDiscussionComment mutation) — the REST API does not support posting discussion comments"
+      ]
+    },
+    "friction": [
+      "biome.json was missing from the worktree (added to main after branch diverged) — caused spurious biome CI failures requiring an origin/main merge to resolve",
+      "sandboxed: false was hardcoded in build_policy_context(), making layer 6 silently dead — caught only on second review pass",
+      "Two post-push compilation errors required hotfix commits: missing channel_sender_id in prompt.rs test initializer, and Clippy field_reassign_with_default in policy.rs test",
+      "CUDA/llama-cpp build failures on macOS pollute cargo check output, requiring --exclude flags to get clean signal on changed crates",
+      "channel_binding_from_runtime_context builds ChannelBinding for hook payloads but sender_id was only accessible via params (not runtime context), requiring adding channel_sender_id to PromptHostRuntimeContext as an intermediate carrier"
+    ],
+    "open_items": [
+      "sender_id in channel_binding_from_runtime_context for hook payloads depends on #640 (channel metadata in hook payloads) — the policy path works but hooks still have a gap",
+      "A dedicated docs/src/tool-policy.md page was created but a more comprehensive treatment could cover migration from the old effective_tool_policy() pattern",
+      "SandboxConfig.tools_policy was added (layer 6) but the sandbox exec_sandboxed flag plumbing to all downstream contexts should be audited — only the policy path was verified",
+      "No dedicated tool-policy docs page existed before this session; the new page covers 5 layers in its initial version but was patched to add layer 6 after the sandbox agent completed"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-12T13:36:42.529724Z",
+    "agent_lines": 11,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 11,
+    "agent_percentage": 100
+  }
+}
