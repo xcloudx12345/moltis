@@ -1,0 +1,60 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "0fb6d2dccabc",
+  "strategy": "manual-commit",
+  "branch": "aerial-bellflower",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/auth/src/credential_store/env_vars.rs",
+    "crates/auth/src/credential_store/ssh.rs",
+    "crates/chat/src/agent_loop.rs",
+    "crates/chat/src/channels.rs",
+    "crates/chat/src/compaction_run/shared.rs",
+    "crates/chat/src/models.rs",
+    "crates/chat/src/run_with_tools.rs",
+    "crates/chat/src/service/chat_impl.rs",
+    "crates/chat/src/service/chat_impl/send.rs",
+    "crates/chat/src/service/mod.rs",
+    "crates/chat/src/streaming.rs",
+    "crates/chat/src/types.rs",
+    "crates/gateway/src/channel_events.rs",
+    "crates/gateway/src/channel_events/commands.rs",
+    "crates/gateway/src/channel_events/control.rs",
+    "crates/gateway/src/channel_events/dispatch.rs",
+    "crates/gateway/src/channel_events/sink.rs",
+    "crates/gateway/src/channel_events/tests.rs",
+    "crates/gateway/src/local_llm_setup.rs",
+    "crates/gateway/src/local_llm_setup/cache.rs",
+    "crates/gateway/src/local_llm_setup/config.rs",
+    "crates/gateway/src/local_llm_setup/service.rs",
+    "crates/gateway/src/local_llm_setup/tests.rs",
+    "crates/gateway/src/methods/services/admin.rs",
+    "crates/gateway/src/server/prepare_core.rs",
+    "crates/gateway/src/server/prepare_core/post_state.rs",
+    "crates/gateway/src/server/tests_legacy/llm.rs",
+    "crates/gateway/src/server/tests_legacy/mod.rs",
+    "crates/gateway/src/services.rs",
+    "crates/gateway/src/session.rs",
+    "crates/gateway/src/session/maintenance.rs",
+    "crates/gateway/src/session/service.rs",
+    "crates/gateway/src/session/share.rs",
+    "crates/gateway/src/session/tests.rs",
+    "crates/gateway/src/session/voice.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0f/b6d2dccabc/0/metadata.json",
+      "transcript": "/0f/b6d2dccabc/0/full.jsonl",
+      "context": "/0f/b6d2dccabc/0/context.md",
+      "content_hash": "/0f/b6d2dccabc/0/content_hash.txt",
+      "prompt": "/0f/b6d2dccabc/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}
