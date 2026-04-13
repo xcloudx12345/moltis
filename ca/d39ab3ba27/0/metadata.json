@@ -1,0 +1,62 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "cad39ab3ba27",
+  "session_id": "a6cf5dcd-19ee-46e4-b4c2-f8b17035e055",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-13T08:14:14.049036Z",
+  "branch": "feat/voice-base-url",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "Cargo.lock"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "a01485a12512",
+  "token_usage": {
+    "input_tokens": 28,
+    "cache_creation_tokens": 49141,
+    "cache_read_tokens": 766407,
+    "output_tokens": 6190,
+    "api_call_count": 20
+  },
+  "summary": {
+    "intent": "Merge the main branch into feat/voice-base-url and resolve any merge conflicts that arose.",
+    "outcome": "Conflicts in whisper.rs and voice.rs were resolved by combining both branches' additions, all 17 whisper tests pass, and the merge commit plus a follow-up Cargo.lock commit were created successfully.",
+    "learnings": {
+      "repo": [
+        "The project is a Rust workspace (molt/moltis) with at least two relevant crates: crates/gateway and crates/voice.",
+        "WhisperStt uses a builder-style API with with_options() and a with_model() convenience method.",
+        "The voice provider supports keyless local servers via an is_configured() check, allowing operation without an API key when base_url points to a local instance.",
+        "Some files contain === sequences (likely in comments) that can produce false positives when grepping for conflict markers."
+      ],
+      "code": [
+        {
+          "path": "crates/voice/src/stt/whisper.rs",
+          "finding": "with_options() now accepts 4 params: (api_key, base_url, model, language). with_model() is retained as a convenience method sourced from main. Both branches' tests are included."
+        },
+        {
+          "path": "crates/gateway/src/voice.rs",
+          "finding": "Whisper provider construction passes base_url (from feat branch) and language (from main), and uses is_configured() to support keyless local servers."
+        }
+      ],
+      "workflow": [
+        "SSH authentication via YubiKey can block git fetch operations; a retry after tapping the key resolves it.",
+        "Running targeted crate-level tests (whisper-related) after a merge provides confidence before finalizing the merge commit.",
+        "Cargo.lock changes after merging main with new dependencies should be committed separately as a clean-up step."
+      ]
+    },
+    "friction": [
+      "YubiKey SSH authentication required a manual tap mid-session, blocking the initial git fetch and requiring a retry.",
+      "False-positive conflict marker matches (=== in comment separators in other files) required extra verification that no real markers remained."
+    ],
+    "open_items": []
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-13T08:14:01.125329Z",
+    "agent_lines": 2426,
+    "human_added": 101317,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 103743,
+    "agent_percentage": 2.3384710293706563
+  }
+}
