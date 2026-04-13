@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "bc7d3dde0a05",
+  "strategy": "manual-commit",
+  "branch": "aerial-bellflower",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/gateway/src/server/prepare_core.rs",
+    "crates/gateway/src/server/prepare_core/post_state.rs",
+    "crates/gateway/src/server/startup.rs",
+    "crates/gateway/src/server/tests_legacy/common.rs",
+    "crates/gateway/src/server/tests_legacy/helpers.rs",
+    "crates/gateway/src/server/tests_legacy/llm.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/bc/7d3dde0a05/0/metadata.json",
+      "transcript": "/bc/7d3dde0a05/0/full.jsonl",
+      "context": "/bc/7d3dde0a05/0/context.md",
+      "content_hash": "/bc/7d3dde0a05/0/content_hash.txt",
+      "prompt": "/bc/7d3dde0a05/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}
