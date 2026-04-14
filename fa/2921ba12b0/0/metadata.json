@@ -1,0 +1,65 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "fa2921ba12b0",
+  "session_id": "07656ec3-0c97-4751-91d1-c1743bb63884",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-14T10:22:54.030068Z",
+  "branch": "main",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/tools/src/sandbox/tests/core.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "96ba8f4ba3ea",
+  "checkpoint_transcript_start": 414,
+  "transcript_lines_at_start": 414,
+  "token_usage": {
+    "input_tokens": 8,
+    "cache_creation_tokens": 2052,
+    "cache_read_tokens": 344017,
+    "output_tokens": 650,
+    "api_call_count": 6
+  },
+  "summary": {
+    "intent": "Enforce a consistent 12-character minimum password length across the entire codebase, matching the backend's validation in auth_routes.rs.",
+    "outcome": "All 16 occurrences across 9 files were updated and pushed. A follow-up formatting fix was required after rustfmt (nightly) reformatted long assert_eq! lines in sandbox tests.",
+    "learnings": {
+      "repo": [
+        "Password minimum length is enforced in auth_routes.rs (backend) and must be mirrored in: locale strings (en/fr), client-side JS validation, Rust FFI bridge (ffi_auth.rs), macOS Swift app (AppSettings.swift), and docs.",
+        "The project uses a pinned nightly rustfmt, which can reformat long assert_eq! macro calls differently than stable, causing format-check CI failures after pushes."
+      ],
+      "code": [
+        {
+          "path": "crates/tools/src/sandbox/tests/core.rs",
+          "line": 31,
+          "end_line": 38,
+          "finding": "Long assert_eq! calls must be formatted with rustfmt nightly's multi-line style; single-line form fails format-check."
+        },
+        {
+          "path": "crates/tools/src/sandbox/tests/core.rs",
+          "line": 54,
+          "end_line": 61,
+          "finding": "Same multi-line assert_eq! formatting requirement applies here."
+        }
+      ],
+      "workflow": [
+        "CI runs zizmor on GitHub Actions workflows; 28 findings are suppressed, and the release workflow passed clean.",
+        "Local checks run in parallel (fmt, biome, i18n, install-names, install-docs, file-size); a single failure aborts the suite with 'One or more parallel local checks failed.'",
+        "The project enforces a 1500-line file size limit with an allowlist for exceptions."
+      ]
+    },
+    "friction": [
+      "Nightly rustfmt reformatted two assert_eq! lines in sandbox tests after the main push, requiring a separate fix commit — the format-check failure only surfaced post-push."
+    ],
+    "open_items": []
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-14T10:22:40.071268Z",
+    "agent_lines": 10,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 10,
+    "agent_percentage": 100
+  }
+}
