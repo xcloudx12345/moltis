@@ -1,0 +1,295 @@
+https://github.com/moltis-org/moltis/actions/runs/24383526416 ran last night, is this a flaky test?
+
+---
+
+https://github.com/moltis-org/moltis/actions/runs/24383526416 ran last night, is this a flaky test?
+
+---
+
+this same code passed on main and release, so it must be a race condition. Please fix both issues you found.
+
+---
+
+commit and push
+
+---
+
+Compiling moltis-metrics v0.1.0 (/Users/penso/tmp/molt/moltis/crates/metrics)
+warning: unused import: `rand::Rng`
+  --> crates/channels/src/otp.rs:12:5
+   |
+12 | use rand::Rng;
+   |     ^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+   --> crates/channels/src/otp.rs:234:33
+    |
+234 |     let code: u32 = rand::rng().random_range(100_000..1_000_000);
+    |                                 ^^^^^^^^^^^^
+    |
+   ::: /Users/penso/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand-0.10.0/src/rng.rs:159:8
+    |
+159 |     fn random_range<T, R>(&mut self, range: R) -> T
+    |        ------------ the method is available for `ThreadRng` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: there is a method `random` with a similar name, but with different arguments
+   --> /Users/penso/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand-0.10.0/src/rng.rs:93:5
+    |
+ 93 | /     fn random<T>(&mut self) -> T
+ 94 | |     where
+ 95 | |         StandardUniform: Distribution<T>,
+    | |_________________________________________^
+help: trait `RngExt` which provides `random_range` is implemented but not in scope; perhaps you want to import it
+    |
+  7 + use rand::RngExt;
+    |
+
+   Compiling nostr-relay-pool v0.44.0
+For more information about this error, try `rustc --explain E0599`.
+warning: `moltis-channels` (lib) generated 1 warning
+error: could not compile `moltis-channels` (lib) due to 1 previous error; 1 warning emitted
+warning: build failed, waiting for other jobs to finish...
+~/t/m/moltis main ❯
+
+---
+
+commit and push
+
+---
+
+~/t/m/moltis main [⇡] ❯ MOLTIS_CONFIG_DIR=.moltis/config MOLTIS_DATA_DIR=.moltis/ cargo run --bin moltis
+   Compiling moltis-sessions v0.1.0 (/Users/penso/tmp/molt/moltis/crates/sessions)
+   Compiling moltis-oauth v0.1.0 (/Users/penso/tmp/molt/moltis/crates/oauth)
+   Compiling moltis-channels v0.1.0 (/Users/penso/tmp/molt/moltis/crates/channels)
+   Compiling llama-cpp-sys-2 v0.1.133
+   Compiling wacore-libsignal v0.2.0
+   Compiling matrix-sdk-base v0.16.0
+   Compiling moltis-browser v0.1.0 (/Users/penso/tmp/molt/moltis/crates/browser)
+   Compiling moltis-network-filter v0.1.0 (/Users/penso/tmp/molt/moltis/crates/network-filter)
+   Compiling moltis-vault v0.1.0 (/Users/penso/tmp/molt/moltis/crates/vault)
+   Compiling slack-morphism v2.18.0
+   Compiling nostr-sdk v0.44.1
+   Compiling webauthn-rs v0.5.4
+   Compiling moltis-webhooks v0.1.0 (/Users/penso/tmp/molt/moltis/crates/webhooks)
+   Compiling moltis-canvas v0.1.0 (/Users/penso/tmp/molt/moltis/crates/canvas)
+   Compiling axum-extra v0.10.3
+   Compiling moltis-tls v0.1.0 (/Users/penso/tmp/molt/moltis/crates/tls)
+   Compiling llama-cpp-2 v0.1.133
+   Compiling async-graphql-axum v7.2.1
+   Compiling moltis-node-host v0.1.0 (/Users/penso/tmp/molt/moltis/crates/node-host)
+   Compiling wacore-appstate v0.2.0
+error[E0432]: unresolved import `rand::RngCore`
+ --> crates/oauth/src/pkce.rs:3:5
+  |
+3 |     rand::RngCore,
+  |     ^^^^^^^^^^^^^ no `RngCore` in the root
+
+error[E0432]: unresolved import `rand::RngCore`
+  --> crates/vault/src/kdf.rs:53:26
+   |
+53 |     use {base64::Engine, rand::RngCore};
+   |                          ^^^^^^^^^^^^^ no `RngCore` in the root
+
+error[E0432]: unresolved import `rand::RngCore`
+  --> crates/vault/src/recovery.rs:51:9
+   |
+51 |     use rand::RngCore;
+   |         ^^^^^^^^^^^^^ no `RngCore` in the root
+
+error[E0432]: unresolved import `rand::RngCore`
+ --> crates/vault/src/xchacha20.rs:8:5
+  |
+8 | use rand::RngCore;
+  |     ^^^^^^^^^^^^^ no `RngCore` in the root
+
+error[E0433]: failed to resolve: could not find `RngCore` in `rand`
+  --> crates/vault/src/vault.rs:93:15
+   |
+93 |         rand::RngCore::fill_bytes(&mut rand::rng(), dek.as_mut());
+   |               ^^^^^^^ could not find `RngCore` in `rand`
+
+warning: unused import: `rand::Rng`
+   --> crates/webhooks/src/types.rs:348:9
+    |
+348 |     use rand::Rng;
+    |         ^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `rand::Rng`
+   --> crates/browser/src/pool.rs:724:9
+    |
+724 |     use rand::Rng;
+    |         ^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0599]: no method named `fill_bytes` found for struct `ThreadRng` in the current scope
+  --> crates/oauth/src/pkce.rs:12:17
+   |
+12 |     rand::rng().fill_bytes(&mut bytes);
+   |                 ^^^^^^^^^^
+   |
+  ::: /Users/penso/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand_core-0.10.0/src/lib.rs:62:8
+   |
+62 |     fn fill_bytes(&mut self, dst: &mut [u8]);
+   |        ---------- the method is available for `ThreadRng` here
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: trait `Rng` which provides `fill_bytes` is implemented but not in scope; perhaps you want to import it
+   |
+ 1 + use rand::Rng;
+   |
+help: there is a method `try_fill_bytes` with a similar name
+   |
+12 |     rand::rng().try_fill_bytes(&mut bytes);
+   |                 ++++
+
+error[E0599]: no method named `fill_bytes` found for struct `ThreadRng` in the current scope
+  --> crates/oauth/src/pkce.rs:28:17
+   |
+28 |     rand::rng().fill_bytes(&mut bytes);
+   |                 ^^^^^^^^^^
+   |
+  ::: /Users/penso/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand_core-0.10.0/src/lib.rs:62:8
+   |
+62 |     fn fill_bytes(&mut self, dst: &mut [u8]);
+   |        ---------- the method is available for `ThreadRng` here
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: trait `Rng` which provides `fill_bytes` is implemented but not in scope; perhaps you want to import it
+   |
+ 1 + use rand::Rng;
+   |
+help: there is a method `try_fill_bytes` with a similar name
+   |
+28 |     rand::rng().try_fill_bytes(&mut bytes);
+   |                 ++++
+
+error[E0599]: no method named `fill_bytes` found for struct `ThreadRng` in the current scope
+  --> crates/vault/src/kdf.rs:56:17
+   |
+56 |     rand::rng().fill_bytes(&mut salt);
+   |                 ^^^^^^^^^^
+   |
+  ::: /Users/penso/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand_core-0.10.0/src/lib.rs:62:8
+   |
+62 |     fn fill_bytes(&mut self, dst: &mut [u8]);
+   |        ---------- the method is available for `ThreadRng` here
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: trait `Rng` which provides `fill_bytes` is implemented but not in scope; perhaps you want to import it
+   |
+ 3 + use rand::Rng;
+   |
+help: there is a method `try_fill_bytes` with a similar name
+   |
+56 |     rand::rng().try_fill_bytes(&mut salt);
+   |                 ++++
+
+error[E0599]: no method named `fill_bytes` found for struct `ThreadRng` in the current scope
+  --> crates/vault/src/recovery.rs:54:17
+   |
+54 |     rand::rng().fill_bytes(&mut entropy);
+   |                 ^^^^^^^^^^
+   |
+  ::: /Users/penso/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand_core-0.10.0/src/lib.rs:62:8
+   |
+62 |     fn fill_bytes(&mut self, dst: &mut [u8]);
+   |        ---------- the method is available for `ThreadRng` here
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: trait `Rng` which provides `fill_bytes` is implemented but not in scope; perhaps you want to import it
+   |
+ 8 + use rand::Rng;
+   |
+help: there is a method `try_fill_bytes` with a similar name
+   |
+54 |     rand::rng().try_fill_bytes(&mut entropy);
+   |                 ++++
+
+error[E0599]: no method named `fill_bytes` found for struct `ThreadRng` in the current scope
+  --> crates/vault/src/xchacha20.rs:33:21
+   |
+33 |         rand::rng().fill_bytes(&mut nonce_bytes);
+   |                     ^^^^^^^^^^
+   |
+  ::: /Users/penso/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand_core-0.10.0/src/lib.rs:62:8
+   |
+62 |     fn fill_bytes(&mut self, dst: &mut [u8]);
+   |        ---------- the method is available for `ThreadRng` here
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: trait `Rng` which provides `fill_bytes` is implemented but not in scope; perhaps you want to import it
+   |
+ 3 + use rand::Rng;
+   |
+help: there is a method `try_fill_bytes` with a similar name
+   |
+33 |         rand::rng().try_fill_bytes(&mut nonce_bytes);
+   |                     ++++
+
+   Compiling moltis-discord v0.1.0 (/Users/penso/tmp/molt/moltis/crates/discord)
+   Compiling moltis-msteams v0.1.0 (/Users/penso/tmp/molt/moltis/crates/msteams)
+Some errors have detailed explanations: E0432, E0433, E0599.
+For more information about an error, try `rustc --explain E0432`.
+error: could not compile `moltis-vault` (lib) due to 7 previous errors
+warning: build failed, waiting for other jobs to finish...
+error[E0599]: no method named `random` found for struct `ThreadRng` in the current scope
+   --> crates/webhooks/src/types.rs:349:39
+    |
+349 |     let bytes: [u8; 18] = rand::rng().random();
+    |                                       ^^^^^^
+    |
+   ::: /Users/penso/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand-0.10.0/src/rng.rs:93:8
+    |
+ 93 |     fn random<T>(&mut self) -> T
+    |        ------ the method is available for `ThreadRng` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: there is a method `random_bool` with a similar name, but with different arguments
+   --> /Users/penso/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand-0.10.0/src/rng.rs:189:5
+    |
+189 |     fn random_bool(&mut self, p: f64) -> bool {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: trait `RngExt` which provides `random` is implemented but not in scope; perhaps you want to import it
+    |
+  1 + use rand::RngExt;
+    |
+
+Some errors have detailed explanations: E0432, E0599.
+error: could not compile `moltis-oauth` (lib) due to 3 previous errors
+For more information about this error, try `rustc --explain E0599`.
+warning: `moltis-webhooks` (lib) generated 1 warning
+error: could not compile `moltis-webhooks` (lib) due to 1 previous error; 1 warning emitted
+error[E0599]: no method named `random` found for struct `ThreadRng` in the current scope
+   --> crates/browser/src/pool.rs:726:23
+    |
+726 |     let id: u64 = rng.random();
+    |                       ^^^^^^
+    |
+   ::: /Users/penso/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rand-0.10.0/src/rng.rs:93:8
+    |
+ 93 |     fn random<T>(&mut self) -> T
+    |        ------ the method is available for `ThreadRng` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: there is a method `and` with a similar name, but with different arguments
+   --> /Users/penso/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tower-http-0.6.8/src/follow_redirect/policy/mod.rs:141:5
+    |
+141 | /     fn and<P, B, E>(self, other: P) -> And<Self, P>
+142 | |     where
+143 | |         Self: Policy<B, E> + Sized,
+144 | |         P: Policy<B, E>;
+    | |________________________^
+help: trait `RngExt` which provides `random` is implemented but not in scope; perhaps you want to import it
+    |
+  3 + use rand::RngExt;
+    |
+
+warning: `moltis-browser` (lib) generated 1 warning
+error: could not compile `moltis-browser` (lib) due to 1 previous error; 1 warning emitted
+~/t/m/moltis main ❯
