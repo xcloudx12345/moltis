@@ -1,0 +1,89 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "5e2ea04c8098",
+  "session_id": "0e1d39af-a1cb-48a8-af0d-24ab9737608f",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-14T14:39:21.601913Z",
+  "branch": "clever-oboe",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/web/src/assets/js/onboarding-view.js",
+    "crates/web/src/assets/js/page-channels.js"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "773149ba1f90",
+  "token_usage": {
+    "input_tokens": 271,
+    "cache_creation_tokens": 389200,
+    "cache_read_tokens": 40082457,
+    "output_tokens": 63960,
+    "api_call_count": 243
+  },
+  "summary": {
+    "intent": "Upgrade the whatsapp-rust ecosystem from 0.2 to 0.5 to fix inbound WhatsApp messages being parsed as empty due to outdated protobuf definitions, then add WhatsApp to the default offered channels and fix QR code display during onboarding.",
+    "outcome": "Successfully upgraded 6 whatsapp crates to 0.5, implemented all new trait methods, added WhatsApp to default channels, fixed QR code delivery via polling fallback, and fixed a duplicate account start bug; PR #709 created and merged with main.",
+    "learnings": {
+      "repo": [
+        "wacore 0.5 default features include 'simd' which requires unstable core::simd::Select — must set default-features = false on both wacore and wacore-binary to avoid nightly toolchain conflicts",
+        "whatsapp-rust 0.5 requires a 4th type parameter for async runtime and .with_runtime(TokioRuntime) on the bot builder",
+        "ProtocolStore trait in 0.5 gained 8 new methods (TC tokens + sent message cache) and changed SKDM signatures from String to Jid",
+        "channels_offered has 4 sources of truth: config schema default, config template comment, gateway state hardcoded fallback, and JS fallbacks in onboarding-view.js and page-channels.js — all must be updated together",
+        "WhatsApp channel accounts are persisted to .moltis/moltis.db and auto-started on gateway boot; re-adding from onboarding caused a second sled lock attempt and EAGAIN error",
+        "QR codes are delivered via WebSocket events with drop_if_slow:true — events can be lost if frontend isn't subscribed in time; channels.status extra field is the polling fallback",
+        "sendRpc() resolves with { ok, payload } frame — the payload field holds the RPC result, NOT a 'result' field"
+      ],
+      "code": [
+        {
+          "path": "crates/whatsapp/src/plugin.rs",
+          "finding": "start_account() must guard against duplicate starts with has_account() check; sled cannot be opened twice in the same process"
+        },
+        {
+          "path": "crates/whatsapp/src/plugin.rs",
+          "finding": "latest_qr() data is stored in AccountState and should be exposed via ChannelHealthSnapshot.extra for polling fallback"
+        },
+        {
+          "path": "crates/config/src/schema/runtime.rs",
+          "finding": "default_channels_offered() is the authoritative Rust default; matching test in crates/config/src/schema/tests.rs must be updated in sync"
+        },
+        {
+          "path": "crates/gateway/src/channel.rs",
+          "finding": "add() method calls start_account directly without checking if account is already running — duplicate start guard must be in the plugin layer"
+        },
+        {
+          "path": "crates/web/src/assets/js/helpers.js",
+          "finding": "sendRpc returns the raw frame { ok, payload } — accessing res.payload.channels is correct, not res.result.channels"
+        }
+      ],
+      "workflow": [
+        "Run cargo check early after version bumps to discover all trait signature changes before writing implementation code",
+        "Use cargo metadata or expand crate source (cat ~/.cargo/registry) to inspect exact trait definitions before implementing new methods",
+        "Biome is used for JS linting/formatting; run alongside cargo fmt checks in quality gates",
+        "just test uses nextest and excludes CUDA-dependent crates on macOS; cargo test --all-features fails on macOS due to llama-cpp-sys-2 CUDA dependency",
+        "E2E tests require a running server and are not executed in CI pre-commit — bugs in JS polling code were not caught by the new e2e test"
+      ]
+    },
+    "friction": [
+      "wacore/wacore-binary simd default feature caused nightly toolchain build failures — required disabling defaults on both crates, not documented in migration guide",
+      "QR code polling used res.result instead of res.payload — a naming mismatch between sendRpc's return shape and what was written; the new e2e test didn't catch it because e2e tests weren't actually run",
+      "Cargo.lock merge conflict required taking main's version then re-running cargo fetch rather than a clean 3-way merge",
+      "gh API for resolving PR review threads required finding correct thread IDs via the REST API, which needed multiple attempts to get right",
+      "Background task notifications for push commands arrived after manual push retries already succeeded, causing confusion about state"
+    ],
+    "open_items": [
+      "Users with existing WhatsApp pairings on 0.2 may need to re-scan QR code if wacore struct serialization changed — needs documentation in PR and user-facing release notes",
+      "E2E tests for QR polling fallback and duplicate account start are written but not verified in CI — need actual e2e test run to confirm they pass",
+      "The duplicate start guard in plugin.rs returns Ok(()) silently; ideally it should also trigger a QR code WebSocket event for the newly connected client so polling isn't required at all",
+      "page-channels.js WhatsApp pairing flow also has the polling fallback but shares the same res.result bug pattern — verify fix was applied to both locations correctly",
+      "WhatsApp as default offered channel may surface pairing UI to users who haven't configured it — consider whether onboarding should gate on moltis.toml having whatsapp in [channels].offered"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-14T14:38:45.952117Z",
+    "agent_lines": 0,
+    "human_added": 0,
+    "human_modified": 2,
+    "human_removed": 0,
+    "total_committed": 0,
+    "agent_percentage": 0
+  }
+}
