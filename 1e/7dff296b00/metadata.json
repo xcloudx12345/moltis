@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "1e7dff296b00",
+  "strategy": "manual-commit",
+  "branch": "tabby-poppyseed",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/tools/src/sandbox/docker.rs",
+    "crates/tools/src/sandbox/tests/core.rs",
+    "docs/src/sandbox.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/1e/7dff296b00/0/metadata.json",
+      "transcript": "/1e/7dff296b00/0/full.jsonl",
+      "context": "/1e/7dff296b00/0/context.md",
+      "content_hash": "/1e/7dff296b00/0/content_hash.txt",
+      "prompt": "/1e/7dff296b00/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 837,
+    "cache_creation_tokens": 71310,
+    "cache_read_tokens": 904698,
+    "output_tokens": 5220,
+    "api_call_count": 20
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "1e7dff296b00",
+  "session_id": "97acf0d9-4501-4b00-8e00-d56f9b9a8d67",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-14T09:16:49.790484Z",
+  "branch": "tabby-poppyseed",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/tools/src/sandbox/docker.rs",
+    "crates/tools/src/sandbox/tests/core.rs",
+    "docs/src/sandbox.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "6257be98d545",
+  "token_usage": {
+    "input_tokens": 837,
+    "cache_creation_tokens": 71310,
+    "cache_read_tokens": 904698,
+    "output_tokens": 5220,
+    "api_call_count": 20
+  },
+  "summary": {
+    "intent": "Investigate GitHub issue #705 reporting that Docker sandbox containers can read host metadata from /proc and /sys, and implement a fix covering both Docker and Podman backends.",
+    "outcome": "Added hostname isolation and tmpfs masks for sensitive /sys subtrees in hardening_args(), updated tests and docs, and committed/pushed changes with a PR created.",
+    "learnings": {
+      "repo": [
+        "Docker and Podman share a single DockerSandbox implementation — fixes to hardening_args() apply to both runtimes automatically.",
+        "Apple Container backend is unaffected by /proc and /sys leaks because it uses a full VM with its own kernel.",
+        "deny_paths config only controls Moltis's file-access tool layer, not what the container kernel exposes directly to shell commands."
+      ],
+      "code": [
+        {
+          "path": "crates/tools/src/sandbox/docker.rs",
+          "line": 182,
+          "end_line": 182,
+          "finding": "hardening_args() is the single place to add Docker/Podman container hardening flags; already had --cap-drop ALL, --security-opt no-new-privileges, and read-only root but was missing hostname isolation and /sys tmpfs masks."
+        },
+        {
+          "path": "crates/tools/src/sandbox/tests/core.rs",
+          "finding": "Hardening tests enumerate expected flags explicitly and needed updating whenever hardening_args() grows new entries."
+        }
+      ],
+      "workflow": [
+        "Beads issue tracker is used to claim and close work items during the session.",
+        "The project uses worktrees under ~/.superset/worktrees/moltis/ for parallel development branches.",
+        "Standard flow: build test → cargo fmt check → clippy → close issue → commit/push/PR."
+      ]
+    },
+    "friction": [
+      "Initial attempt to check the GitHub issue failed with a 401 authentication error and required a retry."
+    ],
+    "open_items": [
+      "/proc still exposes some host metadata (kernel version, CPU info, memory layout, cgroup paths) — only /sys hardware identifier paths were masked in this fix.",
+      "A custom seccomp or AppArmor profile was noted as a stronger long-term fix but was not implemented.",
+      "Docker --cgroupns=private was mentioned as a potential improvement but not applied."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-14T09:16:37.812402Z",
+    "agent_lines": 40,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 40,
+    "agent_percentage": 100
+  }
+}
