@@ -1,0 +1,97 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "1f8338bdc8d6",
+  "session_id": "0e1d39af-a1cb-48a8-af0d-24ab9737608f",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-14T14:49:27.328051Z",
+  "branch": "clever-oboe",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/whatsapp/src/connection.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "0fca89580bbc",
+  "token_usage": {
+    "input_tokens": 304,
+    "cache_creation_tokens": 402744,
+    "cache_read_tokens": 46361736,
+    "output_tokens": 68276,
+    "api_call_count": 268
+  },
+  "summary": {
+    "intent": "Upgrade the whatsapp-rust ecosystem from 0.2 to 0.5 to fix inbound messages being parsed as empty due to outdated protobuf definitions, then add WhatsApp to default offered channels and fix the onboarding QR code flow.",
+    "outcome": "All 6 whatsapp crates bumped to 0.5, store traits updated with 11 new methods, WhatsApp added to default channels, QR code polling fallback implemented with SVG rendering, duplicate account start guard added, and history sync disabled on new pairings. PR #709 created and merged.",
+    "learnings": {
+      "repo": [
+        "wacore and wacore-binary 0.5 default features include 'simd' which requires unstable core::simd::Select — must set default-features = false on both to compile with pinned nightly",
+        "whatsapp-rust 0.5 requires a new 'tokio-runtime' feature flag and a fourth type parameter for async runtime in the bot builder (.with_runtime(TokioRuntime))",
+        "ProtocolStore gained 8 new methods in 0.5: TC token CRUD (get/put/delete/get_all/delete_expired) and sent-message cache (store/take/delete_expired)",
+        "SKDM recipient methods changed from String to Jid type between 0.2 and 0.5",
+        "The gateway starts channels from DB on boot (init_channels.rs), so a 'channels.add' RPC for an already-running account will fail with sled lock contention",
+        "channels_offered has 4 places to update: config/schema/runtime.rs (authoritative default), config/template.rs (comment), gateway/state.rs (pre-config fallback + test), and JS fallbacks in onboarding-view.js and page-channels.js",
+        "sendRpc() returns {ok, payload} not {ok, result} — accessing res.payload.channels is correct",
+        "The qrcode crate is already a workspace dependency and can render SVG server-side for the health snapshot",
+        "whatsapp-rust 0.5 bot builder has .skip_history_sync() to prevent syncing past conversations on new pairings"
+      ],
+      "code": [
+        {
+          "path": "crates/whatsapp/src/connection.rs",
+          "line": 65,
+          "end_line": 65,
+          "finding": "Must add .with_runtime(TokioRuntime) before .on_event() in 0.5 builder — new required 4th type parameter"
+        },
+        {
+          "path": "crates/whatsapp/src/plugin.rs",
+          "finding": "start_account() must guard against re-starting already-running accounts via has_account() check to avoid sled lock contention"
+        },
+        {
+          "path": "crates/whatsapp/src/plugin.rs",
+          "finding": "probe() exposes latest_qr data in ChannelHealthSnapshot.extra as both qr_data (raw string) and qr_svg (server-rendered SVG) for polling fallback"
+        },
+        {
+          "path": "crates/web/src/assets/js/onboarding-view.js",
+          "finding": "Added 2s polling fallback against channels.status when WebSocket QR event is missed; uses qr_svg from extra field"
+        },
+        {
+          "path": "crates/config/src/schema/runtime.rs",
+          "finding": "default_channels_offered() is the authoritative default list — add new channels here first"
+        },
+        {
+          "path": "crates/gateway/src/state.rs",
+          "finding": "Hardcoded fallback channels_offered list exists here for pre-config load state — must be kept in sync with config schema default"
+        }
+      ],
+      "workflow": [
+        "cargo check output after version bumps is the most reliable way to discover all breaking API changes in new crate versions",
+        "When simd/unstable features cause build failures, check crate feature flags via 'cargo metadata' before debugging rustc internals",
+        "E2e tests require a live gateway — compile-time and unit tests won't catch JS field name mismatches like res.result vs res.payload",
+        "After merging main into a feature branch with Cargo.lock conflicts, take main's lockfile then re-run cargo fetch to resolve correctly",
+        "Browser WebSocket console is effective for debugging RPC polling — shows exact payloads and confirms data is arriving before investigating JS rendering"
+      ]
+    },
+    "friction": [
+      "wacore/wacore-binary simd default features caused immediate build failure after version bump — not documented in crate changelog",
+      "QR code data arrived via polling but displayed as raw text because the polling code accessed res.result instead of res.payload — field name mismatch between what sendRpc() returns and what was coded",
+      "No SVG was included in the initial health snapshot extra field, causing raw QR string to be shown in the DOM instead of a scannable image",
+      "Sled lock contention error when re-adding an already-running WhatsApp account from onboarding was confusing — appeared as a hard failure even though QR was being generated",
+      "Background task notifications appeared after manual pushes had already completed, requiring output file reads that added no new information",
+      "gh CLI API for resolving review threads required finding the correct graphql endpoint rather than a simple REST call"
+    ],
+    "open_items": [
+      "Users with existing WhatsApp pairings from 0.2 may need to re-scan QR code if wacore struct serialization changed — needs documentation in PR and user-facing release notes",
+      "E2e test for QR polling fallback was written but not executed against a live gateway — needs to be run in CI to validate the res.payload field fix",
+      "The history sync skip (.skip_history_sync()) was added at connection time but there's no UI indication to users that past conversations won't be imported — may cause confusion",
+      "page-channels.js WhatsApp pairing flow also has the polling fallback but lacks a test equivalent to the onboarding spec",
+      "The onboarding 'syncing conversations...' state mentioned by the user was not implemented — currently history sync is just disabled rather than showing progress feedback"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-14T14:48:49.716607Z",
+    "agent_lines": 0,
+    "human_added": 1,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1,
+    "agent_percentage": 0
+  }
+}
