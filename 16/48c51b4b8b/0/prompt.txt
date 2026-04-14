@@ -1,0 +1,13 @@
+Check https://github.com/moltis-org/moltis/issues/543 and plan a fix
+
+---
+
+Is this blocking slack use at all? Is a newer version already available for slack-morphism?
+
+---
+
+proceed
+
+---
+
+commit push create a PR
