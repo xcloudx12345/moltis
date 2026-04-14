@@ -1,0 +1,63 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "5f8d1d7d2a14",
+  "session_id": "07656ec3-0c97-4751-91d1-c1743bb63884",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-14T10:32:40.196577Z",
+  "branch": "main",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "CHANGELOG.md",
+    "website/changelog/index.html"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "c6a814d7e4ae",
+  "checkpoint_transcript_start": 512,
+  "transcript_lines_at_start": 512,
+  "token_usage": {
+    "input_tokens": 8,
+    "cache_creation_tokens": 1842,
+    "cache_read_tokens": 390317,
+    "output_tokens": 650,
+    "api_call_count": 6
+  },
+  "summary": {
+    "intent": "Push a new release of the project, including version bump, changelog update, and git tag.",
+    "outcome": "Release was prepared with auto-computed version, changelog updated in both CHANGELOG.md and website/changelog/index.html, committed, tagged, and pushed.",
+    "learnings": {
+      "repo": [
+        "Project uses a prepare-release script that auto-computes the version and updates CHANGELOG.md and website/changelog/index.html.",
+        "Biome is used for code formatting; RECOMMENDED_PROVIDERS array requires multi-line formatting per biome rules."
+      ],
+      "code": [
+        {
+          "path": "CHANGELOG.md",
+          "finding": "Updated as part of release prep workflow"
+        },
+        {
+          "path": "website/changelog/index.html",
+          "finding": "Mirror of changelog kept in sync with CHANGELOG.md during releases"
+        },
+        {
+          "path": "page-chat.js",
+          "finding": "Had an extra blank line removed in prior commit 2f777a9d as part of biome formatting fixes"
+        }
+      ],
+      "workflow": [
+        "Release flow: run prepare-release script, review changes, commit, tag, and push in one step.",
+        "Prior to release, a formatting cleanup commit (2f777a9d) was made to satisfy biome linting rules."
+      ]
+    },
+    "friction": [],
+    "open_items": []
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-14T10:32:29.627528Z",
+    "agent_lines": 34,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 34,
+    "agent_percentage": 100
+  }
+}
