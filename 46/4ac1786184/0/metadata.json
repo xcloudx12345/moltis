@@ -1,0 +1,100 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "464ac1786184",
+  "session_id": "0e1d39af-a1cb-48a8-af0d-24ab9737608f",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-14T14:45:11.127315Z",
+  "branch": "clever-oboe",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/whatsapp/Cargo.toml"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "25375571d329",
+  "token_usage": {
+    "input_tokens": 291,
+    "cache_creation_tokens": 396451,
+    "cache_read_tokens": 44072615,
+    "output_tokens": 67244,
+    "api_call_count": 259
+  },
+  "summary": {
+    "intent": "Fix WhatsApp inbound messages being parsed as empty due to outdated protobuf definitions by upgrading the whatsapp-rust ecosystem from 0.2 to 0.5, then enable WhatsApp as a default offered channel in onboarding.",
+    "outcome": "Successfully upgraded 6 whatsapp crates to 0.5, fixed all breaking API changes in stores and connection, added WhatsApp to default channels, fixed QR code display via polling fallback with SVG rendering, and resolved PR review comments. The feature is live on PR #709.",
+    "learnings": {
+      "repo": [
+        "wacore 0.5 and wacore-binary 0.5 both have default-features including 'simd' which requires unstable core::simd::Select — must set default-features = false on both to avoid nightly incompatibility",
+        "WhatsApp accounts are persisted to moltis.db and auto-started on gateway boot via init_channels.rs — trying to add the same account_id again causes a sled lock conflict (EAGAIN/code 35)",
+        "channels_offered defaults exist in 4 separate places: crates/config/src/schema/runtime.rs, crates/config/src/template.rs, crates/gateway/src/state.rs, and JS fallbacks in onboarding-view.js + page-channels.js",
+        "sendRpc() returns { ok, payload } not { ok, result } — the response field is 'payload'",
+        "ChannelHealthSnapshot.extra is a free-form map that can carry arbitrary per-channel data like QR codes to polling clients",
+        "The qrcode crate is already a workspace dependency — just add it to the crate's Cargo.toml",
+        "The WebSocket event sink has drop_if_slow: true, so QR code events can be silently dropped if the client isn't subscribed fast enough"
+      ],
+      "code": [
+        {
+          "path": "crates/whatsapp/src/plugin.rs",
+          "finding": "start_account() needs an early-return guard: if has_account(account_id) { return Ok(()) } to prevent sled double-lock when gateway restarts and UI re-adds same account"
+        },
+        {
+          "path": "crates/whatsapp/src/plugin.rs",
+          "finding": "probe() should render QR as SVG using the qrcode crate and include both qr_data and qr_svg in extra map for polling clients"
+        },
+        {
+          "path": "crates/whatsapp/src/memory_store.rs",
+          "finding": "get_latest_sync_key_id() must not rely on DashMap iteration order — track latest_sync_key_id explicitly in an Arc\u003cMutex\u003cOption\u003cVec\u003cu8\u003e\u003e\u003e\u003e field updated on every set_sync_key()"
+        },
+        {
+          "path": "crates/whatsapp/src/sled_store.rs",
+          "finding": "ProtocolStore SKDM methods changed from \u0026[String]/Vec\u003cString\u003e to \u0026[Jid]/Vec\u003cJid\u003e in wacore 0.5"
+        },
+        {
+          "path": "crates/whatsapp/src/connection.rs",
+          "line": 65,
+          "end_line": 65,
+          "finding": "whatsapp-rust 0.5 bot builder requires .with_runtime(TokioRuntime) before .on_event() — new 4th type parameter"
+        },
+        {
+          "path": "crates/web/src/assets/js/onboarding-view.js",
+          "finding": "QR polling fallback reads res.payload.channels (not res.result.channels) and prefers qr_svg over qr_data for display"
+        },
+        {
+          "path": "crates/config/src/schema/runtime.rs",
+          "finding": "default_channels_offered() is the authoritative source for default channel list — gateway state.rs has a hardcoded fallback used before config loads"
+        }
+      ],
+      "workflow": [
+        "cargo check -p \u003ccrate\u003e is the right iterative approach for compiler-driven fixes after a major dependency bump",
+        "Run cargo fetch before cargo check after version bumps to update the lockfile",
+        "Commit the Cargo.lock separately if it was accidentally omitted from a prior commit",
+        "gh api repos/owner/repo/pulls/NNN/comments fetches PR review comments; use gh api with POST to reply and resolve threads",
+        "E2e tests require a live gateway — they won't catch JS bugs in CI without the full stack running"
+      ]
+    },
+    "friction": [
+      "wacore/wacore-binary 0.5 default features include simd which requires unstable core::simd::Select — not documented, required trial-and-error to discover",
+      "Sled double-lock (EAGAIN) when re-adding an already-running WhatsApp account — needed an idempotency guard in start_account()",
+      "QR code WebSocket event can be silently dropped (drop_if_slow: true) before the frontend subscribes — required a polling fallback",
+      "Initial polling code used res.result instead of res.payload — only discoverable by running the app, not by tests",
+      "QR data returned as raw comma-separated string, not SVG — UI displayed raw text until SVG rendering was added server-side",
+      "Merge conflict in Cargo.lock when merging main — resolved by taking main's version and re-running cargo fetch",
+      "Background task notifications required reading output files that were already completed, adding noise to the session"
+    ],
+    "open_items": [
+      "Users with existing WhatsApp pairings on 0.2 may need to re-scan QR code if wacore struct serialization changed — needs documentation in PR and/or migration warning in UI",
+      "E2e tests for QR polling fallback require a live gateway to actually run — the test exists but hasn't been validated against the real server",
+      "The onboarding polling fallback e2e test would have caught the res.result bug if run — need CI environment with live gateway for e2e tests",
+      "page-channels.js QR polling path has the same fix but wasn't validated with a real pairing flow",
+      "Manual QA step still needed: pair a WhatsApp device, send a text DM, verify it routes to LLM and produces a reply"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-14T14:44:32.826673Z",
+    "agent_lines": 0,
+    "human_added": 16,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 16,
+    "agent_percentage": 0
+  }
+}
