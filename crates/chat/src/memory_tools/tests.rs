@@ -231,6 +231,7 @@ async fn memory_forget_deletes_selected_scoped_chunk() {
         result["checkpointIds"].as_array().map(|items| items.len()),
         Some(1)
     );
+    assert!(result["planned_matches"][0].get("path").is_none());
 
     let updated = std::fs::read_to_string(memory_path).unwrap();
     assert!(!updated.contains("dark mode"));
@@ -273,4 +274,44 @@ async fn memory_forget_refuses_ambiguous_exact_text() {
 
     let updated = std::fs::read_to_string(memory_path).unwrap();
     assert_eq!(updated, "duplicate memory line\nduplicate memory line\n");
+}
+
+#[test]
+fn count_exact_occurrences_accepts_line_ending_variants() {
+    assert_eq!(count_exact_occurrences("alpha\r\nbeta\r\n", "alpha\n"), 1);
+    assert_eq!(count_exact_occurrences("alpha\nbeta\n", "alpha\r\n"), 1);
+}
+
+#[tokio::test]
+async fn memory_forget_reports_unreadable_files_as_issues() {
+    let _lock = DATA_DIR_TEST_LOCK.lock().await;
+    let _guard = DataDirGuard;
+    let (manager, _tmp, memory_path) =
+        setup_agent_memory("writer", "Color preference dark mode\n", 4).await;
+
+    let mut registry = ToolRegistry::new();
+    registry.register(Box::new(NamedTool("memory_forget")));
+    install_agent_scoped_memory_tools(
+        &mut registry,
+        &manager,
+        Arc::new(ForgetPlannerProvider {
+            needle: "dark mode".to_string(),
+        }),
+        "writer",
+        MemoryStyle::Hybrid,
+        AgentMemoryWriteMode::Hybrid,
+    );
+
+    std::fs::remove_file(&memory_path).unwrap();
+
+    let tool = registry.get("memory_forget").unwrap();
+    let result = tool
+        .execute(json!({ "request": "forget that I prefer dark mode" }))
+        .await
+        .unwrap();
+
+    assert_eq!(result["deleted"], json!(false));
+    assert_eq!(result["needs_confirmation"], json!(true));
+    assert!(result["planned_matches"].as_array().unwrap().is_empty());
+    assert!(!result["issues"].as_array().unwrap().is_empty());
 }

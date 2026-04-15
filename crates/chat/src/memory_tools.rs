@@ -59,7 +59,6 @@ struct ForgetRequest {
 struct ForgetPromptCandidate<'a> {
     chunk_id: &'a str,
     file: &'a str,
-    path: &'a str,
     start_line: i64,
     end_line: i64,
     text: &'a str,
@@ -92,7 +91,26 @@ fn count_exact_occurrences(haystack: &str, needle: &str) -> usize {
     if needle.is_empty() {
         return 0;
     }
-    haystack.match_indices(needle).count()
+    for variant in text_variants(needle) {
+        let matches = haystack.match_indices(variant.as_str()).count();
+        if matches > 0 {
+            return matches;
+        }
+    }
+    0
+}
+
+fn text_variants(snippet: &str) -> Vec<String> {
+    let mut variants = vec![snippet.to_string()];
+    if snippet.contains("\r\n") {
+        let lf = snippet.replace("\r\n", "\n");
+        if lf != snippet {
+            variants.push(lf);
+        }
+    } else if snippet.contains('\n') {
+        variants.push(snippet.replace('\n', "\r\n"));
+    }
+    variants
 }
 
 fn preview_text(text: &str) -> String {
@@ -219,7 +237,6 @@ fn forget_planned_match_json(candidate: &ForgetCandidate, reason: &str) -> Value
     json!({
         "chunk_id": candidate.chunk_id,
         "file": candidate.file,
-        "path": candidate.path,
         "start_line": candidate.start_line,
         "end_line": candidate.end_line,
         "reason": reason,
@@ -283,7 +300,6 @@ async fn plan_memory_forget(
         .map(|candidate| ForgetPromptCandidate {
             chunk_id: &candidate.chunk_id,
             file: &candidate.file,
-            path: &candidate.path,
             start_line: candidate.start_line,
             end_line: candidate.end_line,
             text: &candidate.text,
@@ -355,11 +371,16 @@ async fn validate_forget_actions(
         let content = if let Some(existing) = file_cache.get(candidate.path.as_str()) {
             existing.clone()
         } else {
-            let loaded = tokio::fs::read_to_string(&candidate.path)
-                .await
-                .map_err(|error| {
-                    anyhow::anyhow!("failed to read memory file '{}': {error}", candidate.path)
-                })?;
+            let loaded = match tokio::fs::read_to_string(&candidate.path).await {
+                Ok(loaded) => loaded,
+                Err(error) => {
+                    issues.push(format!(
+                        "could not read file for chunk '{}': {error}",
+                        candidate.chunk_id
+                    ));
+                    continue;
+                },
+            };
             file_cache.insert(candidate.path.clone(), loaded.clone());
             loaded
         };
