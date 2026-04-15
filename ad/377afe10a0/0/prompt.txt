@@ -1,0 +1,157 @@
+Look at https://github.com/moltis-org/moltis/issues/712 and write a test to repeat the issue, then fix it for good
+
+---
+
+commit push create a PR
+
+---
+
+Fix and resolve PR comments
+
+---
+
+Checking moltis-media v0.1.0 (/Users/penso/.superset/worktrees/moltis/olive-gatsby/crates/media)
+    Checking moltis-routing v0.1.0 (/Users/penso/.superset/worktrees/moltis/olive-gatsby/crates/routing)
+    Checking moltis-network-filter v0.1.0 (/Users/penso/.superset/worktrees/moltis/olive-gatsby/crates/network-filter)
+error: this `if` statement can be collapsed
+   --> crates/agents/src/prompt/builder.rs:565:5
+    |
+565 | /     if let Some(text) = guidelines_text {
+566 | |         if !text.is_empty() {
+567 | |             prompt.push_str(text);
+568 | |             return;
+569 | |         }
+570 | |     }
+    | |_____^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#collapsible_if
+    = note: `-D clippy::collapsible-if` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::collapsible_if)]`
+help: collapse nested if block
+    |
+565 ~     if let Some(text) = guidelines_text
+566 ~         && !text.is_empty() {
+567 |             prompt.push_str(text);
+568 |             return;
+569 ~         }
+    |
+
+    Checking moltis-sessions v0.1.0 (/Users/penso/.superset/worktrees/moltis/olive-gatsby/crates/sessions)
+error: could not compile `moltis-agents` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `moltis-agents` (lib test) due to 1 previous error
+    Building [=====================> ] 1567/1636: moltis-matrix, llama-cpp-sys-2(build), moltis_matrix(test)
+
+---
+
+Checking moltis-providers v0.1.0 (/Users/penso/.superset/worktrees/moltis/olive-gatsby/crates/providers)
+error: this `if` statement can be collapsed
+  --> crates/providers/src/openai_compat/strict_mode.rs:66:5
+   |
+66 | /     if let Some(enum_values) = obj.get_mut("enum").and_then(|v| v.as_array_mut()) {
+67 | |         if !enum_values.iter().any(|v| v.is_null()) {
+68 | |             enum_values.push(serde_json::Value::Null);
+69 | |         }
+70 | |     }
+   | |_____^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#collapsible_if
+   = note: `-D clippy::collapsible-if` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::collapsible_if)]`
+help: collapse nested if block
+   |
+66 ~     if let Some(enum_values) = obj.get_mut("enum").and_then(|v| v.as_array_mut())
+67 ~         && !enum_values.iter().any(|v| v.is_null()) {
+68 |             enum_values.push(serde_json::Value::Null);
+69 ~         }
+   |
+
+error: used `expect()` on a `Result` value
+   --> crates/providers/src/async_openai_provider.rs:272:21
+    |
+272 |         let built = build_messages(&messages).expect("messages should build");
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: if this value is an `Err`, it will panic
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#expect_used
+    = note: requested on the command line with `-D clippy::expect-used`
+
+error: used `expect()` on a `Result` value
+   --> crates/providers/src/async_openai_provider.rs:299:21
+    |
+299 |         let built = build_messages(&messages).expect("messages should build");
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: if this value is an `Err`, it will panic
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#expect_used
+
+error: could not compile `moltis-providers` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: used `expect()` on an `Option` value
+   --> crates/providers/src/openai_compat/tests.rs:432:21
+    |
+432 |       let time_enum = time_range["enum"]
+    |  _____________________^
+433 | |         .as_array()
+434 | |         .expect("time_range should have enum");
+    | |______________________________________________^
+    |
+    = note: if this value is `None`, it will panic
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#expect_used
+
+error: used `expect()` on an `Option` value
+   --> crates/providers/src/openai_compat/tests.rs:442:24
+    |
+442 |       let country_enum = country["enum"]
+    |  ________________________^
+443 | |         .as_array()
+444 | |         .expect("country should have enum");
+    | |___________________________________________^
+    |
+    = note: if this value is `None`, it will panic
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#expect_used
+
+error: used `expect()` on an `Option` value
+   --> crates/providers/src/openai_compat/tests.rs:471:21
+    |
+471 |       let mode_enum = schema["properties"]["mode"]["enum"]
+    |  _____________________^
+472 | |         .as_array()
+473 | |         .expect("mode should have enum");
+    | |________________________________________^
+    |
+    = note: if this value is `None`, it will panic
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#expect_used
+
+error: used `expect()` on an `Option` value
+   --> crates/providers/src/openai_compat/tests.rs:508:21
+    |
+508 |       let time_enum = params["properties"]["time_range"]["enum"]
+    |  _____________________^
+509 | |         .as_array()
+510 | |         .expect("time_range should have enum");
+    | |______________________________________________^
+    |
+    = note: if this value is `None`, it will panic
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#expect_used
+
+error: used `expect()` on an `Option` value
+   --> crates/providers/src/openai_compat/tests.rs:537:21
+    |
+537 |       let time_enum = schema["properties"]["time_range"]["enum"]
+    |  _____________________^
+538 | |         .as_array()
+539 | |         .expect("time_range should have enum");
+    | |______________________________________________^
+    |
+    = note: if this value is `None`, it will panic
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#expect_used
+
+error: could not compile `moltis-providers` (lib test) due to 8 previous errors
+      Timing report saved to /Users/penso/.superset/worktrees/moltis/olive-gatsby/target/cargo-timings/cargo-timing-20260415T140034.528687Z.html
+[local/lint] failed in 34s
+~/.s/w/m/olive-gatsby olive-gatsby ❯
+
+---
+
+proceed

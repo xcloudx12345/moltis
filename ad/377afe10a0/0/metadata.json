@@ -1,0 +1,84 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "ad377afe10a0",
+  "session_id": "3cbdf88a-944f-47a4-8bff-82e5cc85e2bd",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-15T15:04:03.12692Z",
+  "branch": "olive-gatsby",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/providers/src/openai_compat/tests.rs",
+    "crates/providers/src/openai_compat/strict_mode.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "06ee1f6a8fc0",
+  "token_usage": {
+    "input_tokens": 85,
+    "cache_creation_tokens": 87907,
+    "cache_read_tokens": 4681680,
+    "output_tokens": 19848,
+    "api_call_count": 74
+  },
+  "summary": {
+    "intent": "Fix GitHub issue #712 where optional enum MCP tool parameters caused LLMs to send literal string 'null' instead of null, by writing a regression test and patching the strict mode schema handling in the moltis providers crate.",
+    "outcome": "Root cause identified (two-layer bug: canonicalization strips 'type' from enum schemas, then make_nullable had no fallback for enum-only schemas), fix implemented with add_null_to_enum() helper, 4 regression tests added, e2e scenario added, PR #724 created and all lint/clippy issues resolved across two follow-up pushes.",
+    "learnings": {
+      "repo": [
+        "Schema canonicalization in sanitize_schema_for_openai_compat strips 'type': 'string' from enum properties, leaving bare {'enum': [...]} objects — this is valid JSON Schema but breaks assumptions in strict_mode.rs",
+        "The collapsible_if and expect_used clippy lints are enforced as errors (-D warnings) across the workspace",
+        "Tests in openai_compat use 'let Some(...) = ... else { panic!(...) }' pattern instead of .expect() to satisfy clippy::expect_used lint",
+        "The project uses 'beads' (bd) issue tracker alongside GitHub issues; issues need to be claimed and closed via bd commands",
+        "just lint uses --features local-llm-metal on macOS; CUDA build failures are expected on macOS and unrelated to code changes",
+        "Dolt remote (bd dolt pull) is not configured in worktrees — expected error on commit"
+      ],
+      "code": [
+        {
+          "path": "crates/providers/src/openai_compat/strict_mode.rs",
+          "line": 66,
+          "end_line": 70,
+          "finding": "add_null_to_enum() helper needed collapsible_if fix: nested 'if let' + 'if' must be collapsed to 'if let ... \u0026\u0026 ...' form"
+        },
+        {
+          "path": "crates/providers/src/openai_compat/strict_mode.rs",
+          "finding": "make_nullable() had no handler for enum-only schemas (after canonicalization removes 'type'). Fix adds a final fallback branch that calls add_null_to_enum() when no type/anyOf/oneOf is present"
+        },
+        {
+          "path": "crates/agents/src/prompt/builder.rs",
+          "line": 565,
+          "end_line": 570,
+          "finding": "Pre-existing collapsible_if lint: nested if let Some(text) + if !text.is_empty() needed collapsing — fixed as a side effect of running full lint suite"
+        },
+        {
+          "path": "crates/providers/src/async_openai_provider.rs",
+          "line": 272,
+          "end_line": 299,
+          "finding": "Pre-existing expect_used clippy errors not introduced by this PR — left unresolved as out of scope"
+        }
+      ],
+      "workflow": [
+        "Always run 'just lint' (not just 'just test') before committing — clippy errors only surface during lint",
+        "Verify pre-existing failures on main branch before attributing clippy errors to your changes",
+        "When canonicalization transforms schemas before strict mode processing, unit tests on the raw patch function can pass while end-to-end tests through the full pipeline fail — always add e2e tests through the full call chain"
+      ]
+    },
+    "friction": [
+      "Clippy collapsible_if and expect_used errors required two additional fix commits after the PR was already created and pushed",
+      "The two-layer bug (canonicalization + make_nullable) required a debug test detour to understand what the schema actually looked like after the pipeline",
+      "Rate limit hit mid-session ('You've hit your limit · resets 4pm') causing an interruption",
+      "Dolt pull error on commit is a persistent noise in the worktree workflow"
+    ],
+    "open_items": [
+      "Pre-existing expect_used clippy errors in crates/providers/src/async_openai_provider.rs:272 and :299 left unresolved",
+      "openai_compat_type_arrays test file has pre-existing expect_used violations not addressed in this PR"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-15T15:03:40.036942Z",
+    "agent_lines": 19,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 19,
+    "agent_percentage": 100
+  }
+}
