@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "18abf1a26e8b",
+  "session_id": "0e1d39af-a1cb-48a8-af0d-24ab9737608f",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-15T10:46:55.678134Z",
+  "branch": "clever-oboe",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/web/src/assets/js/onboarding-view.js",
+    "crates/web/src/assets/js/page-channels.js"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "9ba553b0c1ee",
+  "token_usage": {
+    "input_tokens": 810,
+    "cache_creation_tokens": 2470990,
+    "cache_read_tokens": 256742510,
+    "output_tokens": 173621,
+    "api_call_count": 710
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-15T10:46:44.342352Z",
+    "agent_lines": 0,
+    "human_added": 0,
+    "human_modified": 2,
+    "human_removed": 4,
+    "total_committed": 0,
+    "agent_percentage": 0
+  }
+}
