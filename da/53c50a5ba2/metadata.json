@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "da53c50a5ba2",
+  "strategy": "manual-commit",
+  "branch": "power-euphonium",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/ui/e2e/specs/chat-api-message.spec.js"
+  ],
+  "sessions": [
+    {
+      "metadata": "/da/53c50a5ba2/0/metadata.json",
+      "transcript": "/da/53c50a5ba2/0/full.jsonl",
+      "context": "/da/53c50a5ba2/0/context.md",
+      "content_hash": "/da/53c50a5ba2/0/content_hash.txt",
+      "prompt": "/da/53c50a5ba2/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 18,
+    "cache_creation_tokens": 30708,
+    "cache_read_tokens": 1555539,
+    "output_tokens": 5982,
+    "api_call_count": 17
+  }
+}
