@@ -1,0 +1,60 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "57ba1e408284",
+  "session_id": "07656ec3-0c97-4751-91d1-c1743bb63884",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-15T13:36:33.530861Z",
+  "branch": "main",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/agents/src/prompt/builder.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "301251662334",
+  "checkpoint_transcript_start": 583,
+  "transcript_lines_at_start": 583,
+  "token_usage": {
+    "input_tokens": 11,
+    "cache_creation_tokens": 71303,
+    "cache_read_tokens": 648842,
+    "output_tokens": 1079,
+    "api_call_count": 9
+  },
+  "summary": {
+    "intent": "Fix a CI failure on the moltis repo after pushing release tag 20260414.02.",
+    "outcome": "Fixed a Clippy `collapsible_if` lint error in `moltis-agents/src/prompt/builder.rs` around line 565, committed and pushed the fix.",
+    "learnings": {
+      "repo": [
+        "Clippy is enforced in CI for moltis; `collapsible_if` warnings are treated as errors.",
+        "Release tag 20260414.02 includes: E2E test fix (testpass1234), reqwest 0.13 bump, slack-morphism TLS fix, and clear button restore."
+      ],
+      "code": [
+        {
+          "path": "crates/agents/src/prompt/builder.rs",
+          "line": 565,
+          "end_line": 565,
+          "finding": "Had a nested `if` that Clippy flagged as `collapsible_if`; should be collapsed into a single condition."
+        }
+      ],
+      "workflow": [
+        "GPG-signing release artifacts is a manual post-CI step: `./scripts/gpg-sign-release.sh \u003ctag\u003e`.",
+        "Old release tags are deleted and replaced when a fix is needed before signing."
+      ]
+    },
+    "friction": [
+      "CI failure required an additional commit after the release tag was already pushed, necessitating a tag replacement (20260414.01 → 20260414.02)."
+    ],
+    "open_items": [
+      "GPG-sign release artifacts once CI passes: `./scripts/gpg-sign-release.sh 20260414.02`."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-15T13:36:22.714779Z",
+    "agent_lines": 22,
+    "human_added": 4631,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 4653,
+    "agent_percentage": 0.4728132387706856
+  }
+}
