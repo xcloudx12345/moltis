@@ -1,0 +1,5 @@
+It seems slacks is not included in the onboarding like all other channels, please add it. You might need a 3rd row.
+
+---
+
+commit and push
