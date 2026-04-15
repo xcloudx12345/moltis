@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "3786db828498",
+  "strategy": "manual-commit",
+  "branch": "olive-gatsby",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/providers/src/openai_compat/strict_mode.rs",
+    "crates/providers/src/openai_compat/tests.rs",
+    "crates/providers/tests/e2e_scenarios/tool_arg_serialization.json"
+  ],
+  "sessions": [
+    {
+      "metadata": "/37/86db828498/0/metadata.json",
+      "transcript": "/37/86db828498/0/full.jsonl",
+      "context": "/37/86db828498/0/context.md",
+      "content_hash": "/37/86db828498/0/content_hash.txt",
+      "prompt": "/37/86db828498/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 44,
+    "cache_creation_tokens": 71624,
+    "cache_read_tokens": 2248075,
+    "output_tokens": 13589,
+    "api_call_count": 42
+  }
+}
