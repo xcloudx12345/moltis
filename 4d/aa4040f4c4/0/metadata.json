@@ -1,0 +1,72 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "4daa4040f4c4",
+  "session_id": "65fd5abf-436a-49eb-97a3-356fceb99bb1",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-15T21:47:25.224856Z",
+  "branch": "fork-piper",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/matrix/src/config.rs",
+    "crates/config/src/template.rs",
+    "docs/src/matrix.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "1b5d81b5c138",
+  "checkpoint_transcript_start": 1576,
+  "transcript_lines_at_start": 1576,
+  "token_usage": {
+    "input_tokens": 26,
+    "cache_creation_tokens": 12143,
+    "cache_read_tokens": 7333806,
+    "output_tokens": 7182,
+    "api_call_count": 26
+  },
+  "summary": {
+    "intent": "Address Greptile code review feedback on a PR by fixing an undocumented/unused `oidc_issuer` config field identified in iteration 3 of the review cycle.",
+    "outcome": "Removed the `oidc_issuer` field entirely from config, template, tests, and docs since matrix-sdk 0.16 auto-discovers the OIDC issuer and there was no API to override it. Changes committed and pushed to trigger another review iteration.",
+    "learnings": {
+      "repo": [
+        "matrix-sdk 0.16 auto-discovers the OIDC issuer from the homeserver URL via `server_metadata()` — no manual issuer override is exposed by the SDK API.",
+        "Greptile review runs in iterations; stale comments from earlier commits can resurface associated with the latest commit's lines, inflating apparent new feedback counts.",
+        "Config fields live across at least three locations: crates/matrix/src/config.rs, crates/config/src/template.rs, and docs/src/matrix.md — all must be kept in sync."
+      ],
+      "code": [
+        {
+          "path": "crates/matrix/src/config.rs",
+          "finding": "oidc_issuer field was defined in the Matrix config struct but never consumed by start_oidc_login or any other function — dead config."
+        },
+        {
+          "path": "crates/config/src/template.rs",
+          "finding": "Config template included oidc_issuer and needed to be updated in sync with the struct removal."
+        },
+        {
+          "path": "docs/src/matrix.md",
+          "finding": "oidc_issuer was documented as an optional issuer URL override, misleading users into thinking it had an effect."
+        }
+      ],
+      "workflow": [
+        "Greptile iterative review (trigger → poll → fetch comments) is the PR review loop; iteration count tracks review passes.",
+        "When a config field is forward-looking but has no current implementation path, removing it entirely is preferable to leaving dead/documented-but-nonfunctional config.",
+        "Format + lint + test before commit is the standard pre-push gate in this repo."
+      ]
+    },
+    "friction": [
+      "Greptile iteration 3 took longer than usual to complete, requiring multiple polling attempts and a direct status check.",
+      "4 of 5 Greptile comments in iteration 3 were stale (from old commit IDs), making it non-obvious which feedback was genuinely new."
+    ],
+    "open_items": [
+      "oidc_issuer override capability is intentionally deferred — can be re-added when matrix-sdk exposes an API to override the OIDC issuer URL.",
+      "Iteration 4 review still pending after the oidc_issuer removal commit was pushed."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-15T21:47:01.455897Z",
+    "agent_lines": 1,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1,
+    "agent_percentage": 100
+  }
+}
