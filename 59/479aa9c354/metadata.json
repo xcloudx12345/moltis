@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "59479aa9c354",
+  "strategy": "manual-commit",
+  "branch": "literate-jasper",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/providers/src/openai_compat/schema_normalization.rs",
+    "crates/providers/src/openai_compat/tests.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/59/479aa9c354/0/metadata.json",
+      "transcript": "/59/479aa9c354/0/full.jsonl",
+      "context": "/59/479aa9c354/0/context.md",
+      "content_hash": "/59/479aa9c354/0/content_hash.txt",
+      "prompt": "/59/479aa9c354/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 64,
+    "cache_creation_tokens": 189607,
+    "cache_read_tokens": 3511819,
+    "output_tokens": 13401,
+    "api_call_count": 56
+  }
+}

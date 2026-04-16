@@ -1,0 +1,78 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "59479aa9c354",
+  "session_id": "6cf92578-9d62-4e0d-8798-ad6bbfca6864",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-16T10:01:01.348218Z",
+  "branch": "literate-jasper",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/providers/src/openai_compat/schema_normalization.rs",
+    "crates/providers/src/openai_compat/tests.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "45339a36415d",
+  "token_usage": {
+    "input_tokens": 64,
+    "cache_creation_tokens": 189607,
+    "cache_read_tokens": 3511819,
+    "output_tokens": 13401,
+    "api_call_count": 56
+  },
+  "summary": {
+    "intent": "Diagnose and fix Fireworks AI provider returning 400 Bad Request errors after a schema normalization refactor around April 13, 2026.",
+    "outcome": "Root cause identified in json_schema_ast's canonicalization stripping 'type' from enum schemas; fixed by adding a post-canonicalization RestoreEnumTypeTransform in sanitize_schema_for_openai_compat, with 4 new unit tests. PR #740 created and review comments addressed in a follow-up commit.",
+    "learnings": {
+      "repo": [
+        "json_schema_ast crate (v0.3.1) performs two type-stripping transforms: lower_enum_with_type removes 'type' when all enum values match it, and lower_boolean_and_null_types converts {\"type\": \"boolean\"} to {\"enum\": [false, true]}.",
+        "Fireworks AI rejects schemas missing explicit 'type' annotations even when they are semantically valid JSON Schema — this is a provider-specific quirk.",
+        "The OpenAI compat pipeline applies sanitize_schema_for_openai_compat (canonicalize via json_schema_ast) then patch_schema_for_strict_mode; Fireworks goes through the strict path because needs_strict_tools() returns true for it.",
+        "Schema normalization lives in crates/providers/src/openai_compat/schema_normalization.rs; tests are in crates/providers/src/openai_compat/tests.rs.",
+        "Issue tracking and PR workflow uses 'beads' CLI tooling; PRs go to moltis-org/moltis.",
+        "In JSON Schema, 'number' subsumes 'integer', so mixed integer+float enum sets should collapse to 'number' rather than failing type inference."
+      ],
+      "code": [
+        {
+          "path": "~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/json_schema_ast-0.3.1/src/canonicalize.rs",
+          "line": 1531,
+          "end_line": 1543,
+          "finding": "lower_enum_with_type: removes 'type' key when all enum values already match the declared type, treating it as redundant — breaks Fireworks AI."
+        },
+        {
+          "path": "~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/json_schema_ast-0.3.1/src/canonicalize.rs",
+          "line": 1603,
+          "end_line": 1603,
+          "finding": "lower_boolean_and_null_types: converts {\"type\": \"boolean\"} to {\"enum\": [false, true]}, stripping 'type' — also breaks Fireworks AI."
+        },
+        {
+          "path": "crates/providers/src/openai_compat/schema_normalization.rs",
+          "finding": "RestoreEnumTypeTransform added as a post-canonicalization schemars recursive transform: re-infers 'type' from enum values when 'type' is absent and all non-null enum values share a single JSON type."
+        }
+      ],
+      "workflow": [
+        "YubiKey tap is required for git push to remote; this is a manual step that cannot be automated.",
+        "Greptile bot posts automated review comments on PRs with actionable code suggestions worth addressing.",
+        "The fix pattern for upstream crate behavior that can't be changed: apply a compensating post-processing transform rather than forking the crate."
+      ]
+    },
+    "friction": [
+      "YubiKey requirement interrupted the push flow, requiring a manual retry.",
+      "The old config file became unreadable after the schema change, blocking rollback verification by the reporter.",
+      "Boolean enum test assertion needed correction because strict mode's make_nullable converts 'type: boolean' to 'type: [\"boolean\", \"null\"]' for optional fields — this was not anticipated upfront."
+    ],
+    "open_items": [
+      "No e2e or integration test existed for the Fireworks provider with enum schemas before this fix — test coverage gap that may exist for other providers too.",
+      "Nullable enum anyOf branches mentioned in the bug report were acknowledged but not explicitly tested in the fix.",
+      "The json_schema_ast crate's type-stripping behavior may affect other providers beyond Fireworks; a broader audit of provider compatibility with the canonicalization pipeline was not performed."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-16T10:00:37.911205Z",
+    "agent_lines": 46,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 46,
+    "agent_percentage": 100
+  }
+}
