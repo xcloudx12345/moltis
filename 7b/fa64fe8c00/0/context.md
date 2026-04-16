@@ -1,0 +1,12 @@
+# Session Context
+
+## User Prompts
+
+### Prompt 1
+
+Look at https://github.com/moltis-org/moltis/issues/747 write a test to repeat the issue, then fix the issue, commit push and crate a PR.
+
+### Prompt 2
+
+Fix and solve PR comments
+
