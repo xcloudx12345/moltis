@@ -1,0 +1,79 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "9cc3c3935bae",
+  "session_id": "6cf92578-9d62-4e0d-8798-ad6bbfca6864",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-16T08:27:13.992132Z",
+  "branch": "literate-jasper",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/providers/src/openai_compat/schema_normalization.rs",
+    "crates/providers/src/openai_compat/tests.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "1bb68aed1826",
+  "token_usage": {
+    "input_tokens": 46,
+    "cache_creation_tokens": 88701,
+    "cache_read_tokens": 2308719,
+    "output_tokens": 10852,
+    "api_call_count": 42
+  },
+  "summary": {
+    "intent": "Diagnose and fix a regression where Fireworks AI provider started returning 400 Bad Request errors after a schema normalization refactor around April 13, 2026.",
+    "outcome": "Root cause identified in json_schema_ast canonicalization stripping 'type' from enum schemas; fixed by adding a post-canonicalization RestoreEnumTypeTransform in sanitize_schema_for_openai_compat; committed and PR created.",
+    "learnings": {
+      "repo": [
+        "json_schema_ast's canonical_schema_json() has two transforms that remove 'type': lower_enum_with_type (strips type when all enum values match declared type) and lower_boolean_and_null_types (converts {\"type\": \"boolean\"} to {\"enum\": [false, true]})",
+        "Fireworks AI uses the OpenAiProvider code path (base_url contains fireworks.ai) and hits needs_strict_tools() = true, running the full sanitize_schema_for_openai_compat pipeline",
+        "The schema normalization pipeline runs: canonicalization → subset transform → strict mode patching; the fix inserts RestoreEnumTypeTransform after the subset transform",
+        "strict mode patching can convert 'type': 'boolean' to 'type': ['boolean', 'null'] for optional fields (make_nullable), so boolean type restoration must account for array-form types"
+      ],
+      "code": [
+        {
+          "path": "crates/providers/src/openai_compat/schema_normalization.rs",
+          "finding": "sanitize_schema_for_openai_compat is the central pipeline function; RestoreEnumTypeTransform was added here as a post-canonicalization schemars recursive transform"
+        },
+        {
+          "path": "crates/providers/src/openai_compat/tests.rs",
+          "finding": "Four new tests added: sanitize_restores_type_on_string_enum, sanitize_restores_type_on_boolean_enum, to_openai_tools_strict_preserves_enum_type_annotation, sanitize_does_not_infer_type_for_mixed_enums"
+        },
+        {
+          "path": "json_schema_ast-0.3.1/src/canonicalize.rs",
+          "line": 1531,
+          "end_line": 1543,
+          "finding": "lower_enum_with_type removes 'type' when all enum values already match the declared type — semantically valid per JSON Schema but breaks Fireworks AI"
+        },
+        {
+          "path": "json_schema_ast-0.3.1/src/canonicalize.rs",
+          "line": 1603,
+          "finding": "lower_boolean_and_null_types converts {\"type\": \"boolean\"} to {\"enum\": [false, true]}, also removing the 'type' field"
+        }
+      ],
+      "workflow": [
+        "When a provider 400s after a schema pipeline change, trace: provider → needs_strict_tools → sanitize_schema_for_openai_compat → canonicalize → patch_schema_for_strict_mode",
+        "The beads CLI is used for issue tracking: create issue, claim it, close it as part of the fix workflow",
+        "Test assertions for strict-mode schemas must account for make_nullable converting scalar types to array form for optional fields"
+      ]
+    },
+    "friction": [
+      "Rolling back to verify the theory was blocked because Moltis couldn't read the old config file format",
+      "No existing e2e test caught the regression despite the user expecting one existed for Fireworks",
+      "Boolean enum test assertion was initially wrong because strict mode patching transforms 'type': 'boolean' to 'type': ['boolean', 'null'] for optional fields — required a fix before tests passed"
+    ],
+    "open_items": [
+      "Nullable enum anyOf branches (the third case from the bug report) were noted but not explicitly verified with a dedicated test",
+      "The json_schema_ast crate's canonicalization behavior (stripping 'type') may affect other providers beyond Fireworks — no audit was done",
+      "No e2e/integration test exists that would have caught the Fireworks regression before it shipped; adding one was not part of this fix"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-16T08:26:55.692447Z",
+    "agent_lines": 189,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 189,
+    "agent_percentage": 100
+  }
+}
