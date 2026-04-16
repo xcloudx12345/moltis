@@ -1,0 +1,54 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "dca69eeba73b",
+  "session_id": "6ed19ca9-a4de-4ddf-89bf-134cbda9f1cd",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-16T19:47:14.069093Z",
+  "branch": "literate-coral",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/ui/input.css"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "430d88ec26e5",
+  "checkpoint_transcript_start": 858,
+  "transcript_lines_at_start": 858,
+  "token_usage": {
+    "input_tokens": 8,
+    "cache_creation_tokens": 3084,
+    "cache_read_tokens": 979076,
+    "output_tokens": 860,
+    "api_call_count": 6
+  },
+  "summary": {
+    "intent": "Shrink a reasoning combo button/dropdown to fit its content rather than stretching to a fixed wide width.",
+    "outcome": "Fixed the dropdown width by overriding a hardcoded `width: 280px` on `.model-dropdown` in input.css for the reasoning combo context.",
+    "learnings": {
+      "repo": [
+        "The model dropdown has a hardcoded `width: 280px` in crates/web/ui/input.css that overrides any flex/auto sizing on the parent button."
+      ],
+      "code": [
+        {
+          "path": "crates/web/ui/input.css",
+          "finding": ".model-dropdown has hardcoded width: 280px; reasoning combo required a scoped override to shrink it."
+        }
+      ],
+      "workflow": [
+        "CSS width fixes on dropdowns require checking both the trigger button and the dropdown element itself — fixing the button alone left the dropdown visually wide."
+      ]
+    },
+    "friction": [
+      "First fix (width: auto with justify-content: flex-start on the button) appeared to solve the problem but the dropdown's own hardcoded width still made it look too wide, requiring a second investigation."
+    ],
+    "open_items": []
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-16T19:47:05.41524Z",
+    "agent_lines": 4,
+    "human_added": 1,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 5,
+    "agent_percentage": 80
+  }
+}
