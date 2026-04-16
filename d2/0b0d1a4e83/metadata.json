@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "d20b0d1a4e83",
+  "strategy": "manual-commit",
+  "branch": "literate-coral",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/src/assets/js/locales/fr/chat.js",
+    "crates/web/src/assets/js/models.js",
+    "crates/web/src/assets/js/reasoning-toggle.js",
+    "crates/web/src/assets/js/stores/model-store.js"
+  ],
+  "sessions": [
+    {
+      "metadata": "/d2/0b0d1a4e83/0/metadata.json",
+      "transcript": "/d2/0b0d1a4e83/0/full.jsonl",
+      "context": "/d2/0b0d1a4e83/0/context.md",
+      "content_hash": "/d2/0b0d1a4e83/0/content_hash.txt",
+      "prompt": "/d2/0b0d1a4e83/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 18,
+    "cache_creation_tokens": 16940,
+    "cache_read_tokens": 2490417,
+    "output_tokens": 2932,
+    "api_call_count": 14
+  }
+}
