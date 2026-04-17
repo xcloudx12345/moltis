@@ -1,0 +1,70 @@
+Implement the following plan:
+
+# Plan: Fix Podman sandbox startup failure (#757)
+
+## Context
+
+PR #706 added sysfs tmpfs overlays to `hardening_args()` in `docker.rs` to mask host hardware identifiers (serial numbers, BIOS data, disk models, LUKS UUIDs). These work on Docker but break Podman on Ubuntu 24.04/26.04 with both runc and crun.
+
+**Root cause:** When Podman mounts a tmpfs over sysfs paths like `/sys/devices/virtual/dmi`, the OCI runtime performs "tmpcopyup" — copying existing directory contents into the new tmpfs. Some sysfs files (e.g., `board_serial`) are permission-denied even for root inside the container (because `--cap-drop ALL` is active), causing the mount to fail entirely.
+
+Docker does not exhibit this behavior because it handles tmpfs overlay differently on sysfs paths.
+
+## Approach
+
+Skip the sysfs tmpfs overlays when the backend is Podman. Podman's OCI runtime already masks `/sys/firmware` by default via its built-in `MaskedPaths`. For the other paths (`/sys/class/dmi`, `/sys/devices/virtual/dmi`, `/sys/class/block`), losing the masking is acceptable — a slightly less hardened but functional sandbox is better than a broken one.
+
+No config option needed for the initial fix — the backend is already known at runtime (`self.cli`). If users report similar issues with specific Docker configurations later, a config escape hatch can be added as follow-up.
+
+## Changes
+
+### 1. `crates/tools/src/sandbox/docker.rs`
+
+- Change `hardening_args(is_prebuilt: bool)` signature to `hardening_args(is_prebuilt: bool, cli: &str)`
+- Wrap the sysfs tmpfs overlays (lines 203-210) in a `cli != "podman"` guard
+- Keep `--hostname sandbox` for all backends (this works on Podman)
+- Update the call site at line 324 to pass `self.cli`
+
+### 2. `crates/tools/src/sandbox/tests/core.rs`
+
+- Update existing tests to pass `"docker"` as cli arg — these should keep asserting sysfs masks are present
+- Add new test `test_docker_hardening_args_podman` verifying sysfs tmpfs overlays are NOT present when `cli = "podman"`, while all other hardening flags (cap-drop, no-new-privileges, hostname, /tmp, /run tmpfs) remain
+
+### 3. `docs/src/sandbox.md`
+
+- Add a note that sysfs tmpfs masking is Docker-only; Podman relies on its built-in OCI `MaskedPaths` for `/sys/firmware` masking
+
+## Files to modify
+
+1. `crates/tools/src/sandbox/docker.rs` — hardening logic
+2. `crates/tools/src/sandbox/tests/core.rs` — tests
+3. `docs/src/sandbox.md` — documentation
+
+## Verification
+
+1. `cargo test -p moltis-tools --lib sandbox::tests::core` — all tests pass
+2. `cargo +nightly-2025-11-30 fmt --all -- --check` — clean
+3. `just lint` — clean
+4. Manual: `podman run` with the hardening args minus sysfs should succeed
+
+
+If you need specific details from before exiting plan mode (like exact code snippets, error messages, or content you generated), read the full transcript at: /Users/penso/.claude/projects/-Users-penso--superset-worktrees-moltis-astonishing-sunspot/e670239a-5645-4f29-9fd0-afcb594af8b1.jsonl
+
+---
+
+<task-notification>
+<task-id>byp8o487a</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-penso--superset-worktrees-moltis-astonishing-sunspot/e670239a-5645-4f29-9fd0-afcb594af8b1/tasks/byp8o487a.output</output-file>
+<status>completed</status>
+<summary>Background command "Run clippy lint check" completed (exit code 0)</summary>
+</task-notification>
+Read the output file to retrieve the result: /private/tmp/claude-501/-Users-penso--superset-worktrees-moltis-astonishing-sunspot/e670239a-5645-4f29-9fd0-afcb594af8b1/tasks/byp8o487a.output
+
+---
+
+commit and push, create a PR
+
+---
+
+Fix PR comments
