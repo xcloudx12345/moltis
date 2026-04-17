@@ -1,0 +1,113 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "584871b2b567",
+  "session_id": "65fd5abf-436a-49eb-97a3-356fceb99bb1",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-17T14:39:33.863732Z",
+  "branch": "fork-piper",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/matrix/src/client.rs",
+    "crates/channels/src/plugin.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "13550fb47256",
+  "token_usage": {
+    "input_tokens": 811,
+    "cache_creation_tokens": 1601146,
+    "cache_read_tokens": 225545611,
+    "output_tokens": 205248,
+    "api_call_count": 736
+  },
+  "summary": {
+    "intent": "Implement Matrix OIDC authentication (Issue #711) to support homeservers using Matrix Authentication Service (MAS/MSC3861), since password auth is increasingly rare and blocking users like those on matrix.org since April 2025.",
+    "outcome": "Full OIDC auth flow implemented end-to-end across Rust backend and JS frontend, merged to PR #730. Login popup works, channels appear connected, but moltis_owned cross-signing bootstrap requires MAS browser approval and the UI update after approval requires a page reload.",
+    "learnings": {
+      "repo": [
+        "ChannelPlugin trait methods must be in `impl ChannelPlugin for MatrixPlugin`, not inherent `impl MatrixPlugin` — gateway dispatches via `dyn ChannelPlugin` so only trait methods are visible",
+        "Channel status payload uses `ch.status === 'connected'` not `ch.connected`",
+        "RPC responses use `res.payload` not `res.result` for data fields",
+        "OAuth callback route is `/auth/callback`, not `/api/oauth/callback`",
+        "MAS (matrix.org) rejects `https://localhost` redirect URIs per RFC 8252 — must use `http://localhost`",
+        "MAS rejects localhost `client_uri` — must be a real HTTPS project URL (e.g. docs.moltis.org)",
+        "`client.matrix_auth().logged_in()` returns false for OIDC sessions; use `client.user_id().is_some()` for auth-agnostic connected check",
+        "`bootstrap_cross_signing_if_needed(None)` is a no-op when cross-signing already exists from a prior session — must call `reset_identity()` instead when device lacks signing keys",
+        "MAS requires explicit browser approval at `https://account.matrix.org/account/?action=org.matrix.cross_signing_reset` for each new device cross-signing reset",
+        "ChannelEvent serialization uses `#[serde(tag = \"kind\", rename_all = \"snake_case\")]` — new variants auto-serialize to snake_case kind strings",
+        "Ownership config fields (ownership_mode, dm_policy, etc.) were not forwarded through the oauth_start RPC — gateway was building a hardcoded minimal config"
+      ],
+      "code": [
+        {
+          "path": "crates/matrix/src/plugin.rs",
+          "line": 594,
+          "end_line": 594,
+          "finding": "impl ChannelPlugin for MatrixPlugin ends here — OIDC methods must be added inside this block, not as inherent methods on MatrixPlugin"
+        },
+        {
+          "path": "crates/matrix/src/client.rs",
+          "line": 606,
+          "end_line": 606,
+          "finding": "Original ownership check used `matrix_auth().logged_in()` which always returns false for OIDC sessions"
+        },
+        {
+          "path": "crates/matrix/src/client.rs",
+          "line": 894,
+          "end_line": 894,
+          "finding": "Ownership result stored here in sync_once_and_spawn_loop — StatusChanged event must be emitted after this line"
+        },
+        {
+          "path": "crates/web/src/assets/js/page-channels.js",
+          "line": 162,
+          "end_line": 162,
+          "finding": "ownershipIssue detection requires ownershipError.length \u003e 0 — if status poll fires before ownership bootstrap completes, ownershipError is empty and approval UI never shows"
+        },
+        {
+          "path": "crates/channels/src/plugin.rs",
+          "finding": "Added StatusChanged event variant — JS handleChannelEvent should call loadChannels() on 'status_changed' kind to refresh ownership card without page reload"
+        },
+        {
+          "path": "crates/web/ui/input.css",
+          "line": 920,
+          "end_line": 920,
+          "finding": "provider-btn has `transition: opacity 0.15s` — combined with disabled state change, causes Safari to composite old painted text pixels over new text (ghost button bug)"
+        }
+      ],
+      "workflow": [
+        "Never ship OAuth redirect URI logic without testing against the real identity provider — MAS has specific requirements (http loopback, real client_uri) not catchable with unit tests",
+        "Safari ghost text on buttons: Preact patching text nodes inside `\u003cbutton\u003e` doesn't always trigger repaint — fix by adding `key=` tied to the state that changes the text, forcing full DOM element recreation",
+        "3-second polling delays are fragile timing hacks — use WebSocket events (ChannelEvent::StatusChanged) to push state changes to the UI instead",
+        "When a Rust trait method isn't being called, check if it's an inherent method vs trait impl — only trait impl methods are callable through `dyn Trait`",
+        "Greptile code review is useful for catching security issues (token Debug exposure, blocking I/O in async, URL injection) but generates stale comments on old commit lines that pile up across iterations"
+      ]
+    },
+    "friction": [
+      "Three separate MAS registration errors requiring iterative fixes without a test MAS instance: invalid_redirect_uri (https vs http), invalid client_uri (localhost rejected), wrong callback path (/api/oauth/callback vs /auth/callback)",
+      "OIDC trait methods silently fell back to default noop — no compile error, no runtime panic, just 'OIDC login not supported' at runtime",
+      "Multiple light-text-on-light-background color contrast bugs across emerald, sky, amber, and blue banners requiring individual fixes",
+      "Ghost button rendering in Safari required 5+ fix attempts before finding that keying on state string forces DOM recreation",
+      "Ownership bootstrap timing race: JS poll detects 'connected' before sync_once_and_spawn_loop finishes ownership checks, so UI closes modal without showing approval state",
+      "Each new OIDC device triggers a fresh MAS browser approval requirement for cross-signing reset, making moltis_owned mode cumbersome to test",
+      "Channel list requires page reload to show ownership approval UI — WebSocket event fix was implemented but not confirmed working at transcript end",
+      "Greptile accumulated stale comments across 4 review iterations as it re-flagged already-fixed issues on new commit lines"
+    ],
+    "open_items": [
+      "OIDC channels not auto-started from store on Moltis restart — OIDC session restore from disk is unimplemented, channels show as disconnected after restart",
+      "pending_identity_reset handle is in-memory only — lost on restart, causing 'unknown channel account' error on retry ownership after restart",
+      "WebSocket StatusChanged event emission added but real-time UI update without page reload not confirmed working at end of session",
+      "Recovery always shows 'disabled' after OIDC ownership bootstrap — recovery setup (secret storage) not implemented for OIDC path",
+      "m.secret_storage.default_key deserialization warning on every sync — upstream matrix-sdk issue with malformed secret storage from prior sessions",
+      "E2E Playwright tests mock channels.oauth_start but don't test against real MAS — full OIDC flow integration tests not possible without test MAS instance",
+      "Duplicate account guard added for oidc_complete but same Matrix user connected via different auth modes (password + OIDC) is not prevented",
+      "Re-authenticate button in EditMatrixModal mentioned in plan but not implemented — OIDC channels have no way to refresh tokens without removing and re-adding"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-17T14:38:22.551843Z",
+    "agent_lines": 0,
+    "human_added": 24,
+    "human_modified": 8,
+    "human_removed": 0,
+    "total_committed": 24,
+    "agent_percentage": 0
+  }
+}
