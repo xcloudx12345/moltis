@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "3247f3875997",
+  "strategy": "manual-commit",
+  "branch": "buttery-patella",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/httpd/src/server/gateway.rs",
+    "crates/slack/src/plugin.rs",
+    "crates/slack/src/webhook.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/32/47f3875997/0/metadata.json",
+      "transcript": "/32/47f3875997/0/full.jsonl",
+      "context": "/32/47f3875997/0/context.md",
+      "content_hash": "/32/47f3875997/0/content_hash.txt",
+      "prompt": "/32/47f3875997/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 47,
+    "cache_creation_tokens": 77162,
+    "cache_read_tokens": 2646560,
+    "output_tokens": 11402,
+    "api_call_count": 43
+  }
+}
