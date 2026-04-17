@@ -1,0 +1,105 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "86582afa9453",
+  "session_id": "65fd5abf-436a-49eb-97a3-356fceb99bb1",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-17T13:26:51.365341Z",
+  "branch": "fork-piper",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/gateway/src/channel.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "80b5128cfa86",
+  "token_usage": {
+    "input_tokens": 709,
+    "cache_creation_tokens": 1553529,
+    "cache_read_tokens": 185885239,
+    "output_tokens": 183680,
+    "api_call_count": 653
+  },
+  "summary": {
+    "intent": "Implement Matrix OIDC authentication (Issue #711) so users on homeservers using Matrix Authentication Service (MAS/MSC3861) can connect to Moltis, which previously only supported password and access_token auth modes.",
+    "outcome": "Full OIDC two-phase browser flow implemented across Rust backend and JS frontend, PR #730 created and merged, with multiple post-implementation bug fixes addressing MAS registration errors, wrong callback path, status detection, UI display bugs, ownership mode passthrough, and a Safari button repaint issue.",
+    "learnings": {
+      "repo": [
+        "matrix-sdk 0.16 OIDC API uses client.oauth() — no feature flags required; handles PKCE, dynamic client registration, token exchange, and auto token refresh",
+        "MAS (matrix.org's auth service) rejects https://localhost redirect URIs — must normalize to http://localhost per RFC 8252 loopback rules",
+        "MAS rejects localhost as client_uri — client_uri must be a real HTTPS project URL (e.g. https://moltis.org), not the server address",
+        "The OAuth callback route is /auth/callback, not /api/oauth/callback",
+        "matrix_auth().logged_in() returns false for OIDC sessions — must use client.user_id().is_some() to detect any active session",
+        "ChannelPlugin trait methods must be implemented in impl ChannelPlugin for MatrixPlugin block, not as inherent methods — the gateway dispatches through dyn ChannelPlugin",
+        "Channel status uses ch.status === 'connected' field, not ch.connected",
+        "The ownership card in page-channels.js checks auth mode against only 'password' — OIDC fell through to the 'access token' message",
+        "The gateway's oauth_start built a hardcoded minimal config, silently dropping ownership_mode, dm_policy, room_policy from the form",
+        "oidc_issuer field was documented but had no consumption path in matrix-sdk 0.16 — removed to avoid dead config"
+      ],
+      "code": [
+        {
+          "path": "crates/matrix/src/plugin.rs",
+          "line": 606,
+          "end_line": 606,
+          "finding": "was: state.client.matrix_auth().logged_in() — returns false for OIDC sessions; fixed to state.client.user_id().is_some()"
+        },
+        {
+          "path": "crates/matrix/src/oidc.rs",
+          "finding": "normalize_redirect_uri() rewrites https://localhost:* to http://localhost:* for MAS compatibility, but client_uri must remain a real HTTPS project URL"
+        },
+        {
+          "path": "crates/channels/src/plugin.rs",
+          "finding": "oidc_start/oidc_complete added as default trait methods so gateway can dispatch through dyn ChannelPlugin"
+        },
+        {
+          "path": "crates/gateway/src/channel.rs",
+          "line": 818,
+          "end_line": 822,
+          "finding": "oauth_start built hardcoded config with only homeserver/auth_mode/access_token, losing all other form fields — fixed to merge full config from params"
+        },
+        {
+          "path": "crates/web/src/assets/js/page-channels.js",
+          "line": 184,
+          "end_line": 186,
+          "finding": "ownership card logic only handled 'password' — anything else showed 'Access token auth is always user-managed'"
+        },
+        {
+          "path": "crates/web/ui/input.css",
+          "finding": "provider-btn had transition: opacity 0.15s + opacity: 0.4 on :disabled — caused Safari to composite old text pixels during transition, creating ghost text overlay"
+        }
+      ],
+      "workflow": [
+        "Safari does not repaint text nodes inside \u003cbutton\u003e elements reliably when Preact patches them — fix is to key the button element on its state so Preact destroys and recreates the DOM node",
+        "Greptile automated code review caught real bugs: wrong response field (res.result vs res.payload), missing file permissions (0o600 for session files), and dead config fields",
+        "Running cargo check / clippy on only modified crates is faster than workspace-wide checks during iterative development",
+        "matrix-sdk types like RoomLoadSettings are re-exported from matrix_sdk::store — no need to add matrix-sdk-base as direct dependency",
+        "Raw::new(val) returns serde_json::Result\u003cSelf\u003e — needs .map_err() handling",
+        "Preact/HTM does not need nested ternaries extracted to variables for correctness, but keying components on state changes is necessary for reliable DOM updates in Safari"
+      ]
+    },
+    "friction": [
+      "Multiple round-trips to fix MAS registration errors without being able to test against the live MAS server — led to: first fixing client_uri, then wrong redirect scheme, then wrong callback path (/api/oauth/callback vs /auth/callback)",
+      "The redirect_uri normalization (https -\u003e http) was removed then had to be restored, causing a regression that required another user test cycle",
+      "Safari ghost button text issue took 7+ attempts to fix: tried ternary extraction, key on phase, position/isolation CSS, opacity-\u003ecolor-mix CSS, span wrapper, keying span, and finally keying the button element itself",
+      "oidc_start/oidc_complete implemented as inherent MatrixPlugin methods instead of trait overrides — silently fell through to default 'not supported' error requiring a test cycle to catch",
+      "The gateway's oauth_start silently dropped ownership_mode from the form, discovered only after the user tested and saw 'User-managed' despite checking the moltis-owned box",
+      "Greptile ran 4 review iterations with stale comments appearing on new commits, requiring manual resolution of already-fixed comments each round"
+    ],
+    "open_items": [
+      "E2E tests for OIDC are UI-only mocks — no integration test against a real MAS server; would catch redirect URI, client_uri, and callback path issues automatically",
+      "The 're-authenticate' button for existing OIDC channels (EditMatrixModal) was mentioned in the plan but its implementation was not confirmed working",
+      "Duplicate Matrix account detection was added but only for same user_id — connecting same homeserver with different accounts is still possible",
+      "token refresh persistence background task (spawn_session_persistence_task) spawned but not tested — unclear if tokens are persisted correctly across restarts",
+      "bootstrap_cross_signing_if_needed for OIDC moltis_owned mode was referenced in the plan but not confirmed working in the session",
+      "The normalize_redirect_uri function only handles localhost — Tailscale or other non-loopback HTTPS URLs used as redirect targets are not addressed",
+      "Re-authentication flow for expired OIDC sessions needs testing — the restore_oidc_session path on startup after token expiry has not been exercised"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-17T13:25:57.127494Z",
+    "agent_lines": 11,
+    "human_added": 57,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 68,
+    "agent_percentage": 16.176470588235293
+  }
+}
