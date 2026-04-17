@@ -1,0 +1,93 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "67daee47703d",
+  "session_id": "65fd5abf-436a-49eb-97a3-356fceb99bb1",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-17T13:35:19.924117Z",
+  "branch": "fork-piper",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/matrix/src/client.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "9af16abb4ff8",
+  "token_usage": {
+    "input_tokens": 725,
+    "cache_creation_tokens": 1559498,
+    "cache_read_tokens": 191814963,
+    "output_tokens": 186738,
+    "api_call_count": 666
+  },
+  "summary": {
+    "intent": "Implement Matrix OIDC authentication (Issue #711) to support homeservers using Matrix Authentication Service (MAS/MSC3861), since matrix.org and others have moved away from password auth.",
+    "outcome": "Full OIDC two-phase browser flow implemented (oauth_start/oauth_complete RPC methods, callback handler integration, session persistence, token refresh), with UI for all three modals and onboarding. Several post-merge bugs fixed including: wrong callback path, redirect_uri scheme normalization for MAS, status detection for OIDC sessions, ownership mode not passed through, and cross-signing bootstrap without password.",
+    "learnings": {
+      "repo": [
+        "matrix-sdk Client.user_id().is_some() works for both matrix_auth and oauth sessions; matrix_auth().logged_in() returns false for OIDC sessions",
+        "MAS (matrix.org OIDC) rejects https://localhost redirect_uri — requires http://localhost per RFC 8252 loopback rule, but client_uri must be a real HTTPS project URL (not localhost)",
+        "ChannelPlugin trait methods must be overridden in impl ChannelPlugin for MatrixPlugin, not as inherent methods on MatrixPlugin — gateway dispatches through dyn ChannelPlugin and only sees trait methods",
+        "The OAuth callback route is /auth/callback, not /api/oauth/callback",
+        "matrix_sdk::store::RoomLoadSettings is re-exported from matrix_sdk (not just matrix_sdk_base) and can be used without adding matrix-sdk-base as a direct dep",
+        "Raw::new(val: \u0026T) returns serde_json::Result\u003cSelf\u003e — must be unwrapped; Localized::new requires explicit Vec\u003c(LanguageTag, T)\u003e type annotation for empty vecs",
+        "Cross-signing bootstrap for OIDC uses bootstrap_cross_signing_if_needed(None) — MAS handles auth without password; password-based UIAA path errors with 'password is required'",
+        "The ownership_mode and other config fields were not passed through oidc_start RPC — gateway built a hardcoded minimal config ignoring form fields",
+        "channels.status response uses ch.status === 'connected', not ch.connected"
+      ],
+      "code": [
+        {
+          "path": "crates/matrix/src/plugin.rs",
+          "line": 606,
+          "end_line": 606,
+          "finding": "matrix_auth().logged_in() check for connection status — must be replaced with client.user_id().is_some() to detect OIDC sessions"
+        },
+        {
+          "path": "crates/gateway/src/channel.rs",
+          "line": 818,
+          "end_line": 822,
+          "finding": "oidc_start gateway handler built hardcoded minimal config, discarding ownership_mode and all other form fields — needed to forward full config object from JS params"
+        },
+        {
+          "path": "crates/web/src/assets/js/onboarding-view.js",
+          "finding": "Safari browser paint bug: when button text changes (saving state), old text pixels remain composited. Fix: key the \u003cbutton\u003e element on the state value to force DOM node recreation instead of patch"
+        },
+        {
+          "path": "crates/web/ui/input.css",
+          "line": 920,
+          "end_line": 920,
+          "finding": "transition: opacity 0.15s on .provider-btn combined with opacity: 0.4 on :disabled causes ghost text when Preact patches text node simultaneously with disabled state change"
+        }
+      ],
+      "workflow": [
+        "Running cargo check/clippy on individual crates (-p moltis-matrix) is faster than workspace-wide checks during iteration",
+        "Greptile automated review caught real bugs: wrong response field (res.result vs res.payload), missing file permissions (0o600), and unused oidc_issuer config field",
+        "greploop pattern: submit PR → fix comments → push → trigger re-review → repeat until 0 comments works well for iterative PR review",
+        "Preact HTM template buttons with dynamic text need key=${state} to force element recreation in Safari — text node patching doesn't trigger repaint"
+      ]
+    },
+    "friction": [
+      "Multiple roundtrips to fix MAS redirect_uri rejection: first tried http:// normalization (worked for registration but broke callback), then reverted (broke registration again), then restored normalization — needed real MAS test environment from the start",
+      "oidc_start/oidc_complete implemented as inherent MatrixPlugin methods but gateway dispatches through dyn ChannelPlugin trait — silently returned 'OIDC not supported' default error until discovered",
+      "Safari ghost button text bug took 7+ iterations to diagnose and fix (opacity transition → isolation: isolate → span wrapper → keyed span → keyed button)",
+      "Greptile re-flagged already-fixed comments on new commits because it associates old review comments with new commit line numbers",
+      "normalize_redirect_uri was added, removed, and re-added across commits due to uncertainty about MAS behavior without a test environment",
+      "oidc_issuer config field was designed but matrix-sdk 0.16 has no API to override the issuer URL — had to remove it after Greptile flagged it as unused"
+    ],
+    "open_items": [
+      "E2E tests (channels-matrix.spec.js) mock channels.oauth_start but cannot test full OIDC flow against real MAS — integration tests against a MAS instance would catch redirect_uri/client_uri policy issues earlier",
+      "Re-authenticate button in EditMatrixModal (plan step 7) was not fully implemented — plan called for a button to trigger new OIDC flow for existing channels",
+      "Ghost button fix applied only to onboarding-view.js buttons — page-channels.js modal buttons may have same Safari paint issue and were partially fixed but should be audited",
+      "Duplicate Matrix account guard added but account_id is randomly generated — same user could still accumulate multiple OIDC sessions if they repeatedly go through the flow without removing old ones",
+      "oidc_issuer override removed as unused — if matrix-sdk adds API to override issuer URL in a future version, this feature should be re-added",
+      "Cross-signing bootstrap for OIDC moltis_owned mode: ensure_moltis_owned_encryption_oidc added but untested end-to-end for whether MAS actually accepts bootstrap_cross_signing_if_needed(None) without additional OAuth interaction"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-17T13:34:27.576158Z",
+    "agent_lines": 0,
+    "human_added": 94,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 94,
+    "agent_percentage": 0
+  }
+}
