@@ -1,0 +1,109 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "26c045e68053",
+  "session_id": "65fd5abf-436a-49eb-97a3-356fceb99bb1",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-17T14:15:26.704604Z",
+  "branch": "fork-piper",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/web/src/assets/js/onboarding-view.js"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "db1cb539a46b",
+  "token_usage": {
+    "input_tokens": 783,
+    "cache_creation_tokens": 1589187,
+    "cache_read_tokens": 213658644,
+    "output_tokens": 200502,
+    "api_call_count": 712
+  },
+  "summary": {
+    "intent": "Implement Matrix OIDC authentication (MSC3861) for Moltis, enabling users on modern homeservers like matrix.org (which uses Matrix Authentication Service) to connect their accounts without password auth.",
+    "outcome": "Full OIDC authentication flow implemented and working end-to-end: two-phase browser flow (start/complete), session persistence, token refresh, moltis_owned cross-signing bootstrap via OAuth, and UI integration across channels page and onboarding wizard. Multiple iterative bug fixes required to reach a functional state.",
+    "learnings": {
+      "repo": [
+        "MatrixPlugin methods exposed to the gateway must be in `impl ChannelPlugin for MatrixPlugin`, not in `impl MatrixPlugin` — the gateway dispatches through `dyn ChannelPlugin` so inherent methods are invisible.",
+        "Channel status uses `ch.status === 'connected'` not `ch.connected` — the status field is a string enum.",
+        "RPC responses use `res.payload` for data, not `res.result`.",
+        "The OAuth callback route is `/auth/callback`, not `/api/oauth/callback`.",
+        "matrix_auth().logged_in() returns false for OIDC sessions; client.user_id().is_some() works for both auth methods.",
+        "MAS (matrix.org) rejects HTTPS localhost redirect URIs — requires http://localhost per RFC 8252 loopback native app spec.",
+        "MAS requires client_uri to be a real HTTPS project URL, not localhost — it's a metadata field for the consent screen, not a server address.",
+        "Ownership bootstrap for OIDC: bootstrap_cross_signing_if_needed(None) no-ops if cross-signing exists from a prior session; must check if this device has signing keys and call reset_identity() if not.",
+        "reset_identity() requires browser approval from MAS (CrossSigningResetAuthType::OAuth) when prior cross-signing exists — generates an approval URL at account.matrix.org/account/?action=org.matrix.cross_signing_reset.",
+        "The config passed to oidc_start from the gateway was hardcoded and discarded all form fields (ownership_mode, dm_policy, etc.) — needed to pass full config JSON through.",
+        "OIDC channel shows as connected (user_id().is_some()) before sync and ownership bootstrap complete — JS polling detects connected too early, missing ownership errors."
+      ],
+      "code": [
+        {
+          "path": "crates/matrix/src/plugin.rs",
+          "line": 606,
+          "end_line": 606,
+          "finding": "Status probe used matrix_auth().logged_in() which is false for OIDC; changed to client.user_id().is_some()"
+        },
+        {
+          "path": "crates/matrix/src/oidc.rs",
+          "line": 1,
+          "end_line": 50,
+          "finding": "normalize_redirect_uri() rewrites https://localhost to http://localhost for MAS compliance; also client_uri must be project URL not server address"
+        },
+        {
+          "path": "crates/channels/src/plugin.rs",
+          "line": 1,
+          "end_line": 20,
+          "finding": "oidc_start/oidc_complete must be trait methods with default noop impls — gateway calls through dyn ChannelPlugin"
+        },
+        {
+          "path": "crates/gateway/src/channel.rs",
+          "line": 818,
+          "end_line": 822,
+          "finding": "Original oauth_start built hardcoded config ignoring all form fields; fixed to pass full config JSON from params"
+        },
+        {
+          "path": "crates/matrix/src/client.rs",
+          "line": 1,
+          "end_line": 50,
+          "finding": "ensure_oidc_owned_encryption_state: bootstrap may need reset_identity() + retry loop for signing key propagation; handles CrossSigningResetAuthType::OAuth approval flow"
+        }
+      ],
+      "workflow": [
+        "Preact/HTM VDOM reuse causes ghost text when button text changes simultaneously with disabled state — wrapping button in key=${state} forces DOM node replacement instead of text node patching.",
+        "Safari specifically doesn't repaint button text nodes correctly during opacity transitions — the old painted pixels persist composited behind new text.",
+        "matrix-sdk's store module re-exports RoomLoadSettings as matrix_sdk::store::RoomLoadSettings.",
+        "Localized::new requires explicit type annotation for empty Vec: Vec::\u003c(LanguageTag, String)\u003e::new()",
+        "Raw::new(val) returns serde_json::Result\u003cSelf\u003e — needs ? unwrapping.",
+        "Greptile code review caught: Debug derive exposing tokens, blocking std::fs in async, URL parameter injection, polling interval leak, panic in production code.",
+        "Light-on-light color patterns (text-emerald-100 on bg-emerald-500/10, text-sky-100 on bg-sky-500/10, text-amber-50 on bg-amber-500/10) were systematically broken across all ownership/status banners."
+      ]
+    },
+    "friction": [
+      "Multiple round-trips fixing MAS registration errors (invalid_redirect_uri, invalid_client_metadata) because there were no integration tests against a real MAS instance.",
+      "Wrong callback path /api/oauth/callback vs /auth/callback only discovered at runtime.",
+      "https:// vs http:// loopback normalization was added, removed, and re-added across three commits due to lack of end-to-end testing.",
+      "Preact ghost button issue took 8+ attempts to diagnose and fix — required understanding Safari compositing behavior.",
+      "Ownership bootstrap timing issue (OIDC marks connected before sync/ownership completes) required a 2-second delay workaround rather than a proper async signal.",
+      "After Moltis restart, in-memory identity reset handles are lost so retry_ownership failed with 'unknown channel account' error.",
+      "m.secret_storage.default_key deserialization warnings appear on every sync — pre-existing matrix-sdk issue creating noise in logs."
+    ],
+    "open_items": [
+      "OIDC channels are not properly restored from the store on Moltis restart — sessions need to survive process restarts.",
+      "The 2-second delay before closing the OIDC waiting modal is a timing hack — should properly await the ownership bootstrap completion signal.",
+      "MAS requires browser approval for cross-signing reset on every new device — UX could be improved with clearer upfront guidance before starting OIDC flow.",
+      "Duplicate Matrix account guard added for password/token in start_account but not tested for edge cases (e.g. same user reconnecting after removal).",
+      "E2E Playwright tests in channels-matrix.spec.js test UI structure but cannot test the actual OIDC flow against a real MAS instance.",
+      "oidc_issuer field was removed as dead config — may need to be re-added when matrix-sdk exposes issuer override API.",
+      "The pending_identity_reset handle is in-memory only — if the process restarts between 'Open approval page' and 'Retry', users get a confusing error requiring another reset cycle.",
+      "Recovery is consistently 'disabled' after OIDC ownership bootstrap — secret storage setup is not being triggered for OIDC sessions."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-17T14:14:32.68773Z",
+    "agent_lines": 0,
+    "human_added": 19,
+    "human_modified": 2,
+    "human_removed": 0,
+    "total_committed": 19,
+    "agent_percentage": 0
+  }
+}
