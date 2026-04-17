@@ -1,0 +1,102 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "94b76c7f661d",
+  "session_id": "65fd5abf-436a-49eb-97a3-356fceb99bb1",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-17T12:56:08.711616Z",
+  "branch": "fork-piper",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/src/assets/js/page-channels.js",
+    "crates/web/src/assets/js/onboarding-view.js"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "dea2463da2c2",
+  "token_usage": {
+    "input_tokens": 594,
+    "cache_creation_tokens": 1507566,
+    "cache_read_tokens": 143081298,
+    "output_tokens": 158967,
+    "api_call_count": 554
+  },
+  "summary": {
+    "intent": "Implement Matrix OIDC authentication (MSC3861/OAuth2) for Moltis so users on modern homeservers like matrix.org can connect without password auth.",
+    "outcome": "Full OIDC two-phase browser flow implemented and working end-to-end: MAS registration, browser redirect, token exchange, session persistence, token refresh, and UI integration across channels page and onboarding wizard.",
+    "learnings": {
+      "repo": [
+        "ChannelPlugin trait methods must be overridden in `impl ChannelPlugin for MatrixPlugin`, not as inherent methods on `impl MatrixPlugin` — gateway dispatches through `dyn ChannelPlugin` so inherent methods are invisible",
+        "Channel status uses `ch.status === 'connected'` not `ch.connected` — the field name is `status` with string value",
+        "matrix_auth().logged_in() returns false for OIDC sessions; client.user_id().is_some() works for both auth types",
+        "MAS (Matrix Authentication Service) rejects https://localhost redirect URIs — RFC 8252 loopback requires http://localhost; normalize before registration",
+        "MAS also rejects localhost as client_uri — must use real project URL (https://moltis.org) even for local instances",
+        "The existing OAuth callback route is /auth/callback, not /api/oauth/callback",
+        "matrix_sdk::store::RoomLoadSettings is re-exported from matrix-sdk's store module, no need for direct matrix-sdk-base dependency",
+        "Ownership mode checkbox was incorrectly hidden for OIDC; OIDC supports moltis_owned mode and should show the checkbox",
+        "Tailwind light-on-light color combinations used throughout: emerald-100 on emerald-500/10 and sky-100 on sky-500/10 — unreadable, need dark text on light bg"
+      ],
+      "code": [
+        {
+          "path": "crates/matrix/src/plugin.rs",
+          "line": 606,
+          "end_line": 606,
+          "finding": "Status probe used matrix_auth().logged_in() which always returns false for OIDC; changed to client.user_id().is_some()"
+        },
+        {
+          "path": "crates/matrix/src/oidc.rs",
+          "line": 1,
+          "end_line": 200,
+          "finding": "New OIDC module: normalize_redirect_uri() converts https://localhost to http://localhost for MAS compliance; client_uri must be real HTTPS project URL not localhost"
+        },
+        {
+          "path": "crates/channels/src/plugin.rs",
+          "line": 1,
+          "end_line": 50,
+          "finding": "oidc_start/oidc_complete added as trait methods with default noop impl so gateway can dispatch through dyn ChannelPlugin"
+        },
+        {
+          "path": "crates/web/src/assets/js/page-channels.js",
+          "line": 184,
+          "end_line": 186,
+          "finding": "Ownership card auth mode check used `!== 'password'` catch-all, meaning OIDC fell through to access_token messaging; needs explicit oidc branch"
+        },
+        {
+          "path": "crates/web/src/assets/js/channel-utils.js",
+          "line": 76,
+          "end_line": 76,
+          "finding": "matrixOwnershipModeGuidance checked authMode !== 'password' to show user-managed message; OIDC should be treated like password (moltis_owned capable)"
+        }
+      ],
+      "workflow": [
+        "Iterative MAS registration debugging requires rebuilding and retrying against live MAS — unit tests cannot catch HTTP 400 responses from OIDC server policy",
+        "Greptile automated 4 review iterations catching: token exposure via Debug derive, blocking std::fs in async, URL parameter injection, polling interval leak, and dead oidc_issuer config field",
+        "Preact/HTM VDOM reuses DOM nodes aggressively when switching between phases — adding key= attribute to submit button prevents ghost text from previous button labels bleeding through",
+        "CSS transition: opacity 0.15s on provider-btn combined with Preact node reuse causes visible ghost text during state transitions"
+      ]
+    },
+    "friction": [
+      "Three separate MAS registration failures required live server iteration: (1) https vs http redirect URI, (2) localhost as client_uri, (3) wrong callback path /api/oauth/callback vs /auth/callback — none catchable by unit tests",
+      "oidc_start/oidc_complete implemented as inherent MatrixPlugin methods first, silently routing to noop default — error message 'OIDC login not supported' was misleading",
+      "Rate limit interruptions mid-implementation required two 'proceed' prompts to continue",
+      "Nested ternary in HTM template `${a ? b : c ? d : e}` caused Preact ghost text rendering — not caught until user reported visual bug",
+      "Clippy false positive on #[cfg(unix)] OpenOptionsExt trait import — reorganized code structure to satisfy it",
+      "oidc_issuer config field added but matrix-sdk 0.16 has no API to pass custom issuer — field was dead code, removed after Greptile flagged it"
+    ],
+    "open_items": [
+      "E2E Playwright tests (channels-matrix.spec.js) test UI structure but cannot test actual MAS OIDC flow — no test MAS instance available",
+      "Duplicate Matrix account guard checks by user_id after login but cannot prevent duplicate OIDC start flows for the same homeserver before user_id is known",
+      "OIDC re-authentication flow for EditMatrixModal ('Re-authenticate' button) is mentioned in the plan but not fully implemented",
+      "Cross-signing bootstrap for moltis_owned OIDC channels uses bootstrap_cross_signing_if_needed(None) — OAuth reset flow (CrossSigningResetAuthType::OAuth) exists in client.rs:428 but not tested end-to-end",
+      "oidc_issuer override removed because matrix-sdk 0.16 has no API for custom issuer — revisit when matrix-sdk exposes issuer override capability",
+      "Onboarding MatrixForm ghost button fix (Preact key= attribute) is a workaround — root cause is VDOM node reuse across phase transitions, may affect other channel type forms"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-17T12:55:18.896796Z",
+    "agent_lines": 9,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 9,
+    "agent_percentage": 100
+  }
+}
