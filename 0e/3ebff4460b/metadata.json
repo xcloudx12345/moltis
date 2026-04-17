@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "0e3ebff4460b",
+  "strategy": "manual-commit",
+  "branch": "fuchsia-mechanic",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/matrix/src/client.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0e/3ebff4460b/0/metadata.json",
+      "transcript": "/0e/3ebff4460b/0/full.jsonl",
+      "context": "/0e/3ebff4460b/0/context.md",
+      "content_hash": "/0e/3ebff4460b/0/content_hash.txt",
+      "prompt": "/0e/3ebff4460b/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 21,
+    "cache_creation_tokens": 42658,
+    "cache_read_tokens": 422200,
+    "output_tokens": 3007,
+    "api_call_count": 13
+  }
+}
