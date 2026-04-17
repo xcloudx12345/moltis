@@ -1,0 +1,97 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "8087d41a16a7",
+  "session_id": "65fd5abf-436a-49eb-97a3-356fceb99bb1",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-17T14:00:57.364481Z",
+  "branch": "fork-piper",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/matrix/src/plugin.rs",
+    "crates/web/src/assets/js/page-channels.js"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "2044ba29525a",
+  "token_usage": {
+    "input_tokens": 759,
+    "cache_creation_tokens": 1576801,
+    "cache_read_tokens": 204468728,
+    "output_tokens": 195977,
+    "api_call_count": 693
+  },
+  "summary": {
+    "intent": "Implement Matrix OIDC authentication (Issue #711) to support modern Matrix homeservers (including matrix.org since April 2025) that use Matrix Authentication Service (MAS) instead of password auth.",
+    "outcome": "Full OIDC auth flow implemented and working end-to-end: browser popup opens, MAS approves, tokens are exchanged, channel connects. Multiple bugs fixed iteratively through live testing. PR #730 created and merged to main.",
+    "learnings": {
+      "repo": [
+        "ChannelPlugin trait methods must be overridden in `impl ChannelPlugin for MatrixPlugin`, not as inherent methods on `impl MatrixPlugin` — gateway dispatches through `dyn ChannelPlugin` and can't see inherent methods",
+        "matrix_auth().logged_in() returns false for OIDC sessions; use client.user_id().is_some() to check session state for both auth methods",
+        "MAS requires redirect_uri to use http:// (not https://) for loopback addresses per RFC 8252, even though Moltis server runs HTTPS",
+        "MAS rejects client_uri pointing to localhost — must use a real HTTPS project URL (https://moltis.org) in ClientMetadata",
+        "bootstrap_cross_signing_if_needed(None) is a no-op if cross-signing already exists from a prior session; need reset_identity() when the device lacks signing keys",
+        "reset_identity() with OAuth type returns CrossSigningResetAuthType::OAuth requiring browser approval at a MAS URL before reset(None) can complete",
+        "The pending identity reset handle is in-memory only — lost on restart, requiring re-triggering reset_identity() on retry",
+        "OIDC session persistence uses a background task via client.subscribe_to_session_changes() to save refreshed tokens to disk",
+        "RPC response payload is at res.payload not res.result — a common mistake when adding new RPC methods"
+      ],
+      "code": [
+        {
+          "path": "crates/matrix/src/client.rs",
+          "line": 606,
+          "end_line": 606,
+          "finding": "matrix_auth().logged_in() only works for password/token sessions, not OIDC — fixed to client.user_id().is_some()"
+        },
+        {
+          "path": "crates/matrix/src/oidc.rs",
+          "finding": "normalize_redirect_uri() rewrites https://localhost to http://localhost for MAS compliance; client_uri must be project URL not localhost"
+        },
+        {
+          "path": "crates/channels/src/plugin.rs",
+          "finding": "ChannelPlugin trait needs default noop oidc_start/oidc_complete methods so gateway can dispatch generically via dyn ChannelPlugin"
+        },
+        {
+          "path": "crates/gateway/src/channel.rs",
+          "line": 818,
+          "end_line": 822,
+          "finding": "oauth_start was building a hardcoded minimal config ignoring ownership_mode, dm_policy, etc. from the JS form — all form fields must be passed through"
+        },
+        {
+          "path": "crates/web/src/assets/js/onboarding-view.js",
+          "finding": "Safari doesn't repaint button text nodes when Preact patches them in-place; fix is key=${savingState} on the button element to force DOM recreation"
+        }
+      ],
+      "workflow": [
+        "Safari has a browser paint bug: when Preact patches a text node inside \u003cbutton\u003e while opacity transition runs on :disabled, old text pixels persist as ghost overlay — fix by keying the button element on state changes",
+        "Light-on-light color schemes (text-sky-100/emerald-100 on bg-sky-500/10) are unreadable; use dark-on-light instead (text-sky-900 on bg-sky-50)",
+        "Greptile code review caught real bugs across 4 iterations: wrong response field (res.result vs res.payload), blocking I/O in async fns, security token exposure via Debug derive, file permissions",
+        "E2E tests that mock the RPC layer can't catch endpoint path mismatches or server policy rejections — need integration tests against real MAS for OAuth flows",
+        "The /auth/callback route exists (not /api/oauth/callback) — always verify route paths against actual server registration before coding redirect URIs"
+      ]
+    },
+    "friction": [
+      "Multiple back-and-forth iterations fixing redirect_uri issues: first https vs http, then wrong callback path (/api/oauth/callback vs /auth/callback), then client_uri pointing to localhost",
+      "Assistant went in circles on the Safari ghost button issue through 6+ attempts (CSS transitions, span wrapping, key on span, key wrapper div) before finding the correct fix (key on the button element itself)",
+      "Cross-signing bootstrap requires browser approval from MAS for identity resets — this UX flow wasn't visible in the UI after Moltis restart because the in-memory handle was lost",
+      "Channel list didn't auto-refresh after OIDC complete + ownership setup; user had to reload to see ownership error and retry buttons",
+      "Ownership mode checkbox was hidden for OIDC (only shown for password), causing all OIDC accounts to default to user_managed",
+      "The duplicate account guard was missing — users could connect the same Matrix user multiple times via OIDC"
+    ],
+    "open_items": [
+      "OIDC channel restore on Moltis restart may be unreliable — if the stored OIDC session fails to restore, the channel appears in the DB but not in the plugin's accounts map, causing 'unknown channel account' errors on retry_ownership",
+      "Cross-signing reset via OIDC requires browser approval and an in-memory handle that is lost on restart — needs persistent handle storage or re-triggering reset_identity() on retry",
+      "No E2E tests that exercise the full OIDC flow against a real MAS instance — current Playwright tests only mock the RPC layer",
+      "oidc_issuer config field was removed as unused — matrix-sdk 0.16 has no API to override the OIDC issuer URL, but this may be needed for self-hosted MAS with custom issuer URLs in future",
+      "Duplicate Matrix account detection only fires on start/complete — no deduplication when Moltis loads channels from store on restart",
+      "The 'Retry ownership' button flow for OIDC after Moltis restart needs proper re-triggering of reset_identity() rather than assuming an in-memory handle exists"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-17T14:00:05.843015Z",
+    "agent_lines": 16,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 16,
+    "agent_percentage": 100
+  }
+}

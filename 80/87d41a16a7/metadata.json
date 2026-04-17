@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "8087d41a16a7",
+  "strategy": "manual-commit",
+  "branch": "fork-piper",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/matrix/src/plugin.rs",
+    "crates/web/src/assets/js/page-channels.js"
+  ],
+  "sessions": [
+    {
+      "metadata": "/80/87d41a16a7/0/metadata.json",
+      "transcript": "/80/87d41a16a7/0/full.jsonl",
+      "context": "/80/87d41a16a7/0/context.md",
+      "content_hash": "/80/87d41a16a7/0/content_hash.txt",
+      "prompt": "/80/87d41a16a7/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 759,
+    "cache_creation_tokens": 1576801,
+    "cache_read_tokens": 204468728,
+    "output_tokens": 195977,
+    "api_call_count": 693
+  }
+}
