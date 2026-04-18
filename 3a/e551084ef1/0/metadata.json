@@ -1,0 +1,91 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "3ae551084ef1",
+  "session_id": "8b099346-f288-4be9-a192-eff7d5675fb4",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-18T11:15:39.714079Z",
+  "branch": "stone-wood",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/config/src/loader/config_io.rs",
+    "crates/config/src/loader/tests.rs",
+    "crates/config/src/schema/system.rs",
+    "crates/config/src/schema/tests.rs",
+    "crates/config/src/template.rs",
+    "crates/config/src/validate/schema_map.rs",
+    "crates/config/src/validate/semantic.rs",
+    "crates/config/src/validate/tests/common.rs",
+    "crates/config/src/validate/tests/security.rs",
+    "crates/gateway/src/server/prepare_core/post_state.rs",
+    "docs/src/security.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "2a14128fe753",
+  "token_usage": {
+    "input_tokens": 7386,
+    "cache_creation_tokens": 142878,
+    "cache_read_tokens": 4802536,
+    "output_tokens": 11489,
+    "api_call_count": 36
+  },
+  "summary": {
+    "intent": "Add a first-class `server.external_url` config field to moltis so users behind reverse proxies can specify their public URL for WebAuthn passkey origin registration, replacing the undiscoverable env var workaround.",
+    "outcome": "Fully implemented and tested across 11 files: config schema field + helper, schema map registration, semantic validation, config template documentation, env var exclusion, WebAuthn wiring with priority ordering, and updated security docs. All 239 tests pass, clippy clean, formatting clean on changed files.",
+    "learnings": {
+      "repo": [
+        "WebAuthn RP origin registration is the only server-side component that needs the external URL; OIDC and CORS/WS already work via browser-side window.location.origin and Host header comparison.",
+        "Moltis has a generic MOLTIS_* env var override mechanism in config_io.rs with an EXCLUDED list to prevent double-processing of env vars that are handled explicitly elsewhere.",
+        "Config validation is split into schema_map (unknown field detection) and semantic (value validation), both needing updates when adding new fields.",
+        "WebAuthn priority chain: external_url/MOLTIS_EXTERNAL_URL \u003e MOLTIS_WEBAUTHN_RP_ID+ORIGIN \u003e cloud platform vars (APP_DOMAIN, RENDER_*, FLY_*, RAILWAY_*) \u003e localhost auto-detection.",
+        "Pre-existing formatting issues exist in other files (code-index, qmd); only changed files need to be clean."
+      ],
+      "code": [
+        {
+          "path": "crates/config/src/schema/system.rs",
+          "finding": "ServerConfig holds external_url: Option\u003cString\u003e with effective_external_url() checking MOLTIS_EXTERNAL_URL env var first, then config value, stripping trailing slashes."
+        },
+        {
+          "path": "crates/config/src/loader/config_io.rs",
+          "line": 378,
+          "finding": "EXCLUDED list around line 378 prevents MOLTIS_EXTERNAL_URL from being double-processed by the generic env override mechanism."
+        },
+        {
+          "path": "crates/config/src/validate/schema_map.rs",
+          "line": 330,
+          "finding": "Server struct entries around line 330; add (\"external_url\", Leaf) to register new fields and prevent unknown-field warnings."
+        },
+        {
+          "path": "crates/gateway/src/server/prepare_core/post_state.rs",
+          "finding": "build_webauthn_registry() parses effective_external_url() to extract host as RP ID and full URL as origin, falling through to existing env var chain if unset."
+        },
+        {
+          "path": "crates/config/src/template.rs",
+          "line": 33,
+          "finding": "Config template around line 33 is where new commented-out fields are documented; update_releases_url is the neighboring field."
+        }
+      ],
+      "workflow": [
+        "Test changed files' formatting in isolation (rustfmt --check on specific files) rather than running project-wide format check which surfaces pre-existing issues.",
+        "Running clippy per-crate (cargo clippy -p moltis-config, cargo clippy -p moltis-gateway) is faster than project-wide and sufficient for targeted changes.",
+        "Verify url crate availability via grep before adding URL parsing code to a new crate."
+      ]
+    },
+    "friction": [
+      "rustfmt --check on post_state.rs caught a formatting issue with the FLY_APP_NAME line that required an extra fix pass after initial implementation.",
+      "Pre-existing formatting issues in unrelated files (code-index, qmd) created noise when running project-wide format checks, requiring per-file verification."
+    ],
+    "open_items": [
+      "Manual verification steps deferred: set external_url in moltis.toml and confirm WebAuthn RP log shows correct origin; test MOLTIS_EXTERNAL_URL env var takes priority.",
+      "Gateway integration tests (cargo test -p moltis-gateway) not explicitly shown as run in transcript — only compilation/clippy confirmed."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-18T11:15:15.928323Z",
+    "agent_lines": 249,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 249,
+    "agent_percentage": 100
+  }
+}
