@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "bb0690c359f1",
+  "strategy": "manual-commit",
+  "branch": "feat/typescript-migration",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/web/ui/src/components/RunDetail.tsx",
+    "crates/web/ui/src/components/forms/Tabs.tsx",
+    "crates/web/ui/src/components/forms/index.ts",
+    "crates/web/ui/src/hooks/useRpc.ts",
+    "crates/web/ui/src/pages/ChannelsPage.tsx",
+    "crates/web/ui/src/pages/MetricsPage.tsx",
+    "crates/web/ui/src/pages/NodesPage.tsx"
+  ],
+  "sessions": [
+    {
+      "metadata": "/bb/0690c359f1/0/metadata.json",
+      "transcript": "/bb/0690c359f1/0/full.jsonl",
+      "context": "/bb/0690c359f1/0/context.md",
+      "content_hash": "/bb/0690c359f1/0/content_hash.txt",
+      "prompt": "/bb/0690c359f1/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 8352,
+    "cache_creation_tokens": 989192,
+    "cache_read_tokens": 94502279,
+    "output_tokens": 138039,
+    "api_call_count": 380
+  }
+}
