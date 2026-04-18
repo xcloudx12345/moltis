@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "5c924658fd43",
+  "strategy": "manual-commit",
+  "branch": "feat/typescript-migration",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/web/ui/src/pages/ChannelsPage.tsx",
+    "crates/web/ui/src/pages/SettingsPage.tsx"
+  ],
+  "sessions": [
+    {
+      "metadata": "/5c/924658fd43/0/metadata.json",
+      "transcript": "/5c/924658fd43/0/full.jsonl",
+      "context": "/5c/924658fd43/0/context.md",
+      "content_hash": "/5c/924658fd43/0/content_hash.txt",
+      "prompt": "/5c/924658fd43/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 6017,
+    "cache_creation_tokens": 560701,
+    "cache_read_tokens": 46587370,
+    "output_tokens": 88096,
+    "api_call_count": 242
+  }
+}
