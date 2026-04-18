@@ -1,0 +1,41 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "391cf65604dd",
+  "strategy": "manual-commit",
+  "branch": "feat/typescript-migration",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/web/ui/src/helpers.ts",
+    "crates/web/ui/src/main.tsx",
+    "crates/web/ui/src/message-voice.ts",
+    "crates/web/ui/src/onboarding-view.tsx",
+    "crates/web/ui/src/pages/AgentsPage.tsx",
+    "crates/web/ui/src/pages/ChannelsPage.tsx",
+    "crates/web/ui/src/pages/ChatPage.tsx",
+    "crates/web/ui/src/pages/McpPage.tsx",
+    "crates/web/ui/src/pages/ProvidersPage.tsx",
+    "crates/web/ui/src/pages/TerminalPage.tsx",
+    "crates/web/ui/src/sandbox.ts",
+    "crates/web/ui/src/sessions.ts",
+    "crates/web/ui/src/voice-input.ts",
+    "crates/web/ui/src/voice-utils.ts",
+    "crates/web/ui/src/websocket.ts",
+    "crates/web/ui/src/ws-connect.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/39/1cf65604dd/0/metadata.json",
+      "transcript": "/39/1cf65604dd/0/full.jsonl",
+      "context": "/39/1cf65604dd/0/context.md",
+      "content_hash": "/39/1cf65604dd/0/content_hash.txt",
+      "prompt": "/39/1cf65604dd/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 6081,
+    "cache_creation_tokens": 910545,
+    "cache_read_tokens": 62554411,
+    "output_tokens": 105418,
+    "api_call_count": 294
+  }
+}
