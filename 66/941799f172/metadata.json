@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "66941799f172",
+  "strategy": "manual-commit",
+  "branch": "feat/typescript-migration",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/web/src/assets/js/state.js",
+    "crates/web/ui/src/main.tsx",
+    "crates/web/ui/src/types/global.d.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/66/941799f172/0/metadata.json",
+      "transcript": "/66/941799f172/0/full.jsonl",
+      "context": "/66/941799f172/0/context.md",
+      "content_hash": "/66/941799f172/0/content_hash.txt",
+      "prompt": "/66/941799f172/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 8876,
+    "cache_creation_tokens": 3058137,
+    "cache_read_tokens": 372000871,
+    "output_tokens": 224382,
+    "api_call_count": 836
+  }
+}
