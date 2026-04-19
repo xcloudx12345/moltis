@@ -1,0 +1,40 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "c0f96137067d",
+  "strategy": "manual-commit",
+  "branch": "feat/typescript-migration",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/src/assets/dist/chunks/onboarding-view.js",
+    "crates/web/src/assets/dist/chunks/open-modal.js",
+    "crates/web/src/assets/dist/chunks/voice-utils.js",
+    "crates/web/src/assets/dist/chunks/webauthn-helpers.js",
+    "crates/web/src/assets/dist/main.js",
+    "crates/web/src/assets/dist/onboarding.js",
+    "crates/web/src/assets/js/state.js",
+    "crates/web/src/templates/login.html",
+    "crates/web/src/templates/onboarding.html",
+    "crates/web/ui/src/onboarding-view.tsx",
+    "crates/web/ui/src/onboarding/steps/ChannelStep.tsx",
+    "crates/web/ui/src/onboarding/steps/OpenClawImportStep.tsx",
+    "crates/web/ui/src/onboarding/steps/RemoteAccessStep.tsx",
+    "crates/web/ui/src/onboarding/steps/VoiceStep.tsx",
+    "crates/web/ui/src/onboarding/steps/channel-forms.tsx"
+  ],
+  "sessions": [
+    {
+      "metadata": "/c0/f96137067d/0/metadata.json",
+      "transcript": "/c0/f96137067d/0/full.jsonl",
+      "context": "/c0/f96137067d/0/context.md",
+      "content_hash": "/c0/f96137067d/0/content_hash.txt",
+      "prompt": "/c0/f96137067d/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 8762,
+    "cache_creation_tokens": 2991159,
+    "cache_read_tokens": 303103629,
+    "output_tokens": 204261,
+    "api_call_count": 740
+  }
+}
