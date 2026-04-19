@@ -1,0 +1,3 @@
+Invoke the `last30days` skill with the user's arguments: 
+
+Use the skill's canonical pipeline (plan → retrieve → normalize → fuse → rerank → cluster → render). If the user provided no arguments, ask them for a topic before proceeding.
