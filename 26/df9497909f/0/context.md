@@ -1,0 +1,8 @@
+# Session Context
+
+## User Prompts
+
+### Prompt 1
+
+Add a test to catch that issue https://github.com/moltis-org/moltis/issues/798 then fix it. This should never have been committed at all, such issue is not acceptable
+

@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "26df9497909f",
+  "strategy": "manual-commit",
+  "branch": "quaint-accelerator",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/gateway/src/channel_events/commands/dispatch.rs",
+    "crates/slack/src/webhook.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/26/df9497909f/0/metadata.json",
+      "transcript": "/26/df9497909f/0/full.jsonl",
+      "context": "/26/df9497909f/0/context.md",
+      "content_hash": "/26/df9497909f/0/content_hash.txt",
+      "prompt": "/26/df9497909f/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 57,
+    "cache_creation_tokens": 60906,
+    "cache_read_tokens": 2716521,
+    "output_tokens": 10043,
+    "api_call_count": 51
+  }
+}
