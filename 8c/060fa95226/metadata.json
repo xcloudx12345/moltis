@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "8c060fa95226",
+  "strategy": "manual-commit",
+  "branch": "feat/github-header-links",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/src/assets/icons/masks/mask-github-discussion.svg",
+    "crates/web/src/assets/icons/masks/mask-github-issue.svg"
+  ],
+  "sessions": [
+    {
+      "metadata": "/8c/060fa95226/0/metadata.json",
+      "transcript": "/8c/060fa95226/0/full.jsonl",
+      "context": "/8c/060fa95226/0/context.md",
+      "content_hash": "/8c/060fa95226/0/content_hash.txt",
+      "prompt": "/8c/060fa95226/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 19,
+    "cache_creation_tokens": 41631,
+    "cache_read_tokens": 728441,
+    "output_tokens": 6181,
+    "api_call_count": 17
+  }
+}
