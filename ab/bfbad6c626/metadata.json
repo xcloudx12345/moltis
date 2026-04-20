@@ -1,0 +1,60 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "abbfbad6c626",
+  "strategy": "manual-commit",
+  "branch": "honeysuckle-sycamore",
+  "checkpoints_count": 13,
+  "files_touched": [
+    "crates/agents/src/prompt/builder.rs",
+    "crates/agents/src/prompt/tests.rs",
+    "crates/agents/src/prompt/types.rs",
+    "crates/agents/src/silent_turn.rs",
+    "crates/chat/src/lib.rs",
+    "crates/chat/src/memory_tools.rs",
+    "crates/chat/src/prompt.rs",
+    "crates/chat/src/run_with_tools.rs",
+    "crates/chat/src/service/chat_impl/send.rs",
+    "crates/chat/src/streaming.rs",
+    "crates/chat/src/types.rs",
+    "crates/config/src/schema/memory.rs",
+    "crates/config/src/schema/runtime.rs",
+    "crates/config/src/template.rs",
+    "crates/config/src/validate/schema_map.rs",
+    "crates/gateway/src/methods/services/admin.rs",
+    "crates/gateway/src/methods/services/sessions.rs",
+    "crates/gateway/src/server/prepare_core/post_state.rs",
+    "crates/gateway/src/session.rs",
+    "crates/gateway/src/session/summary.rs",
+    "crates/metrics/src/definitions.rs",
+    "crates/skills/src/prompt_gen.rs",
+    "crates/tools/src/skill_tools.rs",
+    "crates/tools/src/skill_tools/crud_write.rs",
+    "crates/web/src/assets/dist/main.js",
+    "crates/web/ui/src/pages/sections/MemorySection.tsx",
+    "deploy/README.md",
+    "deploy/docker-compose.yml",
+    "deploy/moltis.service",
+    "docs/src/SUMMARY.md",
+    "docs/src/configuration-reference.md",
+    "docs/src/configuration.md",
+    "docs/src/deploy-vps.md",
+    "docs/src/skill-tools.md",
+    "plans/2026-04-20-plan-self-improving-agent-loop.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/ab/bfbad6c626/0/metadata.json",
+      "transcript": "/ab/bfbad6c626/0/full.jsonl",
+      "context": "/ab/bfbad6c626/0/context.md",
+      "content_hash": "/ab/bfbad6c626/0/content_hash.txt",
+      "prompt": "/ab/bfbad6c626/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 491,
+    "cache_creation_tokens": 605015,
+    "cache_read_tokens": 130711323,
+    "output_tokens": 117021,
+    "api_call_count": 457
+  }
+}
