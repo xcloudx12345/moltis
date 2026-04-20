@@ -1,0 +1,109 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "8a18c596a572",
+  "session_id": "ed791c89-3b1f-46b9-8e56-2d948f24f0e5",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-20T21:30:02.425292Z",
+  "branch": "stealth-hovercraft",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/ui/src/pages/SkillsPage.tsx"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "5fe3ba766134",
+  "token_usage": {
+    "input_tokens": 618,
+    "cache_creation_tokens": 1702117,
+    "cache_read_tokens": 161773977,
+    "output_tokens": 146936,
+    "api_call_count": 522
+  },
+  "summary": {
+    "intent": "Add 100+ bundled default skills to Moltis (sourced from Hermes Agent and OpenClaw) so agents have rich capabilities out of the box, with category metadata, web UI browsing, and auto-install for missing CLI dependencies.",
+    "outcome": "Successfully implemented a full bundled skills system: embedded 100 skills via include_dir!, added category metadata, web UI with category filters and inline detail view, format fallback for system prompt, auto-install hints on read_skill, and fixed the system prompt discovery path that was missing bundled skills entirely.",
+    "learnings": {
+      "repo": [
+        "Skills discovery for the system prompt happens in crates/chat/src/prompt.rs::discover_skills_if_enabled(), NOT in the gateway services — a separate code path from the web UI skill listing",
+        "The web UI skill listing uses /api/skills in crates/web/src/api.rs which had its own FsSkillDiscoverer, independent of gateway services.rs",
+        "Bundled skills are embedded at crates/skills/src/assets/ using include_dir! macro, mirroring the web UI assets pattern in crates/web/src/assets/",
+        "Skills priority order: Project \u003e Personal \u003e Registry \u003e Plugin \u003e Bundled — user skills always override bundled by name",
+        "The skill_tools.rs was refactored into a module directory (skill_tools/) on main branch during this PR, causing a merge conflict that required porting changes to read_ops.rs",
+        "YAML frontmatter with @ characters (scoped npm packages like @steipete/summarize) must be double-quoted to be valid YAML",
+        "Directory name must match frontmatter 'name' field — 6 skills had mismatches (e.g. trl-fine-tuning/ vs name: fine-tuning-with-trl) causing silent read failures",
+        "Auto-install via tokio::process::Command runs on the gateway host, NOT in the sandbox container where exec runs — fundamental environment mismatch",
+        "Biome formatter uses nightly-2025-11-30 toolchain and has strict indentation rules for multi-line arrow function bodies in JSX",
+        "check-file-size.sh needed exclusions for .moltis/ (installed skills) and crates/skills/src/assets/ (vendored sidecar files)"
+      ],
+      "code": [
+        {
+          "path": "crates/chat/src/prompt.rs",
+          "line": 14,
+          "end_line": 14,
+          "finding": "SkillDiscoverer import was at top level but used inside cfg blocks that had their own local use statements — caused unused import warning"
+        },
+        {
+          "path": "crates/skills/src/bundled.rs",
+          "finding": "BundledSkillStore needs recursive directory traversal for mlops/ which has 3-level nesting (mlops/training/axolotl/SKILL.md)"
+        },
+        {
+          "path": "crates/skills/src/discover.rs",
+          "finding": "CompositeSkillDiscoverer deduplication must use seen.insert() not !seen.contains() to also deduplicate within bundled set itself"
+        },
+        {
+          "path": "crates/tools/src/skill_tools/read_ops.rs",
+          "finding": "Models send file_path: '' (empty string) on first read_skill call causing error — treat empty string same as null/absent"
+        },
+        {
+          "path": "crates/skills/src/requirements.rs",
+          "finding": "npm --ignore-scripts flag breaks scoped package installs (@steipete/summarize) in some npm versions"
+        },
+        {
+          "path": "crates/web/ui/src/pages/SkillsPage.tsx",
+          "line": 924,
+          "end_line": 950,
+          "finding": "Biome requires specific indentation depth for multi-line arrow function bodies — body content needs one extra tab level vs closing brace"
+        },
+        {
+          "path": "crates/gateway/src/services.rs",
+          "finding": "skill_detail handler had no branch for SkillSource::Bundled, causing clicks on bundled skills in web UI to silently fail"
+        }
+      ],
+      "workflow": [
+        "Auto-install of skill CLIs should provide install commands for the agent to run via exec (in sandbox), not execute them server-side on the gateway host",
+        "When porting skills from other repos, check directory name matches frontmatter name field — 6/101 skills had mismatches",
+        "YAML values starting with @ must be quoted: bins: ['@scope/package'] not bins: [@scope/package]",
+        "The godmode/red-teaming skill should not be bundled by default — security concern raised in Greptile review",
+        "Sidecar reference files (unsloth/references/llms-full.md at 16.8k lines, XSD schemas, LaTeX templates) account for ~144k of the 162k added lines",
+        "Greptile auto-review is valuable — caught path normalization missing in bundled sidecar reads and Disable button showing for read-only bundled skills",
+        "When merging main with module restructuring conflicts, accept main's structure entirely then re-apply changes rather than trying to merge line-by-line"
+      ]
+    },
+    "friction": [
+      "system prompt was missing all bundled skills for the entire session because discover_skills_if_enabled() in chat/src/prompt.rs was a completely separate code path from gateway services — not discovered until user reported agent couldn't find bundled skills",
+      "Auto-install ran on gateway host but exec runs in sandbox container — installs appeared to succeed but binary was never available to the agent",
+      "Biome formatter required multiple rounds of fixing (3 separate commits) due to indentation being off by exactly one tab level in arrow function bodies",
+      "sed-based origin metadata injection corrupted some SKILL.md files requiring a full re-copy from source repos",
+      "skill_tools.rs was refactored into a module directory on main branch during the PR, requiring a full re-port of changes to the new read_ops.rs location",
+      "read_skill returning error on file_path: '' caused every model call to fail once then retry with null — two round trips wasted per skill activation",
+      "npm EINVALIDPACKAGENAME error with @steipete/summarize was caused by --ignore-scripts flag interaction with scoped packages, not the @ character itself"
+    ],
+    "open_items": [
+      "plan skill still references .hermes/plans/ directory in its body — should be updated to Moltis equivalent path",
+      "google-workspace skill still references Hermes-managed OAuth2 setup — needs Moltis-specific OAuth instructions",
+      "Annotate ineligible skills in system prompt (e.g. \u003cskill name='summarize' eligible='false'\u003e) so agent knows before trying to use a skill with missing binary",
+      "youtube-content skill could replace summarize skill for YouTube use case — both exist but agent doesn't know to prefer youtube-content for YouTube URLs",
+      "obliteratus skill (removes refusal behaviors from LLMs) is bundled — may warrant security review similar to godmode that was removed",
+      "Skills from openclaw extensions/ directory (Feishu, QQBot platform-specific) were skipped — could be added with platform guards",
+      "Auto-install should detect sandbox vs host environment and route accordingly rather than just providing install hint text"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-20T21:29:17.348629Z",
+    "agent_lines": 4,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 4,
+    "agent_percentage": 100
+  }
+}
