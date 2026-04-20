@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "a8a551755bd0",
+  "strategy": "manual-commit",
+  "branch": "quaint-accelerator",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/gateway/src/channel_events/commands/dispatch.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/a8/a551755bd0/0/metadata.json",
+      "transcript": "/a8/a551755bd0/0/full.jsonl",
+      "context": "/a8/a551755bd0/0/context.md",
+      "content_hash": "/a8/a551755bd0/0/content_hash.txt",
+      "prompt": "/a8/a551755bd0/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 17,
+    "cache_creation_tokens": 5060,
+    "cache_read_tokens": 815290,
+    "output_tokens": 1689,
+    "api_call_count": 11
+  }
+}
