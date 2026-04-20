@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "32e8673f6218",
+  "strategy": "manual-commit",
+  "branch": "honeysuckle-sycamore",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/chat/src/service/chat_impl/send.rs",
+    "crates/gateway/src/session/summary.rs",
+    "crates/tools/src/skill_tools.rs",
+    "crates/tools/src/skill_tools/crud_write.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/32/e8673f6218/0/metadata.json",
+      "transcript": "/32/e8673f6218/0/full.jsonl",
+      "context": "/32/e8673f6218/0/context.md",
+      "content_hash": "/32/e8673f6218/0/content_hash.txt",
+      "prompt": "/32/e8673f6218/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 28,
+    "cache_creation_tokens": 17270,
+    "cache_read_tokens": 9788332,
+    "output_tokens": 4797,
+    "api_call_count": 22
+  }
+}
