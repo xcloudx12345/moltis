@@ -249,6 +249,7 @@ impl LlmProvider for NonStreamingUsageProvider {
                     id: "call_usage_1".into(),
                     name: "echo_tool".into(),
                     arguments: serde_json::json!({"text": "hi"}),
+                    metadata: None,
                 }],
                 usage: Usage {
                     input_tokens: 100,
@@ -357,6 +358,7 @@ impl LlmProvider for ExecSimulatingProvider {
                     id: "call_exec_1".into(),
                     name: "exec".into(),
                     arguments: serde_json::json!({"command": "echo hello"}),
+                    metadata: None,
                 }],
                 usage: Usage {
                     input_tokens: 10,
@@ -818,16 +820,19 @@ async fn test_parallel_tool_execution() {
                 id: "c1".into(),
                 name: "tool_a".into(),
                 arguments: serde_json::json!({}),
+                metadata: None,
             },
             ToolCall {
                 id: "c2".into(),
                 name: "tool_b".into(),
                 arguments: serde_json::json!({}),
+                metadata: None,
             },
             ToolCall {
                 id: "c3".into(),
                 name: "tool_c".into(),
                 arguments: serde_json::json!({}),
+                metadata: None,
             },
         ],
     });
@@ -891,16 +896,19 @@ async fn test_parallel_tool_one_fails() {
                 id: "c1".into(),
                 name: "tool_a".into(),
                 arguments: serde_json::json!({}),
+                metadata: None,
             },
             ToolCall {
                 id: "c2".into(),
                 name: "fail_tool".into(),
                 arguments: serde_json::json!({}),
+                metadata: None,
             },
             ToolCall {
                 id: "c3".into(),
                 name: "tool_c".into(),
                 arguments: serde_json::json!({}),
+                metadata: None,
             },
         ],
     });
@@ -953,16 +961,19 @@ async fn test_parallel_execution_is_concurrent() {
                 id: "c1".into(),
                 name: "slow_a".into(),
                 arguments: serde_json::json!({}),
+                metadata: None,
             },
             ToolCall {
                 id: "c2".into(),
                 name: "slow_b".into(),
                 arguments: serde_json::json!({}),
+                metadata: None,
             },
             ToolCall {
                 id: "c3".into(),
                 name: "slow_c".into(),
                 arguments: serde_json::json!({}),
+                metadata: None,
             },
         ],
     });
