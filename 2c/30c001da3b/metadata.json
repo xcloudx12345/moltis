@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "2c30c001da3b",
+  "strategy": "manual-commit",
+  "branch": "brook-liquid",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/config/src/schema/tools.rs",
+    "crates/config/src/template.rs",
+    "crates/tools/src/sandbox/containers.rs",
+    "crates/tools/src/sandbox/tests/docker_router.rs",
+    "crates/tools/src/sandbox_packages.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/2c/30c001da3b/0/metadata.json",
+      "transcript": "/2c/30c001da3b/0/full.jsonl",
+      "context": "/2c/30c001da3b/0/context.md",
+      "content_hash": "/2c/30c001da3b/0/content_hash.txt",
+      "prompt": "/2c/30c001da3b/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 34,
+    "cache_creation_tokens": 52937,
+    "cache_read_tokens": 1448331,
+    "output_tokens": 8225,
+    "api_call_count": 30
+  }
+}

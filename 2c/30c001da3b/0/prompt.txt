@@ -1,0 +1,11 @@
+The default node is 20, but it should be 22:
+
+ command -v nvm || true; command -v fnm || true; command -v volta || true; node -v; npm -v
+v20.19.4
+9.2.0
+
+Install more recent node version in sandboxes and packages when installing Moltis
+
+---
+
+commit push create a PR
