@@ -1,0 +1,76 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "f307f5c7782b",
+  "session_id": "e9fd1036-eed7-4715-9332-5d3d966e3fdc",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-20T16:01:32.63183Z",
+  "branch": "emerald-match",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/mcp/src/client.rs",
+    "crates/mcp/src/legacy_sse_transport.rs",
+    "crates/mcp/src/lib.rs",
+    "crates/mcp/src/manager.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "e33994208699",
+  "token_usage": {
+    "input_tokens": 48,
+    "cache_creation_tokens": 87753,
+    "cache_read_tokens": 3022947,
+    "output_tokens": 18075,
+    "api_call_count": 42
+  },
+  "summary": {
+    "intent": "Reproduce and fix GitHub issue #278 where Moltis failed to connect to legacy SSE MCP servers (Baserow, NocoDB, lox-mcp) because it skipped the required SSE handshake to discover the session endpoint.",
+    "outcome": "Implemented a new `LegacySseTransport` that performs the correct 2-step handshake (GET SSE endpoint → discover message URL → POST requests), routed `TransportType::Sse` to use it, and shipped with full test coverage. All 4986 workspace tests pass.",
+    "learnings": {
+      "repo": [
+        "The crate previously conflated two distinct MCP transport protocols: 'Streamable HTTP' (direct POST) was used for both `Sse` and `StreamableHttp` transport types — `Sse` was never actually implemented.",
+        "Legacy SSE MCP servers require a GET handshake to the SSE endpoint first; they respond with `event: endpoint` containing a message URL (possibly relative: `/message?sessionId=...`, `?sessionId=...`, or absolute) before accepting POST requests.",
+        "The MCP crate lives at `crates/mcp/` with transport implementations in `src/sse_transport.rs` (Streamable HTTP) and now `src/legacy_sse_transport.rs` (legacy SSE).",
+        "Manager routing for transport types is in `crates/mcp/src/manager.rs`; client connection methods are in `crates/mcp/src/client.rs`.",
+        "The workspace uses a pinned nightly Rust toolchain for formatting; format checks must use that pinned version."
+      ],
+      "code": [
+        {
+          "path": "crates/mcp/src/legacy_sse_transport.rs",
+          "line": 1,
+          "end_line": 468,
+          "finding": "New file implementing `McpTransport` for legacy SSE protocol: GETs SSE endpoint to discover message URL, resolves relative URLs, caches discovered endpoint for subsequent requests."
+        },
+        {
+          "path": "crates/mcp/src/manager.rs",
+          "finding": "Previously had a combined `Sse | StreamableHttp` arm both using `SseTransport`. Split into separate arms: `Sse` → `LegacySseTransport`, `StreamableHttp` → `SseTransport`."
+        },
+        {
+          "path": "crates/mcp/src/client.rs",
+          "finding": "Added `connect_legacy_sse` and `connect_legacy_sse_with_auth` methods to `McpClient`."
+        }
+      ],
+      "workflow": [
+        "Compilation check (`cargo check`) before running tests catches errors faster than `cargo test`.",
+        "Clippy was run after tests and surfaced two issues in the new file that needed fixing before final commit.",
+        "The workflow was: write → compile → test → format → clippy → fix clippy → retest → format verify → commit."
+      ]
+    },
+    "friction": [
+      "Clippy flagged two issues in the newly written `legacy_sse_transport.rs` that required an extra fix-and-retest cycle.",
+      "The root cause required reading through multiple files (sse_transport.rs, client.rs, registry.rs, remote.rs, manager.rs, traits.rs, types.rs, Cargo.toml) before the full picture was clear."
+    ],
+    "open_items": [
+      "The PR was committed and pushed but the transcript ends before confirming the PR was actually created on GitHub.",
+      "No integration test against a real legacy SSE server (Baserow, NocoDB, lox-mcp) — all tests use mocked HTTP servers.",
+      "Relative URL resolution for the discovered endpoint message URL may have edge cases not covered by the three test scenarios (absolute, path-relative, query-only)."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-20T16:01:14.946281Z",
+    "agent_lines": 832,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 832,
+    "agent_percentage": 100
+  }
+}
