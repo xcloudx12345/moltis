@@ -1,0 +1,119 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "80174dca934c",
+  "session_id": "ed791c89-3b1f-46b9-8e56-2d948f24f0e5",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-20T21:58:12.018613Z",
+  "branch": "stealth-hovercraft",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/skills/src/discover.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "a5dc5f70791b",
+  "token_usage": {
+    "input_tokens": 666,
+    "cache_creation_tokens": 1712632,
+    "cache_read_tokens": 179105363,
+    "output_tokens": 151707,
+    "api_call_count": 554
+  },
+  "summary": {
+    "intent": "Add default bundled skills to Moltis by embedding SKILL.md files from Hermes Agent and OpenClaw repositories into the binary, similar to how web UI assets are embedded, so agents have capabilities out-of-the-box without user configuration.",
+    "outcome": "Successfully implemented a bundled skills system with 100 skills across 22 categories embedded in the binary via include_dir!, with category UI filtering/search in the web skills page, inline skill detail panel, auto-install hints for missing CLI dependencies, and all CI checks passing after multiple rounds of clippy/biome/lint fixes.",
+    "learnings": {
+      "repo": [
+        "Skills use SKILL.md files with YAML frontmatter; the `SkillSource` enum requires exhaustive matching in watcher.rs even for no-op variants",
+        "The system prompt skill list is generated in `crates/chat/src/prompt.rs:discover_skills_if_enabled`, not in gateway services — missing this meant bundled skills didn't appear in agent context",
+        "The `/api/skills` web endpoint in `crates/web/src/api.rs` creates its own FsSkillDiscoverer independently of the gateway services discoverer, requiring a separate fix",
+        "Auto-install via `tokio::process::Command` runs on the gateway host process, not inside the sandbox container where `exec` tool calls run — wrong environment for installing CLIs",
+        "The `check-file-size.sh` script enforces a 1500-line limit and needs explicit exclusions for `.moltis/` (installed user skills) and `crates/skills/src/assets/` (vendored sidecar files)",
+        "Hermes and OpenClaw both list all skill names+descriptions in the system prompt (~25 tokens/skill) and load full content on demand via read_skill — no search/filter at prompt generation time",
+        "The `bundled-skills` feature must be forwarded through all crates in the dependency chain: skills → tools → gateway/chat/web, and each crate needs its own feature declaration",
+        "cfg-gated imports (e.g., `use std::sync::Arc` inside `#[cfg(feature = \"bundled-skills\")]`) must be inside the cfg block or they generate unused-import errors when the feature is disabled",
+        "When merging main, `crates/tools/src/skill_tools.rs` had been refactored into a `skill_tools/` module directory, requiring all added code to be ported to `read_ops.rs`"
+      ],
+      "code": [
+        {
+          "path": "crates/skills/src/prompt_gen.rs",
+          "line": 58,
+          "end_line": 58,
+          "finding": "Binary search for compact format fallback used (lo + hi + 1) / 2 — clippy requires .div_ceil(2)"
+        },
+        {
+          "path": "crates/skills/src/bundled.rs",
+          "line": 388,
+          "end_line": 388,
+          "finding": ".map_or(true, String::is_empty) must be .is_none_or(String::is_empty) per clippy::unnecessary_map_or"
+        },
+        {
+          "path": "crates/tools/src/skill_tools/read_ops.rs",
+          "line": 144,
+          "end_line": 150,
+          "finding": "Nested if + if let must be collapsed to `if cond \u0026\u0026 let Some(x) = y` per clippy::collapsible_if (requires nightly let-chains)"
+        },
+        {
+          "path": "crates/skills/src/discover.rs",
+          "line": 3,
+          "end_line": 3,
+          "finding": "Arc import at top level is flagged as unused when bundled-skills feature is off; must be inside the cfg(feature) block"
+        },
+        {
+          "path": "crates/skills/src/requirements.rs",
+          "line": 1,
+          "end_line": 50,
+          "finding": "run_install executes on the gateway host process — wrong environment; replaced with generating install command strings for the agent to run via exec in the sandbox"
+        },
+        {
+          "path": "crates/skills/src/assets/autonomous-ai-agents/claude-code/SKILL.md",
+          "line": 11,
+          "end_line": 11,
+          "finding": "@ character starts a YAML document directive and cannot begin an unquoted scalar; npm scoped packages like @anthropic-ai/claude-code must be quoted in YAML frontmatter"
+        },
+        {
+          "path": "crates/web/src/api.rs",
+          "line": 1,
+          "end_line": 1,
+          "finding": "api_skills_handler creates its own FsSkillDiscoverer — must be updated to CompositeSkillDiscoverer separately from gateway services.rs"
+        }
+      ],
+      "workflow": [
+        "When bulk-injecting YAML frontmatter with sed, @-signs and multi-line values corrupt files — use Python with frontmatter parsing instead",
+        "Biome formatter version mismatches between local and CI can cause repeated fix cycles; apply changes to match the exact indentation output (arrow function bodies in JSX props need one extra tab level)",
+        "PR review with Greptile runs automatically on push; resolve all review threads via GraphQL API to keep PR clean",
+        "local-validate.sh runs biome, tsc, fmt, lint, file-size, zizmor, i18n checks in parallel — run it before pushing to catch issues early",
+        "Directory names for bundled skills must match the frontmatter `name` field exactly; mismatches cause read_skill() lookups to silently fail — caught by the `all_skills_readable` test",
+        "Skills with external CLI requirements should use the `requires:` frontmatter field with `bins:` and `install:` sub-fields; the web UI uses this to show eligibility status"
+      ]
+    },
+    "friction": [
+      "Six rounds of clippy/lint fixes required after initial implementation (div_ceil, map_or→is_none_or, collapsible_if, unused imports, biome indentation x2)",
+      "Biome formatting for JSX arrow functions required multiple rounds because the exact tab depth differs from what auto-formatters produce locally",
+      "npm --ignore-scripts flag broke scoped package (@scope/name) installs; removing it fixed the flag but the package still fails with EINVALIDPACKAGENAME in the sandbox environment",
+      "The system prompt was missing all bundled skills because discover_skills_if_enabled in crates/chat/src/prompt.rs was a separate code path not updated alongside gateway services",
+      "The /api/skills endpoint in the web crate was a third separate discoverer that also needed updating — not obvious from the gateway changes",
+      "Merge conflict with skill_tools.rs→skill_tools/ module split required manually re-applying all bundled skill changes to the new read_ops.rs file",
+      "Python sed for bulk YAML frontmatter injection corrupted files (truncated content); required re-copying from Hermes and using a Python script with proper frontmatter parsing",
+      "Godmode (red-teaming) skill was initially bundled and had to be removed after Greptile security review flagged it",
+      "The agent model sends file_path=\"\" (empty string) on first read_skill call, causing an error before retrying with null — required server-side normalization"
+    ],
+    "open_items": [
+      "Auto-install architecture: install commands are now returned as hints for the agent to run, but there's no mechanism to actually execute them automatically in the right environment (sandbox)",
+      "The `plan` skill body still references `.hermes/plans/` directory instead of a Moltis equivalent",
+      "Two overlapping Google Workspace skills exist: `google-workspace` (Hermes-specific OAuth setup) and `gog` (Google Workspace CLI) — should be consolidated",
+      "The `obliteratus` skill (remove refusal behaviors from open-weight LLMs) is included in bundled skills — may warrant security review for default bundling",
+      "Skills with missing binaries still appear in the system prompt without any eligibility annotation — consider adding `eligible=\"false\"` attribute to `\u003cskill\u003e` tags in the prompt for skills with unmet requirements",
+      "The `summarize` skill's npm package (@steipete/summarize) consistently fails to install in the sandbox environment even after removing --ignore-scripts",
+      "Format fallback (compact mode) in prompt_gen triggers around 300-400 skills; no monitoring for when the current 100-skill set approaches the budget"
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-20T21:56:59.521198Z",
+    "agent_lines": 0,
+    "human_added": 0,
+    "human_modified": 4,
+    "human_removed": 0,
+    "total_committed": 0,
+    "agent_percentage": 0
+  }
+}
