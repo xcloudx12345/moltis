@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "9f2b72e27eb8",
+  "strategy": "manual-commit",
+  "branch": "emerald-match",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/mcp/src/legacy_sse_transport.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/9f/2b72e27eb8/0/metadata.json",
+      "transcript": "/9f/2b72e27eb8/0/full.jsonl",
+      "context": "/9f/2b72e27eb8/0/context.md",
+      "content_hash": "/9f/2b72e27eb8/0/content_hash.txt",
+      "prompt": "/9f/2b72e27eb8/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 27,
+    "cache_creation_tokens": 20510,
+    "cache_read_tokens": 2757130,
+    "output_tokens": 6857,
+    "api_call_count": 26
+  }
+}
