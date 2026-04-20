@@ -1,0 +1,66 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "d6d10899150c",
+  "session_id": "ed791c89-3b1f-46b9-8e56-2d948f24f0e5",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-20T13:00:41.2943Z",
+  "branch": "stealth-hovercraft",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/skills/src/bundled.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "cc276e9aa34e",
+  "checkpoint_transcript_start": 747,
+  "transcript_lines_at_start": 747,
+  "token_usage": {
+    "input_tokens": 47,
+    "cache_creation_tokens": 23908,
+    "cache_read_tokens": 7509874,
+    "output_tokens": 10895,
+    "api_call_count": 45
+  },
+  "summary": {
+    "intent": "Bulk-import all 67 Hermes skills into Moltis as bundled assets, injecting origin metadata and updating the skill discovery code to handle arbitrarily nested directory structures.",
+    "outcome": "69 skills across 18 categories successfully copied, origin metadata injected, discovery code made recursive, and all tests passing — committed and pushed as part of PR #797.",
+    "learnings": {
+      "repo": [
+        "Hermes skills live in a local clone and can be bulk-copied into Moltis bundled assets; `hermes-agent` and `native-mcp` are Hermes-internal and should be excluded.",
+        "The `mlops` skill category has 3+ levels of nesting (e.g. mlops/training/axolotl/SKILL.md), requiring recursive discovery rather than a flat or single-level scan.",
+        "Category-level DESCRIPTION.md files exist in Hermes and must be removed after copying — they are not valid skill files for Moltis.",
+        "Excluding `native-mcp` leaves the `mcp/` category directory empty; it must be explicitly removed after the copy.",
+        "All 69 SKILL.md frontmatter names passed Moltis validation without any transformation needed."
+      ],
+      "code": [
+        {
+          "path": "crates/skills/src/bundled.rs",
+          "finding": "Both FS and embedded skill discovery functions (list, find_skill_dir) were updated from flat/single-level to fully recursive to support arbitrarily nested category structures like mlops/training/axolotl."
+        }
+      ],
+      "workflow": [
+        "Using `sed` to inject YAML frontmatter fields into multi-line files is fragile and can silently truncate file content; a Python script reading/writing the full file is the reliable approach.",
+        "When a bulk sed operation corrupts files, re-copying from the source and rerunning the correct script is faster than attempting in-place repair.",
+        "Verifying both a top-level and a deeply nested skill after metadata injection confirms the script handled all directory depths correctly."
+      ]
+    },
+    "friction": [
+      "Initial `sed` command to inject `origin:` metadata corrupted SKILL.md files by truncating content, requiring a full re-copy from Hermes before retrying with Python.",
+      "Nested mlops sub-categories (3 levels deep) were not anticipated; the discovery code had to be refactored before the bulk copy could work correctly.",
+      "The manually created `arxiv` skill had to be deleted before copying so it would be replaced by the canonical Hermes version."
+    ],
+    "open_items": [
+      "The `dogfood` skill (QA testing) was copied in — worth confirming it is genuinely useful in the Moltis context and not Hermes-specific in practice.",
+      "No automated check prevents Hermes-internal skills (`hermes-agent`, `native-mcp`) from being accidentally re-added in future sync operations; a blocklist or sync script would prevent recurrence.",
+      "Origin metadata references a specific Hermes commit SHA — a periodic resync process to keep bundled skills up to date with upstream Hermes changes is not yet defined."
+    ]
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-20T13:00:04.283274Z",
+    "agent_lines": 66,
+    "human_added": 162218,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 162284,
+    "agent_percentage": 0.040669443691306595
+  }
+}
