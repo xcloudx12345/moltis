@@ -400,6 +400,33 @@ impl ApprovalManager {
             debug!(command, pattern = %desc, "dangerous command allowed by explicit allowlist");
         }
 
+        // Safety floor layer 2: catch dangerous env-var prefixes that the
+        // anchored regex missed (e.g. chained assignments like
+        // `FOO=bar LD_PRELOAD=/evil.so cat`). Same deny/escalate logic as
+        // the regex layer above (moltis-org/moltis#814).
+        if !command.trim().is_empty() && extract_first_bin(command).is_none() {
+            if !matches_allowlist(command, &self.allowlist) {
+                if self.mode == ApprovalMode::Off {
+                    warn!(
+                        command,
+                        "dangerous env-var prefix denied in approval_mode=off",
+                    );
+                    return Err(Error::message(format!(
+                        "exec denied: dangerous env-var prefix (approval_mode=off): {command}"
+                    )));
+                }
+                warn!(
+                    command,
+                    "dangerous env-var prefix detected, forcing approval"
+                );
+                return Ok(ApprovalAction::NeedsApproval);
+            }
+            debug!(
+                command,
+                "dangerous env-var prefix allowed by explicit allowlist"
+            );
+        }
+
         match self.security_level {
             SecurityLevel::Deny => {
                 return Err(Error::message("exec denied: security level is 'deny'"));
@@ -1236,6 +1263,34 @@ mod tests {
             err.to_string().contains("dangerous"),
             "unexpected error message: {err}"
         );
+    }
+
+    #[tokio::test]
+    async fn test_chained_env_injection_denied_in_off_empty_allowlist() {
+        // Regression: chained assignments must be caught by Layer 2 safety
+        // floor even when Off+empty-allowlist short-circuits before mode check.
+        let mgr = ApprovalManager {
+            mode: ApprovalMode::Off,
+            ..Default::default()
+        };
+        let err = mgr
+            .check_command("FOO=bar LD_PRELOAD=/evil.so cat /etc/passwd")
+            .await
+            .expect_err("expected denial for chained env injection in off mode");
+        assert!(
+            err.to_string().contains("dangerous env-var prefix"),
+            "unexpected error message: {err}"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_chained_env_injection_needs_approval_on_miss() {
+        let mgr = ApprovalManager::default();
+        let action = mgr
+            .check_command("FOO=bar LD_PRELOAD=/evil.so cat /etc/passwd")
+            .await
+            .unwrap();
+        assert_eq!(action, ApprovalAction::NeedsApproval);
     }
 
     #[tokio::test]
