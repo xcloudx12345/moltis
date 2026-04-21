@@ -214,30 +214,35 @@ static DANGEROUS_PATTERN_DEFS: &[(&str, &str)] = &[
     ),
     // Inline environment variable injection (moltis-org/moltis#814).
     //
-    // Anchored with `(?:^|\s)` so patterns only fire at command-start
-    // positions, not inside grep/sed arguments like `grep 'PATH=' file`.
-    // Requires `=\S` (non-empty value) to further reduce false positives.
-    // Subshell injection (`sh -c "LD_PRELOAD=..."`) is covered by the fact
-    // that `sh`/`bash` are not safe bins and require approval separately.
+    // Anchored with `(?:^|[;&|]\s*)` so patterns only fire at command-start
+    // positions (start of string, after `;`, `&`, `|`), not inside grep/sed
+    // arguments like `grep PATH=/usr/bin .env`. Requires `=\S` (non-empty
+    // value) to further reduce false positives.
+    //
+    // Chained assignments (`FOO=bar PATH=/evil cat`) are NOT caught here
+    // because there is no separator between them — Layer 2 in
+    // `extract_first_bin` handles that case instead. Subshell injection
+    // (`sh -c "LD_PRELOAD=..."`) is covered by `sh`/`bash` not being safe
+    // bins and requiring approval separately.
     (
-        r"(?i)(?:^|\s)(LD_PRELOAD|LD_LIBRARY_PATH|LD_AUDIT|LD_CONFIG)=\S",
+        r"(?i)(?:^|[;&|]\s*)(LD_PRELOAD|LD_LIBRARY_PATH|LD_AUDIT|LD_CONFIG)=\S",
         "dangerous dynamic linker env var",
     ),
     (
-        r"(?i)(?:^|\s)(DYLD_INSERT_LIBRARIES|DYLD_LIBRARY_PATH|DYLD_FRAMEWORK_PATH)=\S",
+        r"(?i)(?:^|[;&|]\s*)(DYLD_INSERT_LIBRARIES|DYLD_LIBRARY_PATH|DYLD_FRAMEWORK_PATH)=\S",
         "dangerous macOS dynamic linker env var",
     ),
-    (r"(?i)(?:^|\s)PATH=\S", "PATH override"),
+    (r"(?i)(?:^|[;&|]\s*)PATH=\S", "PATH override"),
     (
-        r"(?i)(?:^|\s)(PYTHONPATH|PYTHONSTARTUP|NODE_OPTIONS|NODE_PATH|JAVA_TOOL_OPTIONS|_JAVA_OPTIONS|JDK_JAVA_OPTIONS)=\S",
+        r"(?i)(?:^|[;&|]\s*)(PYTHONPATH|PYTHONSTARTUP|NODE_OPTIONS|NODE_PATH|JAVA_TOOL_OPTIONS|_JAVA_OPTIONS|JDK_JAVA_OPTIONS)=\S",
         "dangerous language runtime env var",
     ),
     (
-        r"(?i)(?:^|\s)(PERL5OPT|PERL5LIB|RUBYOPT|RUBYLIB|CLASSPATH)=\S",
+        r"(?i)(?:^|[;&|]\s*)(PERL5OPT|PERL5LIB|RUBYOPT|RUBYLIB|CLASSPATH)=\S",
         "dangerous language runtime env var",
     ),
     (
-        r"(?i)(?:^|\s)(BASH_ENV|ZDOTDIR)=\S",
+        r"(?i)(?:^|[;&|]\s*)(BASH_ENV|ZDOTDIR)=\S",
         "dangerous shell startup env var",
     ),
 ];
@@ -1078,7 +1083,7 @@ mod tests {
     #[test]
     fn test_no_false_positive_on_grep_sed_arguments() {
         // Regression test: env var names inside grep/sed/awk arguments must
-        // NOT trigger the regex. The (?:^|\s) anchor prevents this.
+        // NOT trigger the regex. The (?:^|[;&|]\s*) anchor prevents this.
         assert!(check_dangerous("grep 'PATH=' ~/.bashrc").is_none());
         assert!(check_dangerous(r#"grep "PATH=" .env"#).is_none());
         assert!(check_dangerous("sed -n '/PATH=/p' .env").is_none());
@@ -1087,6 +1092,10 @@ mod tests {
         assert!(check_dangerous("grep 'NODE_OPTIONS=' .env").is_none());
         // Unquoted grep with empty value — also benign.
         assert!(check_dangerous("grep PATH= file").is_none());
+        // Unquoted grep with value — also benign (the `PATH=` is an argument,
+        // not a shell assignment).
+        assert!(check_dangerous("grep PATH=/usr/bin .env").is_none());
+        assert!(check_dangerous("grep LD_PRELOAD=/path config.txt").is_none());
     }
 
     // Layer 2: extract_first_bin semantic check
