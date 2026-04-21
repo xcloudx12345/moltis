@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "4310ede1d8c4",
+  "session_id": "a8e05ae9-cda8-4471-9672-6dc4c0fd997d",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-21T14:11:41.557741Z",
+  "branch": "similar-papyrus",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/tools/src/approval.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "41e34afa9e60",
+  "checkpoint_transcript_start": 342,
+  "transcript_lines_at_start": 342,
+  "token_usage": {
+    "input_tokens": 26,
+    "cache_creation_tokens": 9723,
+    "cache_read_tokens": 3082514,
+    "output_tokens": 5314,
+    "api_call_count": 26
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-21T14:11:39.484924Z",
+    "agent_lines": 15,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 15,
+    "agent_percentage": 100
+  }
+}
