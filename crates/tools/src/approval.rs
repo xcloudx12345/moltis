@@ -210,26 +210,32 @@ static DANGEROUS_PATTERN_DEFS: &[(&str, &str)] = &[
         r"chmod\s+(-\S*R\S*\s+)*777\s+/",
         "recursive chmod 777 on root",
     ),
-    // Inline environment variable injection (moltis-org/moltis#814)
+    // Inline environment variable injection (moltis-org/moltis#814).
+    //
+    // Anchored with `(?:^|\s)` so patterns only fire at command-start
+    // positions, not inside grep/sed arguments like `grep 'PATH=' file`.
+    // Requires `=\S` (non-empty value) to further reduce false positives.
+    // Subshell injection (`sh -c "LD_PRELOAD=..."`) is covered by the fact
+    // that `sh`/`bash` are not safe bins and require approval separately.
     (
-        r"(?i)\b(LD_PRELOAD|LD_LIBRARY_PATH|LD_AUDIT|LD_CONFIG)=",
+        r"(?i)(?:^|\s)(LD_PRELOAD|LD_LIBRARY_PATH|LD_AUDIT|LD_CONFIG)=\S",
         "dangerous dynamic linker env var",
     ),
     (
-        r"(?i)\b(DYLD_INSERT_LIBRARIES|DYLD_LIBRARY_PATH|DYLD_FRAMEWORK_PATH)=",
+        r"(?i)(?:^|\s)(DYLD_INSERT_LIBRARIES|DYLD_LIBRARY_PATH|DYLD_FRAMEWORK_PATH)=\S",
         "dangerous macOS dynamic linker env var",
     ),
-    (r"(?i)\bPATH=", "PATH override"),
+    (r"(?i)(?:^|\s)PATH=\S", "PATH override"),
     (
-        r"(?i)\b(PYTHONPATH|PYTHONSTARTUP|NODE_OPTIONS|NODE_PATH|JAVA_TOOL_OPTIONS)=",
+        r"(?i)(?:^|\s)(PYTHONPATH|PYTHONSTARTUP|NODE_OPTIONS|NODE_PATH|JAVA_TOOL_OPTIONS)=\S",
         "dangerous language runtime env var",
     ),
     (
-        r"(?i)\b(PERL5OPT|PERL5LIB|RUBYOPT|RUBYLIB|CLASSPATH)=",
+        r"(?i)(?:^|\s)(PERL5OPT|PERL5LIB|RUBYOPT|RUBYLIB|CLASSPATH)=\S",
         "dangerous language runtime env var",
     ),
     (
-        r"(?i)\b(BASH_ENV|ZDOTDIR)=",
+        r"(?i)(?:^|\s)(BASH_ENV|ZDOTDIR)=\S",
         "dangerous shell startup env var",
     ),
 ];
@@ -258,8 +264,10 @@ pub fn check_dangerous(command: &str) -> Option<&'static str> {
 ///
 /// **Limitation:** Quoted tokens like `"LD_PRELOAD=/evil.so" cat /file` will
 /// not be caught here because `split_once('=')` sees key `"LD_PRELOAD` (with
-/// a leading `"`). The regex layer (Layer 1 in `check_dangerous`) still
-/// matches the raw string, so defence-in-depth holds.
+/// a leading `"`). The anchored regex layer (Layer 1) also does not match
+/// this case. In practice this is not exploitable: shells treat the quoted
+/// string as a command name, not an assignment. Subshell wrappers like
+/// `sh -c "LD_PRELOAD=..."` are covered by `sh` not being a safe bin.
 fn extract_first_bin(command: &str) -> Option<&str> {
     let trimmed = command.trim();
     // Skip env var assignments at the start (e.g. `FOO=bar cmd`).
@@ -1012,11 +1020,23 @@ mod tests {
     }
 
     #[test]
-    fn test_dangerous_env_var_in_subshell() {
-        // Regex must catch env vars even inside subshell strings.
+    fn test_dangerous_env_var_in_subshell_not_caught_by_regex() {
+        // Anchored regex patterns intentionally do NOT match env vars inside
+        // quoted subshell arguments. This is safe because sh/bash are not safe
+        // bins and require approval via the mode/allowlist path.
+        assert!(check_dangerous(r#"sh -c "LD_PRELOAD=/evil.so cat /etc/passwd""#).is_none());
+    }
+
+    #[test]
+    fn test_dangerous_env_var_after_separator() {
+        // Patterns still fire after command separators.
         assert_eq!(
-            check_dangerous(r#"sh -c "LD_PRELOAD=/evil.so cat /etc/passwd""#),
+            check_dangerous("echo hi; LD_PRELOAD=/evil.so cat /file"),
             Some("dangerous dynamic linker env var"),
+        );
+        assert_eq!(
+            check_dangerous("true && PATH=/evil:$PATH cmd"),
+            Some("PATH override"),
         );
     }
 
@@ -1039,6 +1059,20 @@ mod tests {
         // Bare ENV is too noisy (ENV=test, ENV=production) — not flagged.
         assert!(check_dangerous("ENV=test rake test").is_none());
         assert!(check_dangerous("ENV=production ./server").is_none());
+    }
+
+    #[test]
+    fn test_no_false_positive_on_grep_sed_arguments() {
+        // Regression test: env var names inside grep/sed/awk arguments must
+        // NOT trigger the regex. The (?:^|\s) anchor prevents this.
+        assert!(check_dangerous("grep 'PATH=' ~/.bashrc").is_none());
+        assert!(check_dangerous(r#"grep "PATH=" .env"#).is_none());
+        assert!(check_dangerous("sed -n '/PATH=/p' .env").is_none());
+        assert!(check_dangerous("awk -F'PATH=' '{print $2}' file").is_none());
+        assert!(check_dangerous("grep 'LD_PRELOAD=' config.txt").is_none());
+        assert!(check_dangerous("grep 'NODE_OPTIONS=' .env").is_none());
+        // Unquoted grep with empty value — also benign.
+        assert!(check_dangerous("grep PATH= file").is_none());
     }
 
     // Layer 2: extract_first_bin semantic check
@@ -1081,17 +1115,16 @@ mod tests {
     #[test]
     fn test_extract_first_bin_quoted_token_limitation() {
         // Quoted env-var assignments bypass Layer 2 because split_once('=')
-        // sees key `"LD_PRELOAD` (with leading `"`). Layer 1 regex still
-        // catches the raw string, so defence-in-depth holds.
+        // sees key `"LD_PRELOAD` (with leading `"`). The anchored regex
+        // (Layer 1) also does not match here because `"` is not whitespace.
+        // In practice, shells interpret `"LD_PRELOAD=/evil.so"` as a command
+        // name, not an env-var assignment, so this is not an exploitable
+        // vector. And sh/bash subshell wrappers require approval separately.
         assert_eq!(
             extract_first_bin(r#""LD_PRELOAD=/evil.so" cat /file"#),
             Some("cat"),
         );
-        // But Layer 1 catches it regardless:
-        assert_eq!(
-            check_dangerous(r#""LD_PRELOAD=/evil.so" cat /file"#),
-            Some("dangerous dynamic linker env var"),
-        );
+        assert!(check_dangerous(r#""LD_PRELOAD=/evil.so" cat /file"#).is_none());
     }
 
     #[test]
@@ -1185,6 +1218,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_env_injection_in_subshell_needs_approval() {
+        // Regex doesn't match inside quotes, but sh is not a safe bin so
+        // the mode check (OnMiss) still requires approval.
         let mgr = ApprovalManager::default();
         let action = mgr
             .check_command(r#"sh -c "LD_PRELOAD=/evil.so cat /etc/passwd""#)
