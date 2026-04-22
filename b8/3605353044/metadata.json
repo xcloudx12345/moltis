@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "b83605353044",
+  "strategy": "manual-commit",
+  "branch": "guiltless-wander",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/ui/src/onboarding/steps/OpenClawImportStep.tsx",
+    "crates/web/ui/src/pages/sections/OpenClawImportSection.tsx"
+  ],
+  "sessions": [
+    {
+      "metadata": "/b8/3605353044/0/metadata.json",
+      "transcript": "/b8/3605353044/0/full.jsonl",
+      "context": "/b8/3605353044/0/context.md",
+      "content_hash": "/b8/3605353044/0/content_hash.txt",
+      "prompt": "/b8/3605353044/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 13,
+    "cache_creation_tokens": 14737,
+    "cache_read_tokens": 2907928,
+    "output_tokens": 3896,
+    "api_call_count": 11
+  }
+}
