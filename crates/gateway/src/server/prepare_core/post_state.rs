@@ -859,7 +859,7 @@ pub(super) async fn complete_startup(
         // ── Code index tools ─────────────────────────────────────────────
         #[cfg(feature = "qmd")]
         {
-            use crate::code_index_tools::ProjectAwareCodeIndexTool;
+            use crate::project_aware_tools::ProjectAwareCodeIndexTool;
             moltis_code_index::tools::register_tools_wrapped(
                 &mut tool_registry,
                 code_index_for_tools,
@@ -869,7 +869,7 @@ pub(super) async fn complete_startup(
 
         #[cfg(all(feature = "code-index-builtin", not(feature = "qmd")))]
         {
-            use crate::code_index_tools::ProjectAwareCodeIndexTool;
+            use crate::project_aware_tools::ProjectAwareCodeIndexTool;
             moltis_code_index::tools::register_tools_wrapped(
                 &mut tool_registry,
                 code_index_for_tools_builtin,
