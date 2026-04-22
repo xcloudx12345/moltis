@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "783c8e3f7c41",
+  "strategy": "manual-commit",
+  "branch": "precious-sunflower",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/chat/src/channels.rs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/78/3c8e3f7c41/0/metadata.json",
+      "transcript": "/78/3c8e3f7c41/0/full.jsonl",
+      "context": "/78/3c8e3f7c41/0/context.md",
+      "content_hash": "/78/3c8e3f7c41/0/content_hash.txt",
+      "prompt": "/78/3c8e3f7c41/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 10,
+    "cache_creation_tokens": 6294,
+    "cache_read_tokens": 859729,
+    "output_tokens": 1631,
+    "api_call_count": 8
+  }
+}
