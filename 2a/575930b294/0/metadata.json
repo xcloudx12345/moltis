@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "2a575930b294",
+  "session_id": "3402de72-4be0-4113-b050-431f799752ad",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-22T10:38:51.16442Z",
+  "branch": "precious-sunflower",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "crates/chat/src/channels.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "0f0e5feac2ec",
+  "token_usage": {
+    "input_tokens": 34,
+    "cache_creation_tokens": 107083,
+    "cache_read_tokens": 2231901,
+    "output_tokens": 6042,
+    "api_call_count": 30
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-22T10:38:46.262688Z",
+    "agent_lines": 33,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 33,
+    "agent_percentage": 100
+  }
+}
