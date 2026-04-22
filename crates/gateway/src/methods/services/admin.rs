@@ -4,6 +4,9 @@ use super::*;
 use crate::methods::voice;
 
 #[cfg(any(feature = "qmd", feature = "code-index-builtin"))]
+use std::sync::Arc;
+
+#[cfg(any(feature = "qmd", feature = "code-index-builtin"))]
 use tracing::info;
 
 pub(super) fn register(reg: &mut MethodRegistry) {
@@ -145,14 +148,13 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                         .and_then(|v| v.as_str())
                         .map(|s| s.to_string());
 
-                    let new_enabled = ctx
+                    let new_enabled: Option<bool> = ctx
                         .params
                         .get("code_index_enabled")
-                        .and_then(|v| v.as_bool())
-                        .unwrap_or(true);
+                        .and_then(|v| v.as_bool());
 
-                    if let Some(ref pid) = project_id {
-                        if new_enabled {
+                    if new_enabled == Some(true) {
+                        if let Some(ref pid) = project_id {
                             // Fetch old project to check previous state
                             if let Ok(Some(old)) = ctx
                                 .state
@@ -166,7 +168,7 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                                     .and_then(|v| v.as_bool())
                                     .unwrap_or(true);
 
-                                if !old_enabled && new_enabled {
+                                if !old_enabled {
                                     let dir = old
                                         .get("directory")
                                         .and_then(|v| v.as_str())
@@ -177,11 +179,20 @@ pub(super) fn register(reg: &mut MethodRegistry) {
                                             project_id = %pid,
                                             "code-index: re-indexing project (enabled by user)"
                                         );
-                                        let _ = ctx
-                                            .state
-                                            .code_index
-                                            .index_project(pid, true, &project_dir)
-                                            .await;
+                                        let code_index = Arc::clone(&ctx.state.code_index);
+                                        let pid_owned = pid.clone();
+                                        tokio::spawn(async move {
+                                            if let Err(e) = code_index
+                                                .index_project(&pid_owned, true, &project_dir)
+                                                .await
+                                            {
+                                                tracing::warn!(
+                                                    project_id = %pid_owned,
+                                                    error = %e,
+                                                    "code-index: background re-index failed"
+                                                );
+                                            }
+                                        });
                                     }
                                 }
                             }

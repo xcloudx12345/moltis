@@ -58,7 +58,7 @@ test.describe("Projects page", () => {
 		await expect(page.getByText(/enable code indexing/i)).toBeVisible();
 
 		// Verify the checkbox is present and checked by default
-		const checkbox = page.locator('input[type="checkbox"]').last();
+		const checkbox = page.getByRole("checkbox", { name: /enable code indexing/i });
 		await expect(checkbox).toBeChecked();
 
 		expect(pageErrors).toEqual([]);

@@ -23,7 +23,6 @@ pub mod channel_webhook_dedup;
 pub mod channel_webhook_middleware;
 pub mod channel_webhook_rate_limit;
 pub mod chat;
-pub mod project_aware_tools;
 pub mod chat_error;
 pub mod cron;
 #[cfg(feature = "local-llm")]
@@ -41,6 +40,7 @@ pub mod nodes;
 pub mod onboarding;
 pub mod pairing;
 pub mod project;
+pub mod project_aware_tools;
 pub mod provider_setup;
 #[cfg(feature = "push-notifications")]
 pub mod push;
