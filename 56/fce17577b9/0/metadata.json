@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "56fce17577b9",
+  "session_id": "a0673b1c-7749-40b0-bbcb-c559f23c5cba",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-22T10:53:24.62342Z",
+  "branch": "pointy-bike",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "crates/providers/tests/fireworks_integration.rs"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "34322d2f61f9",
+  "token_usage": {
+    "input_tokens": 39,
+    "cache_creation_tokens": 43938,
+    "cache_read_tokens": 1061529,
+    "output_tokens": 5542,
+    "api_call_count": 25
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-22T10:53:19.016643Z",
+    "agent_lines": 10,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 10,
+    "agent_percentage": 100
+  }
+}
