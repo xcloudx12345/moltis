@@ -44,7 +44,7 @@ pub use {
     schema::{
         AgentIdentity, AgentMemoryWriteMode, AgentPreset, AgentsConfig, AuthConfig, CacheRetention,
         CalDavAccountConfig, CalDavConfig, ChannelToolPolicyOverride, ChannelsConfig, ChatConfig,
-        CompactionConfig, CompactionMode, GeoLocation, GroupToolPolicy, MemoryBackend,
+        CodeIndexTomlConfig, CompactionConfig, CompactionMode, GeoLocation, GroupToolPolicy, MemoryBackend,
         MemoryCitationsMode, MemoryProvider, MemoryScope, MemorySearchMergeStrategy, MemoryStyle,
         MessageQueueMode, MoltisConfig, NgrokConfig, PresetMemoryConfig, PresetToolPolicy,
         PromptMemoryMode, ResolvedIdentity, SessionAccessPolicyConfig, SessionExportMode, Timezone,
@@ -52,5 +52,6 @@ pub use {
         VoiceConfig, VoiceElevenLabsConfig, VoiceOpenAiConfig, VoiceSttConfig, VoiceSttProvider,
         VoiceTtsConfig, VoiceWhisperConfig, WireApi,
     },
+    schema::parse_byte_size,
     validate::{Diagnostic, Severity, ValidationResult},
 };
