@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "b155cb9284cf",
+  "session_id": "4ffe75b5-1dbf-4492-b766-b64701e3b735",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-22T09:44:16.962353Z",
+  "branch": "guiltless-wander",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/ui/src/pages/ChannelsPage.tsx"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "4fb131732bd0",
+  "checkpoint_transcript_start": 1144,
+  "transcript_lines_at_start": 1144,
+  "token_usage": {
+    "input_tokens": 7,
+    "cache_creation_tokens": 16788,
+    "cache_read_tokens": 1532196,
+    "output_tokens": 1690,
+    "api_call_count": 7
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-22T09:44:14.401513Z",
+    "agent_lines": 14,
+    "human_added": 38,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 52,
+    "agent_percentage": 26.923076923076923
+  }
+}
