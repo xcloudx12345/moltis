@@ -14449,8 +14449,8 @@ function ProjectEditForm(props) {
       /* @__PURE__ */ u("input", { ref: wtRef, type: "checkbox", checked: p.auto_worktree }),
       /* @__PURE__ */ u("span", { className: "text-xs text-[var(--text)]", children: t("projects:editForm.autoWorktree") })
     ] }),
-    /* @__PURE__ */ u("div", { style: { marginBottom: "10px", display: "flex", alignItems: "center", gap: "8px" }, children: [
-      /* @__PURE__ */ u("input", { ref: indexRef, type: "checkbox", checked: p.code_index_enabled !== false }),
+    /* @__PURE__ */ u("label", { style: { marginBottom: "10px", display: "flex", alignItems: "center", gap: "8px" }, children: [
+      /* @__PURE__ */ u("input", { ref: indexRef, type: "checkbox", defaultChecked: p.code_index_enabled !== false }),
       /* @__PURE__ */ u("span", { className: "text-xs text-[var(--text)]", children: t("projects:editForm.codeIndex") })
     ] }),
     /* @__PURE__ */ u("div", { style: { display: "flex", gap: "8px" }, children: [
