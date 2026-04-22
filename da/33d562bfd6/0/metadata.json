@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "da33d562bfd6",
+  "session_id": "4ffe75b5-1dbf-4492-b766-b64701e3b735",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-22T09:43:10.549771Z",
+  "branch": "guiltless-wander",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/ui/src/pages/sections/RemoteAccessSection.tsx"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "4fb131732bd0",
+  "checkpoint_transcript_start": 1095,
+  "transcript_lines_at_start": 1095,
+  "token_usage": {
+    "input_tokens": 11,
+    "cache_creation_tokens": 11628,
+    "cache_read_tokens": 1830186,
+    "output_tokens": 2019,
+    "api_call_count": 9
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-22T09:43:08.076458Z",
+    "agent_lines": 14,
+    "human_added": 10,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 24,
+    "agent_percentage": 58.333333333333336
+  }
+}
