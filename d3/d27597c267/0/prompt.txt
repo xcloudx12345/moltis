@@ -1,0 +1,114 @@
+Now that moltis comes with tons of skills, it might be too much. Add something about skills in the onboarding for people to choose to enable them or not (the bundled ones) and same in settings / skills.
+
+---
+
+commit push create a PR
+
+---
+
+I think the settings/skills page is getting too long now, could you add tabs for skills categories, repositories, skills list. Default should be skills list.
+
+---
+
+In the tab name, add the number of skills, the number of enabled categories, the number of added repositories
+
+---
+
+Now you have tabs, you can use tabs to separate tailscale and ngrok in https://localhost:52791/settings/remote-access to make the page better
+
+---
+
+Add tabs for https://localhost:52791/settings/ssh for ssh keys and targets
+
+You can also remove this from tools, the settings navigation is enough:
+
+<div class="rounded border border-[var(--border)] bg-[var(--surface2)] p-3 max-w-[1100px]"><div class="text-xs text-[var(--muted)] leading-relaxed">Use this as the operator view of what the model can currently reach. For setup changes, jump straight to the relevant control surface.</div><div class="mt-3 flex gap-2 flex-wrap"><button type="button" class="provider-btn provider-btn-secondary">LLMs</button><button type="button" class="provider-btn provider-btn-secondary">MCP</button><button type="button" class="provider-btn provider-btn-secondary">Skills</button><button type="button" class="provider-btn provider-btn-secondary">Nodes</button><button type="button" class="provider-btn provider-btn-secondary">SSH</button></div></div>
+
+---
+
+[Request interrupted by user]
+
+---
+
+Add tabs for https://localhost:52791/settings/ssh for ssh keys and targets
+
+You can also remove this from tools, the settings navigation is enough:
+
+<div class="rounded border border-[var(--border)] bg-[var(--surface2)] p-3 max-w-[1100px]"><div class="text-xs text-[var(--muted)] leading-relaxed">Use this as the operator view of what the model can currently reach. For setup changes, jump straight to the relevant control surface.</div><div class="mt-3 flex gap-2 flex-wrap"><button type="button" class="provider-btn provider-btn-secondary">LLMs</button><button type="button" class="provider-btn provider-btn-secondary">MCP</button><button type="button" class="provider-btn provider-btn-secondary">Skills</button><button type="button" class="provider-btn provider-btn-secondary">Nodes</button><button type="button" class="provider-btn provider-btn-secondary">SSH</button></div></div>
+
+---
+
+I like the html design for skill categories (border higlight + icon), can you use the same for openclaw import sections?
+
+---
+
+I think the onboarding -> remote could leverage tabs too, to show tailscale/ngrok.
+
+---
+
+commit and push
+
+---
+
+Fix and resolve all PR comments
+
+---
+
+~/.s/w/m/guiltless-wander guiltless-wander ❯ ./scripts/local-validate.sh
+Detected macOS without nvcc; using Darwin-native validation commands (metal for provider/gateway, no Linux CUDA path).
+CI still covers the Linux/CUDA all-features path. Override with LOCAL_VALIDATE_* if you need a different split.
+Validating PR #829 (c7b285e7ab0ea86ca63d4fa2e8d54313e1bfdfd4) in moltis-org/moltis
+Publishing commit statuses to: moltis-org/moltis
+Current CI workflow: https://github.com/moltis-org/moltis/actions/runs/24773195266
+cargo +nightly-2025-11-30 fmt --all -- --check
+🌈 zizmor v1.22.0
+[fr/skills.ts] missing=2, extra=0
+  - missing: bundledDescription
+  - missing: bundledTitle
+[zh/skills.ts] missing=2, extra=0
+  - missing: bundledDescription
+  - missing: bundledTitle
+installation docs avoid versionless GitHub asset URLs
+Checking .deb filename pattern...
+  ok: .deb filename: no revision suffix (matches cargo-deb output)
+Checking .rpm filename pattern...
+Checked 245 files in 89ms. No fixes applied.
+  ok: .rpm filename: has -1 revision (matches cargo-generate-rpm output)
+Checking .pkg.tar.zst (Arch) filename pattern...
+  ok: .pkg.tar.zst filename: has -1 revision (matches release workflow)
+Checking AppImage filename pattern...
+  ok: AppImage filename: matches release workflow pattern
+Checking binary tarball filename pattern...
+  ok: binary tarball: matches release workflow pattern
+Checking release_tag() logic...
+  ok: release_tag('20260327.05') = '20260327.05' (date-based, bare)
+  ok: release_tag('0.1.3') = 'v0.1.3' (semver, v-prefixed)
+Checking architecture mappings...
+  ok: deb arch: x86_64 → amd64
+  ok: deb arch: aarch64 → arm64
+Cross-validating against release.yml...
+  ok: release.yml: no --deb-revision flag (consistent with install.sh)
+  ok: release.yml: uses --deb-version for .deb naming
+  ok: release.yml: AppImage naming matches install.sh
+Checking install.sh sync...
+  ok: install.sh and website/install.sh are identical
+
+All 15 install package name checks passed
+ INFO audit: zizmor: 🌈 completed ./.github/actions/sign-artifacts/action.yml
+[local/i18n] failed in 1s
+[local/install-names] passed in 1s
+[local/biome] passed in 1s
+[local/install-docs] passed in 1s
+All Rust and TypeScript files within 1500-line limit (0 allowlisted).
+[local/file-size] passed in 2s
+[local/fmt] passed in 2s
+[local/fmt] total 3s
+[local/biome] total 2s
+[local/tsc] passed in 3s
+[local/tsc] total 4s
+[local/i18n] total 2s
+[local/install-names] total 2s
+ INFO audit: zizmor: 🌈 completed ./.github/workflows/ci.yml
+[local/install-docs] total 2s
+[local/file-size] total 3s
+One or more parallel local checks failed.

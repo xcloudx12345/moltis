@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "d3d27597c267",
+  "strategy": "manual-commit",
+  "branch": "guiltless-wander",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "crates/web/ui/src/locales/fr/skills.ts",
+    "crates/web/ui/src/locales/zh/skills.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/d3/d27597c267/0/metadata.json",
+      "transcript": "/d3/d27597c267/0/full.jsonl",
+      "context": "/d3/d27597c267/0/context.md",
+      "content_hash": "/d3/d27597c267/0/content_hash.txt",
+      "prompt": "/d3/d27597c267/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 16,
+    "cache_creation_tokens": 6851,
+    "cache_read_tokens": 4358764,
+    "output_tokens": 4098,
+    "api_call_count": 14
+  }
+}
