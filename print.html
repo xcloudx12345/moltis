@@ -417,6 +417,8 @@ model = "text-embedding-3-small"
 <div class="table-wrapper"><table><thead><tr><th>Command</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>/new</code></td><td>Start a new session</td></tr>
 <tr><td><code>/model &lt;name&gt;</code></td><td>Switch models</td></tr>
+<tr><td><code>/agent</code></td><td>List or switch chat agents</td></tr>
+<tr><td><code>/mode</code></td><td>List or switch temporary session modes</td></tr>
 <tr><td><code>/clear</code></td><td>Clear chat history</td></tr>
 <tr><td><code>/help</code></td><td>Show available commands</td></tr>
 </tbody></table>
@@ -1211,6 +1213,8 @@ through the upstream proxy.</p>
 <li><a href="configuration-reference.html#chatcompaction"><code>chat.compaction</code></a></li>
 <li><a href="configuration-reference.html#agents"><code>agents</code></a></li>
 <li><a href="configuration-reference.html#agentspresetsname"><code>agents.presets.&lt;name&gt;</code></a></li>
+<li><a href="configuration-reference.html#modes"><code>modes</code></a></li>
+<li><a href="configuration-reference.html#modespresetsname"><code>modes.presets.&lt;name&gt;</code></a></li>
 <li><a href="configuration-reference.html#skills"><code>skills</code></a></li>
 </ul>
 </li>
@@ -1428,8 +1432,8 @@ through the upstream proxy.</p>
 </div>
 <h3 id="agents--agentsconfig"><a class="header" href="#agents--agentsconfig"><code>agents</code> — AgentsConfig</a></h3>
 <div class="table-wrapper"><table><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>default_preset</code></td><td>optional string</td><td><code>null</code></td><td>Default preset name used when <code>spawn_agent.preset</code> is omitted. Applies only to sub-agents.</td></tr>
-<tr><td><code>presets</code></td><td>map of <code>AgentPreset</code></td><td><code>{}</code></td><td>Named spawn presets, keyed by name.</td></tr>
+<tr><td><code>default_preset</code></td><td>optional string</td><td><code>"research"</code></td><td>Default preset name used when <code>spawn_agent.preset</code> is omitted. Applies only to sub-agents.</td></tr>
+<tr><td><code>presets</code></td><td>map of <code>AgentPreset</code></td><td>built-in presets</td><td>Named spawn presets, keyed by name. Built-ins: <code>research</code>, <code>coder</code>, <code>reviewer</code>, <code>qa</code>, <code>ux</code>, <code>docs</code>, <code>coordinator</code>.</td></tr>
 </tbody></table>
 </div>
 <h3 id="agentspresetsname--agentpreset"><a class="header" href="#agentspresetsname--agentpreset"><code>agents.presets.&lt;name&gt;</code> — AgentPreset</a></h3>
@@ -1465,6 +1469,20 @@ through the upstream proxy.</p>
 <div class="table-wrapper"><table><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>scope</code></td><td>enum: <code>user</code>, <code>project</code>, <code>local</code></td><td><code>"user"</code></td><td>Memory scope: <code>user</code> stores in <code>~/.moltis/agent-memory/&lt;preset&gt;/</code>, <code>project</code> in <code>.moltis/agent-memory/&lt;preset&gt;/</code>, <code>local</code> in <code>.moltis/agent-memory-local/&lt;preset&gt;/</code>.</td></tr>
 <tr><td><code>max_lines</code></td><td>integer</td><td><code>200</code></td><td>Maximum lines to load from <code>MEMORY.md</code>.</td></tr>
+</tbody></table>
+</div>
+<h3 id="modes--modesconfig"><a class="header" href="#modes--modesconfig"><code>modes</code> — ModesConfig</a></h3>
+<p>Modes are temporary per-session prompt overlays selected with <code>/mode</code>. They do
+not create chat agents, change memory, or affect <code>spawn_agent</code> presets.</p>
+<div class="table-wrapper"><table><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>presets</code></td><td>map of <code>ModePreset</code></td><td>built-in presets</td><td>Named mode presets. Built-ins: <code>concise</code>, <code>technical</code>, <code>creative</code>, <code>teacher</code>, <code>plan</code>, <code>build</code>, <code>review</code>, <code>research</code>, <code>elevated</code>.</td></tr>
+</tbody></table>
+</div>
+<h3 id="modespresetsname--modepreset"><a class="header" href="#modespresetsname--modepreset"><code>modes.presets.&lt;name&gt;</code> — ModePreset</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>name</code></td><td>optional string</td><td><code>null</code></td><td>Display name shown in the UI and <code>/mode</code> list.</td></tr>
+<tr><td><code>description</code></td><td>optional string</td><td><code>null</code></td><td>Short user-facing summary.</td></tr>
+<tr><td><code>prompt</code></td><td>string</td><td><code>""</code></td><td>Prompt overlay injected into the active session while this mode is selected.</td></tr>
 </tbody></table>
 </div>
 <h3 id="skills--skillsconfig"><a class="header" href="#skills--skillsconfig"><code>skills</code> — SkillsConfig</a></h3>
@@ -5722,6 +5740,9 @@ in place as tokens arrive, throttled to at most one edit every
 <tr><td><code>/new</code></td><td>Start a fresh session for the current chat</td></tr>
 <tr><td><code>/sessions</code></td><td>List or switch among sessions already bound to the current chat</td></tr>
 <tr><td><code>/attach</code></td><td>List existing non-cron sessions and rebind one to the current chat</td></tr>
+<tr><td><code>/agent</code></td><td>List or switch chat agents</td></tr>
+<tr><td><code>/mode</code></td><td>List or switch temporary session modes</td></tr>
+<tr><td><code>/model</code></td><td>List or switch models</td></tr>
 <tr><td><code>/approvals</code></td><td>List pending exec approvals for the current session</td></tr>
 <tr><td><code>/approve N</code></td><td>Approve the numbered exec request from <code>/approvals</code></td></tr>
 <tr><td><code>/deny N</code></td><td>Deny the numbered exec request from <code>/approvals</code></td></tr>
@@ -6347,6 +6368,7 @@ or status is configured, the bot uses Discord’s default (online, no activity).
 <tr><td><code>/model</code></td><td>List or switch the AI model</td></tr>
 <tr><td><code>/sessions</code></td><td>List or switch chat sessions</td></tr>
 <tr><td><code>/agent</code></td><td>List or switch agents</td></tr>
+<tr><td><code>/mode</code></td><td>List or switch temporary session modes</td></tr>
 <tr><td><code>/help</code></td><td>Show available commands</td></tr>
 </tbody></table>
 </div>
@@ -8603,6 +8625,42 @@ name as the namespace.</p>
 writing and parse after reading.</p>
 </div>
 </div>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="modes"><a class="header" href="#modes">Modes</a></h1>
+<p>Modes are session-scoped prompt overlays. They change how the currently selected
+chat agent works right now without creating a new agent, changing memory, or
+changing sub-agent presets.</p>
+<p>Use modes when you want a temporary working style:</p>
+<div class="table-wrapper"><table><thead><tr><th>Mode</th><th>Use it for</th></tr></thead><tbody>
+<tr><td><code>concise</code></td><td>Short, direct answers</td></tr>
+<tr><td><code>technical</code></td><td>Detailed technical analysis</td></tr>
+<tr><td><code>creative</code></td><td>Broad ideation and alternatives</td></tr>
+<tr><td><code>teacher</code></td><td>Step-by-step explanation</td></tr>
+<tr><td><code>plan</code></td><td>Scoping and sequencing before implementation</td></tr>
+<tr><td><code>build</code></td><td>Implementation-focused work</td></tr>
+<tr><td><code>review</code></td><td>Bug-focused code review</td></tr>
+<tr><td><code>research</code></td><td>Evidence-first investigation</td></tr>
+<tr><td><code>elevated</code></td><td>Extra caution for risky operations</td></tr>
+</tbody></table>
+</div>
+<p>Switch the active session from the web chat input or any channel that supports
+regular slash commands:</p>
+<pre><code class="language-text">/mode
+/mode review
+/mode 3
+/mode none
+</code></pre>
+<p><code>/mode</code> lists available modes. <code>/mode none</code> clears the overlay.</p>
+<h2 id="configure-modes"><a class="header" href="#configure-modes">Configure Modes</a></h2>
+<p>Built-in modes are available on every install. Add or override modes in
+<code>moltis.toml</code>:</p>
+<pre><code class="language-toml">[modes.presets.incident]
+name = "Incident"
+description = "production incident response"
+prompt = "Prioritize impact, timeline, mitigation, rollback, logs, and clear status updates."
+</code></pre>
+<p>Mode presets are intentionally small. For durable identity, memory, and chat
+history, create a chat agent. For delegated work through <code>spawn_agent</code>, use an
+agent preset.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="session-branching"><a class="header" href="#session-branching">Session Branching</a></h1>
 <p>Session branching (forking) lets you create an independent copy of a
 conversation at any point. The new session diverges without affecting the
@@ -14084,14 +14142,33 @@ context did not match (e.g., no channel context for a web UI session).</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="agent-presets"><a class="header" href="#agent-presets">Agent Presets</a></h1>
 <p>Agent presets let <code>spawn_agent</code> run sub-agents with role-specific configuration.
 Use them to control model cost, tool access, session visibility, and behavior.</p>
+<p>They are different from <a href="modes.html">modes</a>: modes are temporary overlays for the
+current chat session, while agent presets configure delegated sub-agents.</p>
+<h2 id="built-in-presets"><a class="header" href="#built-in-presets">Built-In Presets</a></h2>
+<p>Moltis ships with these presets on every install:</p>
+<div class="table-wrapper"><table><thead><tr><th>Preset</th><th>Role</th></tr></thead><tbody>
+<tr><td><code>research</code></td><td>Evidence gathering and synthesis. This is the default when <code>spawn_agent.preset</code> is omitted.</td></tr>
+<tr><td><code>coder</code></td><td>Scoped implementation, debugging, cleanup, and focused verification.</td></tr>
+<tr><td><code>reviewer</code></td><td>Code review for correctness, regressions, security, and missing tests.</td></tr>
+<tr><td><code>qa</code></td><td>End-to-end behavior validation, repro steps, and pass/fail reporting.</td></tr>
+<tr><td><code>ux</code></td><td>UX, accessibility, interaction, and visual quality review.</td></tr>
+<tr><td><code>docs</code></td><td>User-facing documentation, examples, and config reference updates.</td></tr>
+<tr><td><code>coordinator</code></td><td>Delegation-first planning and result integration.</td></tr>
+</tbody></table>
+</div>
+<p>User TOML presets and markdown agent definitions with the same name override
+the built-in preset. The built-ins do not set a model or tool allow/deny
+policy, so they inherit the session’s provider and normal tool access. The
+<code>coordinator</code> preset sets <code>delegate_only = true</code>, restricting it to delegation,
+session, and task-list tools.</p>
 <h2 id="quick-start-3"><a class="header" href="#quick-start-3">Quick Start</a></h2>
 <pre><code class="language-toml">[agents.presets.researcher]
 identity.name = "scout"
 identity.emoji = "🔍"
 identity.theme = "thorough and methodical"
 model = "anthropic/claude-haiku-3-5-20241022"
-tools.allow = ["read_file", "glob", "grep", "web_search", "web_fetch"]
-tools.deny = ["exec", "write_file"]
+tools.allow = ["Read", "Glob", "Grep", "web_search", "web_fetch"]
+tools.deny = ["exec", "Write"]
 system_prompt_suffix = "Gather facts and report clearly."
 
 [agents.presets.coordinator]
