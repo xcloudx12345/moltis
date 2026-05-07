@@ -12783,19 +12783,20 @@ enabled behind a TLS-terminating proxy. Use <code>--no-tls</code> (or
 TCP TLS passthrough). In that case, set <code>MOLTIS_ALLOW_TLS_BEHIND_PROXY=true</code>.</p>
 </div>
 </div>
-<div id="admonition-warning" class="admonition admonish-warning" role="note" aria-labelledby="admonition-warning-title">
+<div id="admonition-tip-1" class="admonition admonish-tip" role="note" aria-labelledby="admonition-tip-1-title">
 <div class="admonition-title">
-<div id="admonition-warning-title">
-<p>Warning</p>
+<div id="admonition-tip-1-title">
+<p>Tip</p>
 </div>
-<a class="admonition-anchor-link" href="cloud-deploy.html#admonition-warning"></a>
+<a class="admonition-anchor-link" href="cloud-deploy.html#admonition-tip-1"></a>
 </div>
 <div>
-<p><strong>Sandbox limitation</strong>: Most cloud providers do not support Docker-in-Docker.
-The sandboxed command execution feature (where the LLM runs shell commands
-inside isolated containers) will not work on these platforms. The agent will
-still function for chat, tool calls that don’t require shell execution, and
-MCP server connections.</p>
+<p><strong>Sandbox on cloud deploys</strong>: Most cloud providers do not support
+Docker-in-Docker. To enable sandboxed command execution, configure a
+<a href="sandbox-remote.html">remote sandbox backend</a> — set <code>VERCEL_TOKEN</code> for Vercel
+Firecracker microVMs, or <code>DAYTONA_API_KEY</code> for Daytona cloud sandboxes
+(including self-hosted). Moltis auto-detects these when no local Docker is
+available.</p>
 </div>
 </div>
 <h3 id="moltis_deploy_platform"><a class="header" href="#moltis_deploy_platform"><code>MOLTIS_DEPLOY_PLATFORM</code></a></h3>
@@ -12949,12 +12950,12 @@ callback capture fails, Moltis prompts you to paste the callback URL (or
 <code>code#state</code>) directly in the terminal. After you log in, tokens are saved to
 the config volume and the running gateway picks them up automatically — no
 restart needed.</p>
-<div id="admonition-tip-1" class="admonition admonish-tip" role="note" aria-labelledby="admonition-tip-1-title">
+<div id="admonition-tip-2" class="admonition admonish-tip" role="note" aria-labelledby="admonition-tip-2-title">
 <div class="admonition-title">
-<div id="admonition-tip-1-title">
+<div id="admonition-tip-2-title">
 <p>Tip</p>
 </div>
-<a class="admonition-anchor-link" href="cloud-deploy.html#admonition-tip-1"></a>
+<a class="admonition-anchor-link" href="cloud-deploy.html#admonition-tip-2"></a>
 </div>
 <div>
 <p>GitHub Copilot uses device-flow authentication (a code you enter on
@@ -12980,7 +12981,149 @@ the gateway is ready. Configure your provider’s health check to use:</p>
 <li><strong>Method</strong>: <code>GET</code></li>
 <li><strong>Expected status</strong>: <code>200</code></li>
 </ul>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="deploy-moltis-on-a-vps"><a class="header" href="#deploy-moltis-on-a-vps">Deploy Moltis on a VPS</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="remote-sandbox-backends"><a class="header" href="#remote-sandbox-backends">Remote Sandbox Backends</a></h1>
+<p>When Docker is unavailable (cloud deploys, restricted environments), moltis can
+use remote sandbox backends to provide isolated command execution via cloud APIs.</p>
+<h2 id="available-backends"><a class="header" href="#available-backends">Available Backends</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Backend</th><th>Provider</th><th>Isolation</th><th>Package Manager</th></tr></thead><tbody>
+<tr><td><strong>Vercel Sandbox</strong></td><td>Vercel (managed)</td><td>Firecracker microVM</td><td><code>dnf</code> (Amazon Linux 2023)</td></tr>
+<tr><td><strong>Daytona</strong></td><td>Daytona (managed or self-hosted)</td><td>Cloud sandbox</td><td><code>apt-get</code> (Ubuntu)</td></tr>
+<tr><td><strong>Firecracker</strong></td><td>Self-hosted (Linux)</td><td>Local microVM</td><td><code>apt-get</code> (Ubuntu)</td></tr>
+</tbody></table>
+</div>
+<h2 id="vercel-sandbox"><a class="header" href="#vercel-sandbox">Vercel Sandbox</a></h2>
+<p>Vercel Sandbox creates ephemeral Firecracker microVMs via the Vercel API.
+Each session gets its own isolated VM with millisecond boot times.</p>
+<h3 id="configuration-23"><a class="header" href="#configuration-23">Configuration</a></h3>
+<p>Set environment variables:</p>
+<pre><code class="language-bash">VERCEL_TOKEN=ver_your_token_here
+VERCEL_TEAM_ID=team_your_team_id    # optional but recommended
+</code></pre>
+<p>Or configure in <code>moltis.toml</code>:</p>
+<pre><code class="language-toml">[tools.exec.sandbox]
+backend = "vercel"  # or leave "auto" for auto-detection
+
+# Optional: customize Vercel sandbox settings
+vercel_runtime = "node24"       # node24, node22, or python3.13
+vercel_timeout_ms = 300000      # 5 minutes
+vercel_vcpus = 2
+</code></pre>
+<h3 id="getting-credentials"><a class="header" href="#getting-credentials">Getting Credentials</a></h3>
+<ol>
+<li><strong>Token</strong>: Go to <a href="https://vercel.com/account/tokens">vercel.com/account/tokens</a> → Create</li>
+<li><strong>Project ID</strong> (required): Create a project at <a href="https://vercel.com/new">vercel.com/new</a>, then get the ID from Project Settings → General → “Project ID”</li>
+<li><strong>Team ID</strong> (optional but recommended): Go to your team’s Settings → General → scroll to “Team ID”</li>
+</ol>
+<h3 id="how-it-works-19"><a class="header" href="#how-it-works-19">How It Works</a></h3>
+<ul>
+<li><code>backend = "auto"</code> detects <code>VERCEL_TOKEN</code> when no local Docker is available</li>
+<li>Each session creates an ephemeral Firecracker microVM</li>
+<li>Commands execute via the Vercel REST API</li>
+<li>Files transfer via gzipped tar upload / raw read</li>
+<li>On cleanup, the sandbox is stopped (resources freed immediately)</li>
+<li>Snapshots cache pre-installed packages for fast subsequent boots</li>
+</ul>
+<h2 id="daytona"><a class="header" href="#daytona">Daytona</a></h2>
+<p>Daytona provides cloud sandboxes via a REST API. You can use the managed
+service at <code>app.daytona.io</code> or self-host Daytona on your own infrastructure
+(e.g., Proxmox, bare-metal Linux, Kubernetes).</p>
+<h3 id="configuration-24"><a class="header" href="#configuration-24">Configuration</a></h3>
+<p>Set environment variables:</p>
+<pre><code class="language-bash">DAYTONA_API_KEY=dyt_your_api_key_here
+DAYTONA_API_URL=https://app.daytona.io/api  # default, change for self-hosted
+</code></pre>
+<p>Or configure in <code>moltis.toml</code>:</p>
+<pre><code class="language-toml">[tools.exec.sandbox]
+backend = "daytona"  # or leave "auto" for auto-detection
+
+# Daytona API settings
+daytona_api_url = "https://app.daytona.io/api"  # change for self-hosted
+daytona_target = "us"                            # optional target region
+</code></pre>
+<h3 id="self-hosted-daytona"><a class="header" href="#self-hosted-daytona">Self-Hosted Daytona</a></h3>
+<p>If you run Daytona on your own infrastructure (Proxmox, bare-metal, etc.),
+point the API URL to your instance:</p>
+<pre><code class="language-toml">[tools.exec.sandbox]
+daytona_api_url = "https://daytona.your-server.local/api"
+</code></pre>
+<p>Or via environment variable:</p>
+<pre><code class="language-bash">DAYTONA_API_URL=https://daytona.your-server.local/api
+</code></pre>
+<p>This gives you full control over the sandbox infrastructure while still
+using moltis’s multi-backend routing and workspace sync.</p>
+<h3 id="getting-credentials-1"><a class="header" href="#getting-credentials-1">Getting Credentials</a></h3>
+<ol>
+<li>Sign up at <a href="https://www.daytona.io">daytona.io</a> or deploy self-hosted</li>
+<li>Generate an API key from the Daytona dashboard</li>
+<li>Set <code>DAYTONA_API_KEY</code> in your environment</li>
+</ol>
+<h3 id="how-it-works-20"><a class="header" href="#how-it-works-20">How It Works</a></h3>
+<ul>
+<li><code>backend = "auto"</code> detects <code>DAYTONA_API_KEY</code> when no local Docker is available</li>
+<li>Each session creates an ephemeral cloud sandbox</li>
+<li>Commands execute via the toolbox REST API</li>
+<li>Files transfer via multipart upload / download</li>
+<li>On cleanup, the sandbox is deleted</li>
+</ul>
+<h2 id="local-firecracker"><a class="header" href="#local-firecracker">Local Firecracker</a></h2>
+<p>For Linux servers without Docker where you want VM-level isolation, the
+Firecracker backend boots microVMs directly using the Firecracker hypervisor.</p>
+<h3 id="requirements"><a class="header" href="#requirements">Requirements</a></h3>
+<ul>
+<li>Linux only (Firecracker requires KVM)</li>
+<li><code>firecracker</code> binary installed</li>
+<li>Uncompressed Linux kernel (<code>vmlinux</code>)</li>
+<li>ext4 rootfs image with SSH server and <code>sandbox</code> user</li>
+<li>Root access or <code>CAP_NET_ADMIN</code> for TAP networking</li>
+</ul>
+<h3 id="configuration-25"><a class="header" href="#configuration-25">Configuration</a></h3>
+<pre><code class="language-toml">[tools.exec.sandbox]
+backend = "firecracker"
+
+firecracker_bin = "/usr/local/bin/firecracker"
+firecracker_kernel = "/opt/moltis/vmlinux"
+firecracker_rootfs = "/opt/moltis/rootfs.ext4"
+firecracker_ssh_key = "/opt/moltis/ssh_key"
+firecracker_vcpus = 2
+firecracker_memory_mb = 512
+</code></pre>
+<h3 id="how-it-works-21"><a class="header" href="#how-it-works-21">How It Works</a></h3>
+<ul>
+<li>Boots a Firecracker microVM in ~125ms</li>
+<li>Creates a dedicated TAP device per VM for networking</li>
+<li>Commands execute via SSH into the guest</li>
+<li>Pre-built rootfs caches packages (like Docker image building)</li>
+<li>On cleanup, the VM is shut down and TAP device removed</li>
+</ul>
+<h2 id="auto-detection"><a class="header" href="#auto-detection">Auto-Detection</a></h2>
+<p>When <code>backend = "auto"</code> (the default), moltis selects the sandbox backend
+in this order:</p>
+<ol>
+<li><strong>Local</strong>: Apple Container → Podman → Docker → (next)</li>
+<li><strong>Remote</strong>: Vercel (if <code>VERCEL_TOKEN</code> set) → Daytona (if <code>DAYTONA_API_KEY</code> set)</li>
+<li><strong>Fallback</strong>: Restricted Host (rlimits only, no isolation)</li>
+</ol>
+<h2 id="multi-backend-routing"><a class="header" href="#multi-backend-routing">Multi-Backend Routing</a></h2>
+<p>Multiple backends can be active simultaneously. Per-session backend selection
+allows different sessions to use different backends:</p>
+<pre><code class="language-json">{ "key": "session:heavy-compute", "sandboxBackend": "vercel" }
+{ "key": "session:quick-test", "sandboxBackend": "docker" }
+</code></pre>
+<p>Configure backends in the <strong>Settings → Sandboxes → Remote sandbox backends</strong>
+section of the web UI, or via environment variables and <code>moltis.toml</code>.</p>
+<h2 id="web-ui-configuration"><a class="header" href="#web-ui-configuration">Web UI Configuration</a></h2>
+<p>Navigate to <strong>Settings → Sandboxes</strong> and scroll to the “Remote sandbox backends”
+section. Enter your API tokens and save — moltis will use them after restart.</p>
+<h2 id="package-provisioning"><a class="header" href="#package-provisioning">Package Provisioning</a></h2>
+<p>Remote sandboxes automatically install the same default packages configured for
+local Docker sandboxes. The first session may take longer as packages are
+installed, but subsequent sessions use cached images/snapshots:</p>
+<div class="table-wrapper"><table><thead><tr><th>Backend</th><th>Caching Strategy</th></tr></thead><tbody>
+<tr><td>Vercel</td><td>Snapshot after first provisioning (instant subsequent boots)</td></tr>
+<tr><td>Daytona</td><td>Runtime provisioning on first session</td></tr>
+<tr><td>Firecracker</td><td>Pre-built rootfs with packages baked in</td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="deploy-moltis-on-a-vps"><a class="header" href="#deploy-moltis-on-a-vps">Deploy Moltis on a VPS</a></h1>
 <p>Run your own AI agent on a $5/month VPS. This guide covers provisioning,
 installation, and connecting channels (Telegram, Discord, etc.) so you can
 talk to your agent from anywhere.</p>
@@ -13701,7 +13844,7 @@ startup in the correct dependency order.</p>
     │   └── 20240205100004_init.sql   # files, chunks, embedding_cache, FTS
     └── src/lib.rs                     # run_migrations() (separate memory.db)
 </code></pre>
-<h2 id="how-it-works-19"><a class="header" href="#how-it-works-19">How It Works</a></h2>
+<h2 id="how-it-works-22"><a class="header" href="#how-it-works-22">How It Works</a></h2>
 <h3 id="migration-ownership"><a class="header" href="#migration-ownership">Migration Ownership</a></h3>
 <p>Each crate is autonomous and owns its schema:</p>
 <div class="table-wrapper"><table><thead><tr><th>Crate</th><th>Database</th><th>Tables</th><th>Migration File</th></tr></thead><tbody>
@@ -14164,7 +14307,7 @@ fn main() {
 
     // Now spans will add labels to metrics
 }</code></pre></pre>
-<h3 id="how-it-works-20"><a class="header" href="#how-it-works-20">How It Works</a></h3>
+<h3 id="how-it-works-23"><a class="header" href="#how-it-works-23">How It Works</a></h3>
 <p>When tracing is enabled, span fields are automatically added as metric labels:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -14249,7 +14392,7 @@ pub mod my_feature {
 
 counter!(my_feature::OPERATIONS_TOTAL).increment(1);
 <span class="boring">}</span></code></pre></pre>
-<h2 id="configuration-23"><a class="header" href="#configuration-23">Configuration</a></h2>
+<h2 id="configuration-26"><a class="header" href="#configuration-26">Configuration</a></h2>
 <p>Metrics configuration in <code>moltis.toml</code>:</p>
 <pre><code class="language-toml">[metrics]
 enabled = true              # Enable metrics collection (default: true)
@@ -14348,11 +14491,11 @@ tools grouped by origin.</p>
 With many MCP servers this can burn 15,000+ tokens per turn. <strong>Lazy mode</strong>
 replaces all tool schemas with a single <code>tool_search</code> meta-tool that the model
 uses to discover and activate tools on demand.</p>
-<h3 id="configuration-24"><a class="header" href="#configuration-24">Configuration</a></h3>
+<h3 id="configuration-27"><a class="header" href="#configuration-27">Configuration</a></h3>
 <pre><code class="language-toml">[tools]
 registry_mode = "lazy"   # default: "full"
 </code></pre>
-<h3 id="how-it-works-21"><a class="header" href="#how-it-works-21">How it works</a></h3>
+<h3 id="how-it-works-24"><a class="header" href="#how-it-works-24">How it works</a></h3>
 <ol>
 <li>The model receives only <code>tool_search</code> in its tool list.</li>
 <li><code>tool_search(query="memory")</code> returns name + description pairs (max 15), no schemas.</li>
