@@ -53,7 +53,7 @@ provider so you can skip the browser setup wizard entirely.</p>
 
 
 
-<table><thead><tr><th>Port</th><th>Purpose</th></tr></thead><tbody><tr><td>13131</td><td>Gateway (HTTPS) — web UI, API, WebSocket</td></tr><tr><td>13132</td><td>HTTP — CA certificate download for TLS trust</td></tr><tr><td>1455</td><td>OAuth callback — required for OpenAI Codex and other providers with pre-registered redirect URIs</td></tr></tbody></table>
+<table><thead><tr><th>Port</th><th>Purpose</th></tr></thead><tbody><tr><td>13131</td><td>Gateway (HTTPS by default, HTTP with <code>--no-tls</code>) — web UI, API, WebSocket</td></tr><tr><td>13132</td><td>HTTP — CA certificate download for local TLS trust</td></tr><tr><td>1455</td><td>OAuth callback — required for OpenAI Codex and other providers with pre-registered redirect URIs</td></tr></tbody></table>
 <h3 id="trusting-the-tls-certificate">Trusting the TLS certificate</h3>
 <p>Moltis generates a self-signed CA on first run. Browsers will show a security
 warning until you trust this CA. Port 13132 serves the certificate over plain
@@ -79,6 +79,24 @@ sudo update-ca-certificates"><code><span class="line"><span style="color:#C2C3C5
 <span class="line"><span style="color:#6F42C1;--shiki-dark:#B392F0">sudo</span><span style="color:#2B5581;--shiki-dark:#9ECBFF"> update-ca-certificates</span></span></code></pre>
 <p>After trusting the CA, restart your browser. The warning will not appear again
 (the CA persists in the mounted config volume).</p>
+<p>This local CA only solves certificate trust for names included in the generated
+server certificate, such as <code>localhost</code>, <code>moltis.localhost</code>, the container or
+host name, and sometimes an inferred non-loopback bind IP. It does not make a
+certificate valid for an arbitrary public VPS IP address or hosting-provider
+domain. Browsers still reject those targets with a certificate name mismatch if
+they are not present in the certificate SAN list. IP-address URLs require an IP
+SAN. For direct <code>https://&#x3C;public-ip>:13131</code> access, set <code>tls.public_ip</code> to that
+address before starting Moltis so the auto-generated certificate includes it:</p>
+<pre class="astro-code astro-code-themes min-light github-dark" style="background-color:#ffffff;--shiki-dark-bg:#24292e;color:#24292eff;--shiki-dark:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="toml" data-code="[tls]
+public_ip = &#x22;203.0.113.10&#x22;"><code><span class="line"><span style="color:#24292EFF;--shiki-dark:#E1E4E8">[</span><span style="color:#24292EFF;--shiki-dark:#B392F0">tls</span><span style="color:#24292EFF;--shiki-dark:#E1E4E8">]</span></span>
+<span class="line"><span style="color:#24292EFF;--shiki-dark:#E1E4E8">public_ip </span><span style="color:#D32F2F;--shiki-dark:#E1E4E8">=</span><span style="color:#22863A;--shiki-dark:#9ECBFF"> "203.0.113.10"</span></span></code></pre>
+<p>Regular public TLS deployments should use a domain name.</p>
+<p>For internet-facing Docker deployments, prefer a domain name plus a reverse
+proxy with public CA certificates. Run Moltis with <code>--no-tls</code>, set
+<code>MOLTIS_BEHIND_PROXY=true</code>, and point the proxy at <code>http://&#x3C;moltis-host>:13131</code>.
+If you want Moltis to serve HTTPS directly, mount a certificate and private key
+whose SANs cover the public hostname and set <code>tls.cert_path</code> and <code>tls.key_path</code>
+in <code>moltis.toml</code>.</p>
 <aside class="admonition admonition-note"><div class="admonition-title">Note</div><div class="admonition-body"><p>When accessing from localhost, no authentication is required. If you access Moltis from a different machine (e.g., over the network), a setup code is printed to the container logs for authentication setup:</p>
 <p>~~~bash<br>docker logs moltis<br>~~~</p></div></aside>
 <h2 id="volume-mounts">Volume Mounts</h2>

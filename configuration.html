@@ -451,7 +451,11 @@ allowlist = [&#x22;U123456789&#x22;]"><code><span class="line"><span style="colo
 enabled = true
 cert_path = &#x22;~/.config/moltis/cert.pem&#x22;
 key_path = &#x22;~/.config/moltis/key.pem&#x22;
-# If paths don&#x27;t exist, a self-signed certificate is generated
+# If custom paths are not set and auto_generate is true, Moltis generates a
+# local CA and server certificate for localhost/private-network names. Public
+# VPS IP access should set public_ip; public domains should use a reverse proxy
+# or custom CA-issued certificates.
+# public_ip = &#x22;203.0.113.10&#x22;
 
 # Port for the plain-HTTP redirect / CA-download server.
 # Defaults to the server port + 1 when not set.
@@ -459,7 +463,11 @@ key_path = &#x22;~/.config/moltis/key.pem&#x22;
 <span class="line"><span style="color:#24292EFF;--shiki-dark:#E1E4E8">enabled </span><span style="color:#D32F2F;--shiki-dark:#E1E4E8">=</span><span style="color:#1976D2;--shiki-dark:#79B8FF"> true</span></span>
 <span class="line"><span style="color:#24292EFF;--shiki-dark:#E1E4E8">cert_path </span><span style="color:#D32F2F;--shiki-dark:#E1E4E8">=</span><span style="color:#22863A;--shiki-dark:#9ECBFF"> "~/.config/moltis/cert.pem"</span></span>
 <span class="line"><span style="color:#24292EFF;--shiki-dark:#E1E4E8">key_path </span><span style="color:#D32F2F;--shiki-dark:#E1E4E8">=</span><span style="color:#22863A;--shiki-dark:#9ECBFF"> "~/.config/moltis/key.pem"</span></span>
-<span class="line"><span style="color:#C2C3C5;--shiki-dark:#6A737D"># If paths don't exist, a self-signed certificate is generated</span></span>
+<span class="line"><span style="color:#C2C3C5;--shiki-dark:#6A737D"># If custom paths are not set and auto_generate is true, Moltis generates a</span></span>
+<span class="line"><span style="color:#C2C3C5;--shiki-dark:#6A737D"># local CA and server certificate for localhost/private-network names. Public</span></span>
+<span class="line"><span style="color:#C2C3C5;--shiki-dark:#6A737D"># VPS IP access should set public_ip; public domains should use a reverse proxy</span></span>
+<span class="line"><span style="color:#C2C3C5;--shiki-dark:#6A737D"># or custom CA-issued certificates.</span></span>
+<span class="line"><span style="color:#C2C3C5;--shiki-dark:#6A737D"># public_ip = "203.0.113.10"</span></span>
 <span class="line"></span>
 <span class="line"><span style="color:#C2C3C5;--shiki-dark:#6A737D"># Port for the plain-HTTP redirect / CA-download server.</span></span>
 <span class="line"><span style="color:#C2C3C5;--shiki-dark:#6A737D"># Defaults to the server port + 1 when not set.</span></span>

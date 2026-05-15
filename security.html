@@ -270,7 +270,15 @@ auto_generate = true"><code><span class="line"><span style="color:#24292EFF;--sh
 <span class="line"><span style="color:#24292EFF;--shiki-dark:#E1E4E8">enabled </span><span style="color:#D32F2F;--shiki-dark:#E1E4E8">=</span><span style="color:#1976D2;--shiki-dark:#79B8FF"> true</span></span>
 <span class="line"><span style="color:#24292EFF;--shiki-dark:#E1E4E8">auto_generate </span><span style="color:#D32F2F;--shiki-dark:#E1E4E8">=</span><span style="color:#1976D2;--shiki-dark:#79B8FF"> true</span></span></code></pre>
 <p>For production, use certificates from a trusted CA or configure custom
-certificates.</p>
+certificates. The auto-generated certificate is intended for localhost and
+private-network access; importing the generated CA does not make the certificate
+valid for public IP addresses or domains that are not listed in its SANs. IP
+address URLs require a certificate with that address as an IP SAN; set
+<code>tls.public_ip</code> to include a direct-access VPS IP in Moltis’ auto-generated
+certificate. Regular public TLS deployments should use a domain name. For VPS and other
+internet-facing deployments, terminate TLS at a reverse proxy or configure
+<code>tls.cert_path</code> and <code>tls.key_path</code> with a certificate issued for your public
+hostname.</p>
 <h3 id="origin-validation">Origin Validation</h3>
 <p>WebSocket connections validate the <code>Origin</code> header to prevent cross-site
 WebSocket hijacking (CSWSH). Connections from untrusted origins are rejected.</p>

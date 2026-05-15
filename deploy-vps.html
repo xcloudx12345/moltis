@@ -17,8 +17,9 @@ DigitalOcean, Linode, Vultr, etc.)</li>
 <li>An API key from at least one LLM provider (Anthropic, OpenAI, etc.)</li>
 </ul>
 <h2 id="option-a-docker-recommended">Option A: Docker (recommended)</h2>
-<p>Docker is the fastest path. It handles TLS certificates, sandbox isolation,
-and upgrades via image pulls.</p>
+<p>Docker is the fastest path. It handles sandbox isolation and upgrades via image
+pulls. For browser-trusted TLS on a VPS, put Moltis behind a reverse proxy
+such as Caddy, nginx, or Traefik and let the proxy manage public certificates.</p>
 <h3 id="1-install-docker">1. Install Docker</h3>
 <pre class="astro-code astro-code-themes min-light github-dark" style="background-color:#ffffff;--shiki-dark-bg:#24292e;color:#24292eff;--shiki-dark:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="bash" data-code="curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker $USER
@@ -42,9 +43,39 @@ docker compose up -d"><code><span class="line"><span style="color:#6F42C1;--shik
 <span class="line"><span style="color:#C2C3C5;--shiki-dark:#6A737D"># Start</span></span>
 <span class="line"><span style="color:#6F42C1;--shiki-dark:#B392F0">docker</span><span style="color:#2B5581;--shiki-dark:#9ECBFF"> compose</span><span style="color:#2B5581;--shiki-dark:#9ECBFF"> up</span><span style="color:#2B5581;--shiki-dark:#79B8FF"> -d</span></span></code></pre>
 <h3 id="3-access-the-web-ui">3. Access the web UI</h3>
-<p>Open <code>https://&#x3C;your-server-ip>:13131</code> in your browser. You’ll see a TLS
-warning because Moltis generates a self-signed certificate. Accept it or
-download the CA from <code>http://&#x3C;your-server-ip>:13132</code>.</p>
+<p>For a production VPS, use a domain name and terminate TLS at a reverse proxy:</p>
+<pre class="astro-code astro-code-themes min-light github-dark" style="background-color:#ffffff;--shiki-dark-bg:#24292e;color:#24292eff;--shiki-dark:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="yaml" data-code="services:
+  moltis:
+    image: ghcr.io/moltis-org/moltis:latest
+    command: [&#x22;--bind&#x22;, &#x22;0.0.0.0&#x22;, &#x22;--port&#x22;, &#x22;13131&#x22;, &#x22;--no-tls&#x22;]
+    environment:
+      - MOLTIS_BEHIND_PROXY=true
+      - MOLTIS_EXTERNAL_URL=https://chat.example.com"><code><span class="line"><span style="color:#D32F2F;--shiki-dark:#85E89D">services</span><span style="color:#D32F2F;--shiki-dark:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#D32F2F;--shiki-dark:#85E89D">  moltis</span><span style="color:#D32F2F;--shiki-dark:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#D32F2F;--shiki-dark:#85E89D">    image</span><span style="color:#D32F2F;--shiki-dark:#E1E4E8">:</span><span style="color:#22863A;--shiki-dark:#9ECBFF"> ghcr.io/moltis-org/moltis:latest</span></span>
+<span class="line"><span style="color:#D32F2F;--shiki-dark:#85E89D">    command</span><span style="color:#D32F2F;--shiki-dark:#E1E4E8">:</span><span style="color:#24292EFF;--shiki-dark:#E1E4E8"> [</span><span style="color:#22863A;--shiki-dark:#9ECBFF">"--bind"</span><span style="color:#212121;--shiki-dark:#E1E4E8">,</span><span style="color:#22863A;--shiki-dark:#9ECBFF"> "0.0.0.0"</span><span style="color:#212121;--shiki-dark:#E1E4E8">,</span><span style="color:#22863A;--shiki-dark:#9ECBFF"> "--port"</span><span style="color:#212121;--shiki-dark:#E1E4E8">,</span><span style="color:#22863A;--shiki-dark:#9ECBFF"> "13131"</span><span style="color:#212121;--shiki-dark:#E1E4E8">,</span><span style="color:#22863A;--shiki-dark:#9ECBFF"> "--no-tls"</span><span style="color:#24292EFF;--shiki-dark:#E1E4E8">]</span></span>
+<span class="line"><span style="color:#D32F2F;--shiki-dark:#85E89D">    environment</span><span style="color:#D32F2F;--shiki-dark:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#24292EFF;--shiki-dark:#E1E4E8">      - </span><span style="color:#22863A;--shiki-dark:#9ECBFF">MOLTIS_BEHIND_PROXY=true</span></span>
+<span class="line"><span style="color:#24292EFF;--shiki-dark:#E1E4E8">      - </span><span style="color:#22863A;--shiki-dark:#9ECBFF">MOLTIS_EXTERNAL_URL=https://chat.example.com</span></span></code></pre>
+<p>Point your proxy at <code>http://&#x3C;moltis-host>:13131</code>, then open your public URL,
+for example <code>https://chat.example.com</code>.</p>
+<p>Moltis can also auto-generate a local CA and server certificate, but that mode
+is meant for local development or private networks. Trusting the generated CA
+only makes the issuer trusted; the browser still requires the certificate’s
+Subject Alternative Name (SAN) to match the exact hostname or IP you open.
+An IP-address URL such as <code>https://&#x3C;your-server-ip>:13131</code> only works if the
+certificate contains that IP address as an IP SAN, and normal public TLS setups
+are domain-name based. Inside Docker, Moltis usually cannot know your VPS public
+IP or provider domain, so direct IP access may fail with a certificate name
+mismatch even after importing the CA. To use direct IP access with the
+auto-generated certificate, set the public IP explicitly:</p>
+<pre class="astro-code astro-code-themes min-light github-dark" style="background-color:#ffffff;--shiki-dark-bg:#24292e;color:#24292eff;--shiki-dark:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="toml" data-code="[tls]
+public_ip = &#x22;203.0.113.10&#x22;"><code><span class="line"><span style="color:#24292EFF;--shiki-dark:#E1E4E8">[</span><span style="color:#24292EFF;--shiki-dark:#B392F0">tls</span><span style="color:#24292EFF;--shiki-dark:#E1E4E8">]</span></span>
+<span class="line"><span style="color:#24292EFF;--shiki-dark:#E1E4E8">public_ip </span><span style="color:#D32F2F;--shiki-dark:#E1E4E8">=</span><span style="color:#22863A;--shiki-dark:#9ECBFF"> "203.0.113.10"</span></span></code></pre>
+<p>Then restart Moltis so it regenerates the server certificate and import the
+generated CA from <code>http://&#x3C;your-server-ip>:13132/certs/ca.pem</code>. If you want
+Moltis to serve HTTPS directly on a public domain, configure <code>tls.cert_path</code> and
+<code>tls.key_path</code> with a certificate issued for that domain.</p>
 <p>Log in with the password you set, then configure your LLM provider in
 Settings.</p>
 <h2 id="option-b-binary--systemd">Option B: Binary + systemd</h2>
@@ -113,14 +144,16 @@ the web UI. Each channel has its own setup flow:</p>
 <p>See the individual <a href="/channels.html">channel docs</a> for detailed setup
 instructions.</p>
 <h2 id="firewall">Firewall</h2>
-<p>Open ports 13131 (HTTPS gateway) and 13132 (HTTP CA download) in your
-firewall. If you put Moltis behind a reverse proxy (nginx, Caddy), you only
-need to expose the proxy port and can use <code>--no-tls</code> on Moltis.</p>
-<pre class="astro-code astro-code-themes min-light github-dark" style="background-color:#ffffff;--shiki-dark-bg:#24292e;color:#24292eff;--shiki-dark:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="bash" data-code="# UFW example
-sudo ufw allow 13131/tcp
-sudo ufw allow 13132/tcp"><code><span class="line"><span style="color:#C2C3C5;--shiki-dark:#6A737D"># UFW example</span></span>
-<span class="line"><span style="color:#6F42C1;--shiki-dark:#B392F0">sudo</span><span style="color:#2B5581;--shiki-dark:#9ECBFF"> ufw</span><span style="color:#2B5581;--shiki-dark:#9ECBFF"> allow</span><span style="color:#2B5581;--shiki-dark:#9ECBFF"> 13131/tcp</span></span>
-<span class="line"><span style="color:#6F42C1;--shiki-dark:#B392F0">sudo</span><span style="color:#2B5581;--shiki-dark:#9ECBFF"> ufw</span><span style="color:#2B5581;--shiki-dark:#9ECBFF"> allow</span><span style="color:#2B5581;--shiki-dark:#9ECBFF"> 13132/tcp</span></span></code></pre>
+<p>If you use the recommended reverse proxy setup, expose only the proxy ports
+(<code>80</code> and <code>443</code>) publicly and keep Moltis’ <code>13131</code> port private to the host or
+container network.</p>
+<p>Only expose <code>13131</code> directly if you intentionally serve Moltis without a proxy.
+Only expose <code>13132</code> if you intentionally use Moltis’ local CA download endpoint.</p>
+<pre class="astro-code astro-code-themes min-light github-dark" style="background-color:#ffffff;--shiki-dark-bg:#24292e;color:#24292eff;--shiki-dark:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="bash" data-code="# UFW example for the recommended reverse proxy setup
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp"><code><span class="line"><span style="color:#C2C3C5;--shiki-dark:#6A737D"># UFW example for the recommended reverse proxy setup</span></span>
+<span class="line"><span style="color:#6F42C1;--shiki-dark:#B392F0">sudo</span><span style="color:#2B5581;--shiki-dark:#9ECBFF"> ufw</span><span style="color:#2B5581;--shiki-dark:#9ECBFF"> allow</span><span style="color:#2B5581;--shiki-dark:#9ECBFF"> 80/tcp</span></span>
+<span class="line"><span style="color:#6F42C1;--shiki-dark:#B392F0">sudo</span><span style="color:#2B5581;--shiki-dark:#9ECBFF"> ufw</span><span style="color:#2B5581;--shiki-dark:#9ECBFF"> allow</span><span style="color:#2B5581;--shiki-dark:#9ECBFF"> 443/tcp</span></span></code></pre>
 <h2 id="upgrades">Upgrades</h2>
 <p><strong>Docker:</strong> <code>docker compose pull &#x26;&#x26; docker compose up -d</code></p>
 <p><strong>Binary:</strong> Download the new release binary and restart the service:</p>
