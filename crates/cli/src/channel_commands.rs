@@ -138,7 +138,7 @@ fn run_teams_bootstrap(args: TeamsBootstrapArgs) -> Result<()> {
         generate_webhook_secret()
     };
     if !webhook_secret_provided {
-        println!("Generated webhook secret: [redacted]");
+        println!("Generated webhook secret: {webhook_secret}");
         if !args.force && !prompt_yes_no("Use generated webhook secret", true)? {
             webhook_secret = prompt_required("Webhook secret", None)?;
         }
@@ -172,18 +172,15 @@ fn run_teams_bootstrap(args: TeamsBootstrapArgs) -> Result<()> {
     println!("  account_id:      {account_id}");
     println!("  app_id:          {app_id}");
     println!("  tenant_id:       {}", args.tenant_id);
-    println!("  oauth_tenant:    [redacted]");
-    println!("  oauth_scope:     [redacted]");
+    println!("  oauth_tenant:    {}", args.oauth_tenant);
+    println!("  oauth_scope:     {}", args.oauth_scope);
     println!("  webhook_endpoint:");
     println!("    {endpoint}");
     println!();
 
     if args.dry_run {
         println!("Dry run enabled. Generated config payload:");
-        println!(
-            "{}",
-            serde_json::to_string_pretty(&redact_channel_config(&config_value))?
-        );
+        println!("{}", serde_json::to_string_pretty(&config_value)?);
         println!();
         print_setup_links();
         return Ok(());
@@ -211,21 +208,6 @@ fn run_teams_bootstrap(args: TeamsBootstrapArgs) -> Result<()> {
     }
 
     Ok(())
-}
-
-fn redact_channel_config(value: &Value) -> Value {
-    let mut redacted = value.clone();
-    for key in [
-        "app_password",
-        "webhook_secret",
-        "oauth_tenant",
-        "oauth_scope",
-    ] {
-        if let Some(slot) = redacted.get_mut(key) {
-            *slot = Value::String("[redacted]".to_string());
-        }
-    }
-    redacted
 }
 
 fn required_value(
