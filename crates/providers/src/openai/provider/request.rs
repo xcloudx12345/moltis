@@ -469,7 +469,7 @@ fn assign_openai_tool_call_id(
 
     let base = base_openai_tool_call_id(raw);
     let mut candidate = base.clone();
-    let mut nonce = 1usize;
+    let mut nonce = usize::from(!used_tool_call_ids.is_empty());
     while used_tool_call_ids.contains(&candidate) {
         candidate = disambiguate_tool_call_id(&base, nonce);
         nonce = nonce.saturating_add(1);

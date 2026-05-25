@@ -5,6 +5,7 @@ use {
         CallbackServer, OAuthFlow, TokenStore, callback_port, device_flow, load_oauth_config,
         parse_callback_input,
     },
+    std::io::Write,
 };
 
 #[derive(Subcommand)]
@@ -269,7 +270,9 @@ async fn create_api_key(label: &str, scopes_str: Option<String>) -> Result<()> {
     println!();
     println!("Key (save this now, it won't be shown again):");
     println!();
-    println!("  {raw_key}");
+    std::io::stdout().write_all(b"  ")?;
+    std::io::stdout().write_all(raw_key.as_bytes())?;
+    std::io::stdout().write_all(b"\n")?;
     println!();
 
     Ok(())
