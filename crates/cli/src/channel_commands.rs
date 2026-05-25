@@ -156,7 +156,7 @@ fn run_teams_bootstrap(args: TeamsBootstrapArgs) -> Result<()> {
         return Ok(());
     }
 
-    let endpoint_display = build_webhook_endpoint_display(&base_url, &account_id)?;
+    let endpoint = build_webhook_endpoint(&base_url, &account_id, &webhook_secret)?;
     let config_value = build_channel_config(
         &app_id,
         &app_password,
@@ -175,7 +175,7 @@ fn run_teams_bootstrap(args: TeamsBootstrapArgs) -> Result<()> {
     println!("  oauth_tenant:    [redacted]");
     println!("  oauth_scope:     [redacted]");
     println!("  webhook_endpoint:");
-    println!("    {endpoint_display}?secret=[redacted]");
+    println!("    {endpoint}");
     println!();
 
     if args.dry_run {
@@ -202,8 +202,7 @@ fn run_teams_bootstrap(args: TeamsBootstrapArgs) -> Result<()> {
     println!();
     print_setup_links();
     println!("Set your Azure Bot messaging endpoint to:");
-    println!("  {endpoint_display}?secret=[configured webhook_secret]");
-    println!("The webhook secret is stored in the saved Teams channel config and is not printed.");
+    println!("  {endpoint}");
     println!();
     println!("Then verify in Settings -> Channels (Microsoft Teams).");
 
@@ -404,12 +403,45 @@ fn normalize_base_url(raw: &str) -> Result<String> {
     Ok(parsed.as_str().trim_end_matches('/').to_string())
 }
 
-fn build_webhook_endpoint_display(base_url: &str, account_id: &str) -> Result<String> {
+fn build_webhook_endpoint(
+    base_url: &str,
+    account_id: &str,
+    webhook_secret: &str,
+) -> Result<String> {
     validate_account_id(account_id)?;
     let normalized = normalize_base_url(base_url)?;
+    if webhook_secret.trim().is_empty() {
+        return Ok(format!(
+            "{normalized}/api/channels/msteams/{account_id}/webhook"
+        ));
+    }
+
     Ok(format!(
-        "{normalized}/api/channels/msteams/{account_id}/webhook"
+        "{normalized}/api/channels/msteams/{account_id}/webhook?secret={}",
+        encode_query_component(webhook_secret)
     ))
+}
+
+fn encode_query_component(value: &str) -> String {
+    let mut encoded = String::with_capacity(value.len());
+    for b in value.bytes() {
+        if matches!(b, b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'~') {
+            encoded.push(char::from(b));
+        } else {
+            encoded.push('%');
+            encoded.push(hex_upper((b >> 4) & 0x0f));
+            encoded.push(hex_upper(b & 0x0f));
+        }
+    }
+    encoded
+}
+
+fn hex_upper(value: u8) -> char {
+    match value {
+        0..=9 => (b'0' + value) as char,
+        10..=15 => (b'A' + (value - 10)) as char,
+        _ => '0',
+    }
 }
 
 fn generate_webhook_secret() -> String {
@@ -483,12 +515,12 @@ mod tests {
     }
 
     #[test]
-    fn webhook_endpoint_display_omits_secret() {
+    fn webhook_endpoint_encodes_secret() {
         let endpoint =
-            build_webhook_endpoint_display("https://bot.example.com", "my-bot").expect("endpoint");
+            build_webhook_endpoint("https://bot.example.com", "my-bot", "a b+c").expect("endpoint");
         assert_eq!(
             endpoint,
-            "https://bot.example.com/api/channels/msteams/my-bot/webhook"
+            "https://bot.example.com/api/channels/msteams/my-bot/webhook?secret=a%20b%2Bc"
         );
     }
 
