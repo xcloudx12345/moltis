@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## [20260526.02] - 2026-05-26
+### Fixed
+- [ci] Stabilize release checks
+
 ## [20260526.01] - 2026-05-26
 ### Added
 - [tools] Support nonblocking spawn agents (#1067)
