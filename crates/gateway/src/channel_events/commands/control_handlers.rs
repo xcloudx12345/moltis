@@ -992,37 +992,6 @@ pub(in crate::channel_events) async fn handle_tts(
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn parse_tmux_status_command() {
-        let parsed = parse_tmux_channel_command("status moltis:0.1").unwrap();
-        match parsed {
-            TmuxChannelCommand::Status { target } => assert_eq!(target.as_str(), "moltis:0.1"),
-            _ => panic!("expected status command"),
-        }
-    }
-
-    #[test]
-    fn parse_tmux_send_keeps_message_spaces() {
-        let parsed = parse_tmux_channel_command("send   %12   hello from telegram").unwrap();
-        match parsed {
-            TmuxChannelCommand::Send { target, text } => {
-                assert_eq!(target.as_str(), "%12");
-                assert_eq!(text, "hello from telegram");
-            },
-            _ => panic!("expected send command"),
-        }
-    }
-
-    #[test]
-    fn parse_tmux_rejects_missing_text() {
-        assert!(parse_tmux_channel_command("send %12").is_err());
-    }
-}
-
 async fn handle_tts_persona(state: &Arc<GatewayState>, args: &str) -> ChannelResult<String> {
     let Some(ref store) = state.services.voice_persona_store else {
         return Err(ChannelError::unavailable("voice personas not available"));
@@ -1194,5 +1163,43 @@ async fn handle_tts_chat(
         other => Err(ChannelError::invalid_input(format!(
             "unknown /tts chat mode: {other}\nUsage: /tts chat [on|off|default]"
         ))),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parse_tmux_command_ok(input: &str) -> TmuxChannelCommand {
+        match parse_tmux_channel_command(input) {
+            Ok(command) => command,
+            Err(error) => panic!("expected valid /tmux command {input}: {error}"),
+        }
+    }
+
+    #[test]
+    fn parse_tmux_status_command() {
+        let parsed = parse_tmux_command_ok("status moltis:0.1");
+        match parsed {
+            TmuxChannelCommand::Status { target } => assert_eq!(target.as_str(), "moltis:0.1"),
+            _ => panic!("expected status command"),
+        }
+    }
+
+    #[test]
+    fn parse_tmux_send_keeps_message_spaces() {
+        let parsed = parse_tmux_command_ok("send   %12   hello from telegram");
+        match parsed {
+            TmuxChannelCommand::Send { target, text } => {
+                assert_eq!(target.as_str(), "%12");
+                assert_eq!(text, "hello from telegram");
+            },
+            _ => panic!("expected send command"),
+        }
+    }
+
+    #[test]
+    fn parse_tmux_rejects_missing_text() {
+        assert!(parse_tmux_channel_command("send %12").is_err());
     }
 }
