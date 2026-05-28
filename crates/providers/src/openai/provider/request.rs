@@ -677,7 +677,7 @@ mod tests {
     #[test]
     fn gemini_serializes_thought_signature_as_extra_content() {
         let p = provider(
-            "gemini-3.1-flash-lite-preview",
+            "gemini-3.1-flash-lite",
             "gemini",
             "https://generativelanguage.googleapis.com/v1beta/openai",
         )

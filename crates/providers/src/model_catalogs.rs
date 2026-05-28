@@ -71,31 +71,13 @@ pub(crate) fn is_fireworks_kimi_router(def: &OpenAiCompatDef, model_id: &str) ->
 
 /// Known Fireworks models.
 pub(crate) const FIREWORKS_MODELS: &[(&str, &str)] = &[
-    (
-        "accounts/fireworks/routers/kimi-k2p5-turbo",
-        "Kimi K2.5 Turbo",
-    ),
+    ("accounts/fireworks/models/kimi-k2p5", "Kimi K2.5"),
     ("accounts/fireworks/models/kimi-k2p6", "Kimi K2.6"),
     ("accounts/fireworks/models/glm-5p1", "GLM 5.1"),
+    ("accounts/fireworks/models/gpt-oss-120b", "GPT OSS 120B"),
     (
-        "accounts/fireworks/models/qwen3-235b-a22b-instruct-2507",
-        "Qwen3 235B A22B Instruct",
-    ),
-    (
-        "accounts/fireworks/models/llama-v3p1-405b-instruct",
-        "Llama 3.1 405B Instruct",
-    ),
-    (
-        "accounts/fireworks/models/llama-v3p1-70b-instruct",
-        "Llama 3.1 70B Instruct",
-    ),
-    (
-        "accounts/fireworks/models/qwen3-coder-480b-a35b-instruct",
-        "Qwen3 Coder 480B A35B",
-    ),
-    (
-        "accounts/fireworks/models/kimi-k2-instruct-0905",
-        "Kimi K2 Instruct",
+        "accounts/fireworks/models/deepseek-v4-pro",
+        "DeepSeek V4 Pro",
     ),
 ];
 
@@ -148,15 +130,10 @@ pub(crate) const MOONSHOT_MODELS: &[(&str, &str)] =
 /// See: <https://ai.google.dev/gemini-api/docs/models>
 pub(crate) const GEMINI_MODELS: &[(&str, &str)] = &[
     ("gemini-3.1-pro-preview", "Gemini 3.1 Pro Preview"),
-    (
-        "gemini-3.1-flash-lite-preview",
-        "Gemini 3.1 Flash-Lite Preview",
-    ),
+    ("gemini-3.1-flash-lite", "Gemini 3.1 Flash-Lite"),
     ("gemini-3-flash-preview", "Gemini 3 Flash Preview"),
-    ("gemini-2.5-flash-preview-05-20", "Gemini 2.5 Flash Preview"),
-    ("gemini-2.5-pro-preview-05-06", "Gemini 2.5 Pro Preview"),
-    ("gemini-2.0-flash", "Gemini 2.0 Flash"),
-    ("gemini-2.0-flash-lite", "Gemini 2.0 Flash Lite"),
+    ("gemini-2.5-flash", "Gemini 2.5 Flash"),
+    ("gemini-2.5-pro", "Gemini 2.5 Pro"),
 ];
 
 /// OpenAI-compatible provider definition for table-driven registration.
@@ -551,7 +528,7 @@ mod tests {
         ));
         assert!(!is_fireworks_kimi_router(
             fireworks,
-            "accounts/fireworks/models/kimi-k2-instruct-0905"
+            "accounts/fireworks/models/kimi-k2p5"
         ));
     }
 

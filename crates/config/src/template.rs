@@ -169,7 +169,7 @@ port = {port}                           # Port number (auto-generated for this i
 # [providers.gemini]
 # enabled = true
 # api_key = "..."                             # Or set GEMINI_API_KEY / GOOGLE_API_KEY env var
-# models = ["gemini-2.5-flash-preview-05-20", "gemini-2.0-flash"]
+# models = ["gemini-2.5-flash", "gemini-2.5-pro"]
 # fetch_models = true
 # base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
 # alias = "gemini"
@@ -201,7 +201,7 @@ port = {port}                           # Port number (auto-generated for this i
 # [providers.fireworks]
 # enabled = true
 # api_key = "..."                             # Or set FIREWORKS_API_KEY env var
-# models = ["accounts/fireworks/routers/kimi-k2p5-turbo"]
+# models = ["accounts/fireworks/models/kimi-k2p5"]
 # fetch_models = true                          # Set false to skip remote discovery
 # base_url = "https://api.fireworks.ai/inference/v1"
 # alias = "fireworks"
