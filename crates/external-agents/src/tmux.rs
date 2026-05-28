@@ -268,7 +268,11 @@ mod tests {
     #[test]
     fn target_accepts_common_tmux_targets() {
         for target in ["moltis", "moltis:0", "moltis:0.1", "@12", "%34"] {
-            assert_eq!(TmuxTarget::new(target).unwrap().as_str(), target);
+            let parsed = match TmuxTarget::new(target) {
+                Ok(parsed) => parsed,
+                Err(error) => panic!("expected valid tmux target {target}: {error}"),
+            };
+            assert_eq!(parsed.as_str(), target);
         }
     }
 
