@@ -50,4 +50,4 @@ Channel tmux control supports:
 /tmux send <target> <text>
 ```
 
-Use tmux target strings such as `moltis:0.1`, `@12`, or `%34`. Delivery returns an explicit receipt (`applied`, `busy`, `unknown`, and related states) instead of assuming `tmux send-keys` means the application consumed the input.
+Use tmux target strings such as `moltis:0.1`, `@12`, or `%34`. Delivery returns an explicit receipt (`applied`, `busy`, or `unknown`) instead of assuming `tmux send-keys` means the application consumed the input.

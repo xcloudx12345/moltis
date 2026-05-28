@@ -103,8 +103,6 @@ fn format_tmux_delivery_status(status: TmuxDeliveryStatus) -> &'static str {
     match status {
         TmuxDeliveryStatus::Applied => "applied",
         TmuxDeliveryStatus::Busy => "busy",
-        TmuxDeliveryStatus::Rejected => "rejected",
-        TmuxDeliveryStatus::Timeout => "timeout",
         TmuxDeliveryStatus::Unknown => "unknown",
     }
 }

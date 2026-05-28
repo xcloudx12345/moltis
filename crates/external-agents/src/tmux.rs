@@ -1,4 +1,4 @@
-use std::{process::Command, time::SystemTime};
+use std::process::Command;
 
 pub const MOLTIS_HOST_TERMINAL_TMUX_SOCKET_NAME: &str = "moltis-host-terminal";
 pub const MOLTIS_HOST_TERMINAL_TMUX_CONFIG_PATH: &str = "/dev/null";
@@ -17,8 +17,6 @@ pub enum TmuxPaneState {
 pub enum TmuxDeliveryStatus {
     Applied,
     Busy,
-    Rejected,
-    Timeout,
     Unknown,
 }
 
@@ -62,6 +60,9 @@ impl TmuxTarget {
 }
 
 /// Minimal tmux controller for driving live terminal sessions.
+///
+/// This intentionally shells out to the tmux CLI to target the same named
+/// socket/config used by the existing web host-terminal implementation.
 #[derive(Debug, Clone)]
 pub struct TmuxController {
     socket_name: Option<String>,
@@ -159,12 +160,10 @@ impl TmuxController {
 
         let after = self.capture_pane(target).unwrap_or_default();
         let pane_state_after = classify_pane_state(&after);
-        let status = if !after.is_empty() && after != before {
+        let status = if after != before {
             TmuxDeliveryStatus::Applied
-        } else if pane_state_before == TmuxPaneState::Unknown {
-            TmuxDeliveryStatus::Unknown
         } else {
-            TmuxDeliveryStatus::Applied
+            TmuxDeliveryStatus::Unknown
         };
 
         Ok(TmuxDeliveryReceipt {
@@ -200,8 +199,9 @@ pub fn classify_pane_state(output: &str) -> TmuxPaneState {
         return TmuxPaneState::Unknown;
     }
     if trimmed.contains("do you want to proceed")
-        || trimmed.contains("allow this")
-        || trimmed.contains("permission")
+        || trimmed.contains("allow this action")
+        || trimmed.contains("allow this operation")
+        || trimmed.contains("grant permission")
     {
         return TmuxPaneState::PermissionPrompt;
     }
@@ -257,10 +257,7 @@ fn strip_ansi(value: &str) -> String {
 }
 
 fn tmux_buffer_name() -> String {
-    let nanos = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .map(|duration| duration.as_nanos())
-        .unwrap_or_default();
+    let nanos = time::OffsetDateTime::now_utc().unix_timestamp_nanos();
     format!("moltis-channel-{nanos}-{}", std::process::id())
 }
 
@@ -293,6 +290,18 @@ mod tests {
         assert_eq!(
             classify_pane_state("Do you want to proceed?\n> 1. Yes"),
             TmuxPaneState::PermissionPrompt
+        );
+        assert_eq!(
+            classify_pane_state("Allow this action?\n1. Yes"),
+            TmuxPaneState::PermissionPrompt
+        );
+    }
+
+    #[test]
+    fn classify_permission_denied_as_ready_prompt() {
+        assert_eq!(
+            classify_pane_state("ls /root\nPermission denied\n~/repo $"),
+            TmuxPaneState::ReadyPrompt
         );
     }
 
