@@ -1168,16 +1168,15 @@ mod tests {
     #[cfg(feature = "bundled-skills")]
     #[tokio::test]
     #[serial]
-    async fn disabling_one_bundled_skill_does_not_disable_category() {
-        let dir = tempfile::tempdir().expect("tempdir");
+    async fn disabling_one_bundled_skill_does_not_disable_category() -> anyhow::Result<()> {
+        let dir = tempfile::tempdir()?;
         moltis_config::set_config_dir(dir.path().to_path_buf());
         let _guard = ConfigDirGuard;
 
         let service = NoopSkillsService;
         let result = service
             .skill_disable(serde_json::json!({ "source": "bundled", "skill": "apple-notes" }))
-            .await
-            .expect("disable bundled skill");
+            .await?;
 
         assert_eq!(
             result.get("skill").and_then(Value::as_str),
@@ -1199,29 +1198,27 @@ mod tests {
                 .skills
                 .is_bundled_skill_enabled("apple-reminders", Some("apple"))
         );
+        Ok(())
     }
 
     #[cfg(feature = "bundled-skills")]
     #[tokio::test]
     #[serial]
-    async fn bundled_category_toggle_preserves_individual_disables() {
-        let dir = tempfile::tempdir().expect("tempdir");
+    async fn bundled_category_toggle_preserves_individual_disables() -> anyhow::Result<()> {
+        let dir = tempfile::tempdir()?;
         moltis_config::set_config_dir(dir.path().to_path_buf());
         let _guard = ConfigDirGuard;
 
         let service = NoopSkillsService;
         service
             .skill_disable(serde_json::json!({ "source": "bundled", "skill": "apple-notes" }))
-            .await
-            .expect("disable bundled skill");
+            .await?;
         service
             .bundled_toggle_category(serde_json::json!({ "category": "apple", "enabled": false }))
-            .await
-            .expect("disable bundled category");
+            .await?;
         let still_disabled = service
             .skill_enable(serde_json::json!({ "source": "bundled", "skill": "apple-reminders" }))
-            .await
-            .expect("enable bundled skill while category is disabled");
+            .await?;
         assert_eq!(
             still_disabled.get("enabled").and_then(Value::as_bool),
             Some(true)
@@ -1242,5 +1239,6 @@ mod tests {
                 .skills
                 .is_bundled_skill_enabled("apple-reminders", Some("apple"))
         );
+        Ok(())
     }
 }
