@@ -54,6 +54,7 @@ fn load_suite() -> ScenarioSuite {
 fn optional_var(name: &str) -> Option<String> {
     std::env::var(name)
         .ok()
+        .map(|value| value.trim().to_string())
         .filter(|value| !value.trim().is_empty())
 }
 
@@ -132,7 +133,7 @@ async fn complete_scenario_with_retries(
             },
             Err(error) => {
                 panic!(
-                    "provider {provider_name} request failed for scenario {}: {error}",
+                    "provider {provider_name} request failed for scenario {}: {error:#}",
                     scenario.id
                 );
             },
