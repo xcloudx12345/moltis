@@ -17,7 +17,7 @@ fn test_sandbox_scope_display() {
 
 #[test]
 fn test_docker_hardening_args_prebuilt() {
-    let args = DockerSandbox::hardening_args(true, BackendKind::Docker);
+    let args = DockerSandbox::hardening_args(true, BackendKind::Docker, false);
     assert!(args.contains(&"--cap-drop".to_string()));
     assert!(args.contains(&"ALL".to_string()));
     assert!(args.contains(&"--security-opt".to_string()));
@@ -50,7 +50,7 @@ fn test_docker_hardening_args_prebuilt() {
 
 #[test]
 fn test_docker_hardening_args_not_prebuilt() {
-    let args = DockerSandbox::hardening_args(false, BackendKind::Docker);
+    let args = DockerSandbox::hardening_args(false, BackendKind::Docker, false);
     assert!(args.contains(&"--cap-drop".to_string()));
     assert!(args.contains(&"ALL".to_string()));
     assert!(args.contains(&"--security-opt".to_string()));
@@ -80,7 +80,7 @@ fn test_docker_hardening_args_not_prebuilt() {
 
 #[test]
 fn test_docker_hardening_args_podman() {
-    let args = DockerSandbox::hardening_args(true, BackendKind::Podman);
+    let args = DockerSandbox::hardening_args(true, BackendKind::Podman, false);
     // Core hardening flags must still be present
     assert!(args.contains(&"--cap-drop".to_string()));
     assert!(args.contains(&"ALL".to_string()));
@@ -104,6 +104,91 @@ fn test_docker_hardening_args_podman() {
     assert!(!args.contains(&"/sys/class/dmi:ro,nosuid".to_string()));
     assert!(!args.contains(&"/sys/devices/virtual/dmi:ro,nosuid".to_string()));
     assert!(!args.contains(&"/sys/class/block:ro,nosuid".to_string()));
+}
+
+#[test]
+fn test_podman_nested_hardening_args_are_privileged() {
+    let args = DockerSandbox::hardening_args(true, BackendKind::Podman, true);
+
+    assert!(args.contains(&"--privileged".to_string()));
+    assert!(!args.contains(&"--cap-drop".to_string()));
+    assert!(!args.contains(&"no-new-privileges".to_string()));
+    assert!(!args.contains(&"--read-only".to_string()));
+}
+
+#[test]
+fn test_docker_ignores_nested_podman_hardening_flag() {
+    let args = DockerSandbox::hardening_args(true, BackendKind::Docker, true);
+
+    assert!(!args.contains(&"--privileged".to_string()));
+    assert!(args.contains(&"--cap-drop".to_string()));
+    assert!(args.contains(&"no-new-privileges".to_string()));
+    assert!(args.contains(&"--read-only".to_string()));
+}
+
+#[test]
+fn test_podman_socket_args_disabled_by_default() {
+    let sandbox = DockerSandbox::podman(SandboxConfig::default());
+
+    assert!(sandbox.podman_socket_run_args().is_empty());
+    assert!(sandbox.podman_socket_exec_env_args().is_empty());
+}
+
+#[test]
+fn test_podman_socket_args_for_path() {
+    let args = DockerSandbox::podman_socket_run_args_for_path(Some(std::path::Path::new(
+        "/run/user/1000/podman/podman.sock",
+    )));
+
+    assert_eq!(args, vec![
+        "-v".to_string(),
+        "/run/user/1000/podman/podman.sock:/tmp/moltis-host-podman.sock:rw".to_string(),
+    ]);
+}
+
+#[test]
+fn test_podman_socket_exec_env_args_when_enabled() {
+    let sandbox = DockerSandbox::podman(SandboxConfig {
+        allow_host_podman: true,
+        ..Default::default()
+    });
+    let args = sandbox.podman_socket_exec_env_args();
+
+    assert!(args.contains(&"CONTAINER_HOST=unix:///tmp/moltis-host-podman.sock".to_string()));
+    assert!(args.contains(&"DOCKER_HOST=unix:///tmp/moltis-host-podman.sock".to_string()));
+}
+
+#[test]
+fn test_podman_rootless_reexec_restricted_detection() {
+    assert!(is_podman_rootless_reexec_restricted(
+        "cannot clone: Operation not permitted\nError: cannot re-exec process"
+    ));
+    assert!(!is_podman_rootless_reexec_restricted(
+        "Error: image not found"
+    ));
+}
+
+#[test]
+fn test_podman_rootless_reexec_error_gets_actionable_context() {
+    let formatted = format_container_run_stderr(
+        BackendKind::Podman,
+        "cannot clone: Operation not permitted\nError: cannot re-exec process",
+    );
+
+    assert!(formatted.contains("NoNewPrivileges=true"));
+    assert!(formatted.contains("Rootless Podman"));
+    assert!(formatted.contains("allow_host_podman=true"));
+    assert!(formatted.contains("allow_nested_podman=true"));
+}
+
+#[test]
+fn test_docker_run_error_does_not_get_podman_context() {
+    let formatted = format_container_run_stderr(
+        BackendKind::Docker,
+        "cannot clone: Operation not permitted\nError: cannot re-exec process",
+    );
+
+    assert!(!formatted.contains("NoNewPrivileges=true"));
 }
 
 #[test]
@@ -269,7 +354,7 @@ fn test_docker_workspace_args_uses_host_data_dir_override() {
 
 #[test]
 fn test_docker_hardening_args_enable_init_reaper() {
-    let args = DockerSandbox::hardening_args(true, BackendKind::Docker);
+    let args = DockerSandbox::hardening_args(true, BackendKind::Docker, false);
     assert!(
         args.contains(&"--init".to_string()),
         "Docker sandboxes must run with an init process so orphaned children are reaped"
@@ -278,7 +363,7 @@ fn test_docker_hardening_args_enable_init_reaper() {
 
 #[test]
 fn test_podman_hardening_args_do_not_require_host_init_binary() {
-    let args = DockerSandbox::hardening_args(true, BackendKind::Podman);
+    let args = DockerSandbox::hardening_args(true, BackendKind::Podman, false);
     assert!(!args.contains(&"--init".to_string()));
 }
 

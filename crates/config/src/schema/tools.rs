@@ -699,6 +699,15 @@ pub struct SandboxConfig {
     /// Ignored for Apple Container and WASM backends.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub gpus: Option<String>,
+    /// Mount the host Podman socket into Podman-backed sandboxes and set
+    /// CONTAINER_HOST/DOCKER_HOST inside the sandbox. Dangerous: commands in
+    /// the sandbox can control host containers.
+    #[serde(default)]
+    pub allow_host_podman: bool,
+    /// Relax Podman sandbox hardening so Podman can run inside the sandbox.
+    /// Dangerous and runtime-dependent: uses privileged container launch.
+    #[serde(default)]
+    pub allow_nested_podman: bool,
     /// Packages to install via `apt-get` in the sandbox image.
     /// Set to an empty list to skip provisioning.
     #[serde(default = "default_sandbox_packages")]
@@ -974,6 +983,8 @@ impl Default for SandboxConfig {
             backend: "auto".into(),
             resource_limits: ResourceLimitsConfig::default(),
             gpus: None,
+            allow_host_podman: false,
+            allow_nested_podman: false,
             packages: default_sandbox_packages(),
             wasm_fuel_limit: None,
             wasm_epoch_interval_ms: None,

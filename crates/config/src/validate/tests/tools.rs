@@ -63,6 +63,37 @@ backend = "podman"
 }
 
 #[test]
+fn podman_escape_hatch_fields_accepted_and_warned() {
+    let toml = r#"
+[tools.exec.sandbox]
+backend = "podman"
+allow_host_podman = true
+allow_nested_podman = true
+"#;
+    let result = validate_toml_str(toml);
+
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .all(|d| d.category != "unknown-field"),
+        "podman escape hatch fields should be accepted"
+    );
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .any(|d| d.path == "tools.exec.sandbox.allow_host_podman")
+    );
+    assert!(
+        result
+            .diagnostics
+            .iter()
+            .any(|d| d.path == "tools.exec.sandbox.allow_nested_podman")
+    );
+}
+
+#[test]
 fn unknown_security_level_warned() {
     let toml = r#"
 [tools.exec]

@@ -22,6 +22,11 @@ Both configurations:
 - **Restart on failure** with a 10-second cooldown
 - **Log to** `~/.moltis/moltis.log`
 
+On Linux, the generated user service is compatible with rootless Podman. If you
+hand-edit the unit, avoid `NoNewPrivileges=true` and `ProtectHome=true` when
+using Podman as the sandbox backend because they can prevent Podman from
+creating user namespaces and reading its per-user container storage.
+
 ### Options
 
 You can pass `--bind`, `--port`, and `--log-level` to bake them into the

@@ -109,6 +109,10 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now moltis
 ```
 
+The bundled unit is compatible with rootless Podman. If you customize it, do
+not add `NoNewPrivileges=true` or `ProtectHome=true` when using Podman as the
+sandbox backend; those restrictions block Podman's user namespace re-exec path.
+
 ### 4. Set your password
 
 ```bash

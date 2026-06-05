@@ -99,6 +99,42 @@ Once installed, restart `moltis gateway` — the startup banner will show
 `sandbox: podman backend`. All Docker hardening flags (see below) apply
 identically to Podman containers.
 
+If Moltis runs under systemd, rootless Podman must be allowed to create user
+namespaces and access the Moltis user's container storage. Do not run Moltis
+from a unit with `NoNewPrivileges=true` or `ProtectHome=true`; those restrictions
+can make Podman fail with `cannot clone: Operation not permitted` and
+`Error: cannot re-exec process` even when the same `podman run ...` command works
+from an interactive shell.
+
+Moltis supports using Podman as the sandbox backend. Running `podman run ...`
+from inside an already sandboxed Moltis container is different and is blocked by
+the default hardened sandbox, which drops capabilities and sets
+`no-new-privileges` inside the container.
+
+Two explicit escape hatches are available when you intentionally want container
+commands inside a Podman sandbox:
+
+```toml
+[tools.exec.sandbox]
+backend = "podman"
+
+# Use the host Podman service from inside the sandbox.
+# This mounts the host Podman socket and sets CONTAINER_HOST/DOCKER_HOST.
+allow_host_podman = true
+
+# Or run Podman nested inside the sandbox.
+# This starts the sandbox with privileged Podman launch flags and disables
+# the normal no-new-privileges/cap-drop/read-only hardening for that sandbox.
+# allow_nested_podman = true
+# packages = ["podman", "uidmap", "slirp4netns", "fuse-overlayfs"]
+```
+
+Use only one of these modes unless you have a specific reason to combine them.
+`allow_host_podman` is usually more reliable, but sandboxed commands can control
+host containers. `allow_nested_podman` keeps container state inside the sandbox,
+but it is runtime-dependent and weakens the sandbox substantially by using
+privileged container settings.
+
 ## Docker
 
 Docker is supported on macOS, Linux, and Windows. On macOS it runs inside a
@@ -128,6 +164,11 @@ hardening flags by default:
 The `--read-only` flag is applied only to prebuilt sandbox images (where
 packages are already baked in). Non-prebuilt images need a writable root
 filesystem for `apt-get` provisioning on first start.
+
+When `allow_nested_podman = true` and the backend is Podman, Moltis starts the
+sandbox with `--privileged` and does not apply `--cap-drop ALL`,
+`--security-opt no-new-privileges`, or `--read-only`. This is required for
+nested container runtimes but materially reduces the security boundary.
 
 The `/sys` tmpfs overlays prevent host hardware metadata (serial numbers, disk
 models, LUKS UUIDs) from being visible inside the container. Note that

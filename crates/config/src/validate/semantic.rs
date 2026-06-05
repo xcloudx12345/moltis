@@ -213,6 +213,25 @@ pub(super) fn check_semantic_warnings(config: &MoltisConfig, diagnostics: &mut V
         });
     }
 
+    if config.tools.exec.sandbox.allow_host_podman {
+        diagnostics.push(Diagnostic {
+            severity: Severity::Warning,
+            category: "security",
+            path: "tools.exec.sandbox.allow_host_podman".into(),
+            message: "allow_host_podman exposes the host Podman socket to sandboxed commands"
+                .into(),
+        });
+    }
+
+    if config.tools.exec.sandbox.allow_nested_podman {
+        diagnostics.push(Diagnostic {
+            severity: Severity::Warning,
+            category: "security",
+            path: "tools.exec.sandbox.allow_nested_podman".into(),
+            message: "allow_nested_podman relaxes Podman sandbox hardening and starts the sandbox with privileged container settings".into(),
+        });
+    }
+
     // tools.fs: must_read_before_write requires track_reads
     if config.tools.fs.must_read_before_write && !config.tools.fs.track_reads {
         diagnostics.push(Diagnostic {

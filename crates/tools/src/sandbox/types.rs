@@ -216,6 +216,10 @@ pub struct SandboxConfig {
     pub resource_limits: ResourceLimits,
     /// GPU device passthrough for Docker/Podman backends (e.g. "all", "device=0").
     pub gpus: Option<String>,
+    /// Mount the host Podman socket into Podman-backed sandboxes.
+    pub allow_host_podman: bool,
+    /// Relax Podman sandbox hardening to support nested Podman.
+    pub allow_nested_podman: bool,
     /// Packages to install via `apt-get` after container creation.
     /// Set to an empty list to skip provisioning.
     pub packages: Vec<String>,
@@ -286,6 +290,8 @@ impl Default for SandboxConfig {
             backend: "auto".into(),
             resource_limits: ResourceLimits::default(),
             gpus: None,
+            allow_host_podman: false,
+            allow_nested_podman: false,
             packages: Vec::new(),
             timezone: None,
             wasm_fuel_limit: None,
@@ -363,6 +369,8 @@ impl From<&moltis_config::schema::SandboxConfig> for SandboxConfig {
                 pids_max: cfg.resource_limits.pids_max,
             },
             gpus: cfg.gpus.clone(),
+            allow_host_podman: cfg.allow_host_podman,
+            allow_nested_podman: cfg.allow_nested_podman,
             packages: cfg.packages.clone(),
             timezone: None, // Set by gateway from user profile
             wasm_fuel_limit: cfg.wasm_fuel_limit,

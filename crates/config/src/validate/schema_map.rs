@@ -98,6 +98,8 @@ pub(super) fn build_schema_map() -> KnownKeys {
             ("backend", Leaf),
             ("resource_limits", resource_limits()),
             ("gpus", Leaf),
+            ("allow_host_podman", Leaf),
+            ("allow_nested_podman", Leaf),
             ("packages", Leaf),
             ("wasm_fuel_limit", Leaf),
             ("wasm_epoch_interval_ms", Leaf),
