@@ -88,6 +88,18 @@ impl DockerSandbox {
         }
     }
 
+    #[cfg(test)]
+    pub(crate) fn with_cli(config: SandboxConfig, cli: &'static str) -> Self {
+        Self {
+            config,
+            kind: BackendKind::Docker,
+            cli,
+            backend_label: "docker",
+            provisioned: Mutex::new(HashSet::new()),
+            startup_gates: Mutex::new(HashMap::new()),
+        }
+    }
+
     fn image(&self) -> &str {
         self.config
             .image
@@ -758,7 +770,10 @@ impl Sandbox for DockerSandbox {
             max_bytes,
         )
         .await?;
-        if !matches!(host_result, SandboxReadResult::NotFound) {
+        if matches!(
+            host_result,
+            SandboxReadResult::Ok(_) | SandboxReadResult::TooLarge(_)
+        ) {
             return Ok(host_result);
         }
 
@@ -780,13 +795,24 @@ impl Sandbox for DockerSandbox {
         content: &[u8],
     ) -> Result<Option<serde_json::Value>> {
         if let Some(host_path) = self.mounted_host_path(id, file_path) {
-            return native_host_write_file(
+            let host_result = native_host_write_file(
                 host_path
                     .to_str()
                     .ok_or_else(|| Error::message("mounted host path contains invalid UTF-8"))?,
                 content,
             )
             .await;
+            match host_result {
+                Ok(payload) => return Ok(payload),
+                Err(error) => {
+                    debug!(
+                        guest_path = file_path,
+                        host_path = %host_path.display(),
+                        %error,
+                        "mounted host write failed; falling back to container write"
+                    );
+                },
+            }
         }
 
         let container_name = self.container_name(id);
@@ -795,13 +821,25 @@ impl Sandbox for DockerSandbox {
 
     async fn list_files(&self, id: &SandboxId, root: &str) -> Result<SandboxListFilesResult> {
         if let Some(host_path) = self.mounted_host_path(id, root) {
-            let host_files = native_host_list_files(
+            let host_result = native_host_list_files(
                 host_path
                     .to_str()
                     .ok_or_else(|| Error::message("mounted host path contains invalid UTF-8"))?,
             )
-            .await?;
-            return remap_host_list_result_to_guest(root, &host_path, host_files);
+            .await;
+            match host_result {
+                Ok(host_files) => {
+                    return remap_host_list_result_to_guest(root, &host_path, host_files);
+                },
+                Err(error) => {
+                    debug!(
+                        guest_path = root,
+                        host_path = %host_path.display(),
+                        %error,
+                        "mounted host list failed; falling back to container list"
+                    );
+                },
+            }
         }
 
         let container_name = self.container_name(id);

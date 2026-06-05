@@ -557,6 +557,17 @@ fn classify_container_copy_error(stderr: &str) -> Option<ContainerCopyErrorKind>
     None
 }
 
+fn container_copy_failure_detail(stderr: &str, exit_code: Option<i32>) -> String {
+    let detail = stderr.trim();
+    if !detail.is_empty() {
+        return detail.to_string();
+    }
+    match exit_code {
+        Some(code) => format!("copy command exited with code {code} and no stderr"),
+        None => "copy command exited without a status code or stderr".to_string(),
+    }
+}
+
 async fn oci_exec_shell(
     cli: &str,
     container_name: &str,
@@ -1084,7 +1095,7 @@ pub async fn oci_container_read_file(
 
                 Err(Error::message(format!(
                     "{cli} cp failed for '{file_path}': {}",
-                    stderr.trim()
+                    container_copy_failure_detail(stderr.trim(), status.code())
                 )))
             })
             .await
@@ -1148,7 +1159,8 @@ pub async fn oci_container_write_file(
     }
 
     Err(Error::message(format!(
-        "{cli} cp failed for '{file_path}': {detail}"
+        "{cli} cp failed for '{file_path}': {}",
+        container_copy_failure_detail(detail, output.status.code())
     )))
 }
 
@@ -1421,5 +1433,17 @@ mod tests {
         .unwrap();
 
         assert!(matches!(result, SandboxReadResult::NotFound));
+    }
+
+    #[test]
+    fn oci_copy_failure_detail_is_not_empty_when_stderr_is_empty() {
+        assert_eq!(
+            container_copy_failure_detail("", Some(1)),
+            "copy command exited with code 1 and no stderr"
+        );
+        assert_eq!(
+            container_copy_failure_detail("explicit failure", Some(1)),
+            "explicit failure"
+        );
     }
 }
