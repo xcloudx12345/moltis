@@ -35,6 +35,8 @@ pub struct VoiceTtsConfig {
     pub piper: VoicePiperTtsConfig,
     /// Coqui TTS (local server) settings.
     pub coqui: VoiceCoquiTtsConfig,
+    /// MSEdge TTS (free neural) settings.
+    pub msedge: VoiceMSEdgeTtsConfig,
 }
 
 impl Default for VoiceTtsConfig {
@@ -48,6 +50,7 @@ impl Default for VoiceTtsConfig {
             google: VoiceGoogleTtsConfig::default(),
             piper: VoicePiperTtsConfig::default(),
             coqui: VoiceCoquiTtsConfig::default(),
+            msedge: VoiceMSEdgeTtsConfig::default(),
         }
     }
 }
@@ -222,6 +225,18 @@ impl Default for VoiceCoquiTtsConfig {
     }
 }
 
+/// MSEdge TTS (free neural) configuration.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct VoiceMSEdgeTtsConfig {
+    /// Whether this provider is enabled.
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+
+    /// Default voice ID (e.g., "vi-VN-NamMinhNeural").
+    pub voice_id: Option<String>,
+}
+
 /// Voice STT configuration for moltis.toml.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -291,17 +306,20 @@ pub enum VoiceTtsProvider {
     Piper,
     #[serde(rename = "coqui")]
     Coqui,
+    #[serde(rename = "msedge")]
+    MSEdge,
 }
 
 impl VoiceTtsProvider {
     #[must_use]
-    pub fn as_str(self) -> &'static str {
+    pub     fn as_str(self) -> &'static str {
         match self {
             Self::ElevenLabs => "elevenlabs",
             Self::OpenAi => "openai",
             Self::Google => "google",
             Self::Piper => "piper",
             Self::Coqui => "coqui",
+            Self::MSEdge => "msedge",
         }
     }
 
@@ -313,31 +331,34 @@ impl VoiceTtsProvider {
             "google" | "google-tts" => Some(Self::Google),
             "piper" => Some(Self::Piper),
             "coqui" => Some(Self::Coqui),
+            "msedge" | "msegde" | "edge-tts" => Some(Self::MSEdge),
             _ => None,
         }
     }
 
     /// Human-readable provider name.
     #[must_use]
-    pub fn name(self) -> &'static str {
+    pub     fn name(self) -> &'static str {
         match self {
             Self::ElevenLabs => "ElevenLabs",
             Self::OpenAi => "OpenAI TTS",
             Self::Google => "Google Cloud TTS",
             Self::Piper => "Piper",
             Self::Coqui => "Coqui TTS",
+            Self::MSEdge => "MSEdge TTS",
         }
     }
 
     /// All TTS provider IDs.
     #[must_use]
-    pub fn all() -> &'static [Self] {
+    pub     fn all() -> &'static [Self] {
         &[
             Self::ElevenLabs,
             Self::OpenAi,
             Self::Google,
             Self::Piper,
             Self::Coqui,
+            Self::MSEdge,
         ]
     }
 }

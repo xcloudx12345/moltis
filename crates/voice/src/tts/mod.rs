@@ -5,12 +5,18 @@ mod coqui;
 mod elevenlabs;
 mod google;
 pub mod mock;
+mod msedge;
 mod openai;
 mod piper;
 
 pub use {
-    coqui::CoquiTts, elevenlabs::ElevenLabsTts, google::GoogleTts, mock::MockTts,
-    openai::OpenAiTts, piper::PiperTts,
+    coqui::CoquiTts,
+    elevenlabs::ElevenLabsTts,
+    google::GoogleTts,
+    mock::MockTts,
+    msedge::MSEdgeTts,
+    openai::OpenAiTts,
+    piper::PiperTts,
 };
 
 use {

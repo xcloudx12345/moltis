@@ -259,6 +259,8 @@ whatsapp-rust-tokio-transport  = "0.5"
 whatsapp-rust-ureq-http-client = "0.5"
 # QR code rendering
 qrcode = "0.14"
+# TTS
+msedge-tts = { default-features = false, features = ["tokio-runtime"], version = "0.4" }
 # TLS / certificate generation
 axum-server    = { features = ["tls-rustls"], version = "0.7" }
 rcgen          = "0.13"

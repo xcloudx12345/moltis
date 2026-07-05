@@ -729,6 +729,13 @@ pub(super) fn build_schema_map() -> KnownKeys {
                                 ("endpoint", Leaf),
                             ])),
                         ),
+                        (
+                            "msedge",
+                            Struct(HashMap::from([
+                                ("enabled", Leaf),
+                                ("voice_id", Leaf),
+                            ])),
+                        ),
                     ])),
                 ),
                 (

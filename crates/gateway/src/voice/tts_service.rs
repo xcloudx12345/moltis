@@ -8,8 +8,8 @@ use {
 };
 
 use moltis_voice::{
-    AudioFormat, CoquiTts, ElevenLabsTts, GoogleTts, OpenAiTts, PiperTts, SynthesizeRequest,
-    TtsConfig, TtsProvider, TtsProviderId, parse_tts_directives, strip_ssml_tags,
+    AudioFormat, CoquiTts, ElevenLabsTts, GoogleTts, MSEdgeTts, OpenAiTts, PiperTts,
+    SynthesizeRequest, TtsConfig, TtsProvider, TtsProviderId, parse_tts_directives, strip_ssml_tags,
 };
 
 use crate::services::{ServiceError, ServiceResult, TtsService};
@@ -86,6 +86,9 @@ impl LiveTtsService {
                 speaker: None,
                 language: None,
             },
+            msedge: moltis_voice::MSEdgeTtsConfig {
+                voice_id: cfg.voice.tts.msedge.voice_id.clone(),
+            },
         }
     }
 
@@ -133,6 +136,10 @@ impl LiveTtsService {
                     None
                 }
             },
+            TtsProviderId::MSEdge => {
+                let msedge = MSEdgeTts::new(config.msedge.voice_id.clone());
+                Some(Box::new(msedge) as Box<dyn TtsProvider + Send + Sync>)
+            },
         }
     }
 
@@ -145,12 +152,11 @@ impl LiveTtsService {
                 config.elevenlabs.api_key.is_some(),
             ),
             (
-                TtsProviderId::OpenAi,
-                config.openai.api_key.is_some() || config.openai.base_url.is_some(),
+                TtsProviderId::Piper,
+                config.piper.model_path.is_some(),
             ),
-            (TtsProviderId::Google, config.google.api_key.is_some()),
-            (TtsProviderId::Piper, config.piper.model_path.is_some()),
             (TtsProviderId::Coqui, true), // Always available if server running
+            (TtsProviderId::MSEdge, config.msedge.voice_id.is_some()),
         ]
     }
 
@@ -564,8 +570,8 @@ mod tests {
         let providers = service.providers().await.unwrap();
 
         let providers_arr = providers.as_array().unwrap();
-        // 5 providers: elevenlabs, openai, google, piper, coqui
-        assert_eq!(providers_arr.len(), 5);
+        // 6 providers: elevenlabs, openai, google, piper, coqui, msedge
+        assert_eq!(providers_arr.len(), 6);
 
         let ids: Vec<_> = providers_arr
             .iter()
@@ -576,6 +582,7 @@ mod tests {
         assert!(ids.contains(&"google"));
         assert!(ids.contains(&"piper"));
         assert!(ids.contains(&"coqui"));
+        assert!(ids.contains(&"msedge"));
     }
 
     #[tokio::test]

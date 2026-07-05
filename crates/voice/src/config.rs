@@ -57,6 +57,9 @@ pub struct TtsConfig {
 
     /// Coqui TTS (local) settings.
     pub coqui: CoquiTtsConfig,
+
+    /// MSEdge TTS (free neural) settings.
+    pub msedge: MSEdgeTtsConfig,
 }
 
 impl Default for TtsConfig {
@@ -71,6 +74,7 @@ impl Default for TtsConfig {
             google: GoogleTtsConfig::default(),
             piper: PiperTtsConfig::default(),
             coqui: CoquiTtsConfig::default(),
+            msedge: MSEdgeTtsConfig::default(),
         }
     }
 }
@@ -223,6 +227,18 @@ impl Default for CoquiTtsConfig {
             language: None,
         }
     }
+}
+
+/// MSEdge TTS (free neural) configuration.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct MSEdgeTtsConfig {
+    /// Whether this provider is enabled.
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+
+    /// Default voice ID (e.g., "vi-VN-NamMinhNeural").
+    pub voice_id: Option<String>,
 }
 
 /// ElevenLabs Scribe STT configuration.
